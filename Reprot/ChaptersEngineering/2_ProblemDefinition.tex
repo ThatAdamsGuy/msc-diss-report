@@ -1,0 +1,265 @@
+\chapter{Problem Definition}
+\label{chap:problem}
+
+% ============================================================================
+% CHAPTER PURPOSE -- HIGH PRIORITY
+% Convert the research context into a precise, assessable project. This chapter
+% must define the problem, aim, objectives, deliverables, boundaries and success
+% criteria before the model is introduced.
+% Do not repeat the background and do not introduce detailed equations.
+% ============================================================================
+
+\section{Problem Statement}
+\label{sec:problem-statement}
+
+% VERY HIGH PRIORITY.
+% State the engineering problem in operational terms. For example:
+% During a race, a team must determine whether stopping before a nearby rival
+% will generate enough time during the offset laps to change the post stop
+% running order, while accounting for tyre state and other relevant effects.
+%
+% Clarify that the problem is not merely to predict a lap time. It is to compare
+% two counterfactual strategy scenarios over a defined time horizon.
+% Explain the need for transparency: the user should be able to identify which
+% factors produced the recommendation.
+
+\section{Research Aim}
+\label{sec:research-aim}
+
+% State one concise aim, ideally a single sentence. Suggested form:
+% "To develop, implement and validate a deterministic model for quantifying the
+% time gain or loss associated with Formula One undercut opportunities using
+% historic lap time data and configurable race parameters."
+% Adapt only once the exact final scope is fixed.
+
+[x - Come back at end, check this matches the final product]
+
+This research aims to develop, implement, and validate a deterministic model for quantifying the time gain or time loss associated with Formula One undercut opportunities in race strategies. This will use configurable race and track parameters to identify opportunities, and validate against dynamically retrieved historic lap time data.
+
+\section{Research Objectives}
+\label{sec:research-objectives}
+
+% VERY HIGH PRIORITY. Use an enumerated list so Chapter 7 can revisit each item.
+% Each objective must be specific enough to assess.
+%
+% Suggested objectives:
+% \begin{enumerate}
+%   \item Identify and justify the principal factors influencing undercut gain.
+%   \item Develop a progressive lap time and scenario-comparison model.
+%   \item Implement the model in a desktop engineering-analysis tool.
+%   \item Visualise predicted opportunities on historic race traces.
+%   \item Verify the mathematical and software implementation.
+%   \item Validate the model against selected historic F1 undercut cases.
+%   \item quantify sensitivity to the principal model parameters and critically
+%         evaluate applicability and limitations.
+% \end{enumerate}
+%
+% Avoid objectives such as "research tyres" that are activities rather than
+% assessable outcomes.
+
+\begin{enumerate}
+    \item Identify and justify the factors influencing time gain and loss of an undercut manoeuvre, including the level at which each can impact.
+    \item Develop a progressive lap time model than encompasses these factors and can be used to compare various scenarios.
+    \item Implement the model in a desktop software tool for engineer analysis.
+    \item Visualise the analysis and predicted opportunities on historic race traces.
+    \item Verify the mathematical and software implementation.
+    \item Identify and select a representative range of successful and unsuccessful historic F1 undercut scenarios.
+    \item Validate the model against selected historic F1 undercut cases.
+    \item Critically evaluate the applicability, sensivity, and limitations of the final model and software solution.
+\end{enumerate}
+
+\section{Research Questions}
+\label{sec:research-questions}
+
+% HIGH VALUE. A short set of questions sharpens the dissertation argument.
+% Suggested questions:
+% RQ1: Can a deterministic model reproduce the direction and approximate
+%      magnitude of undercut gain observed in historic races?
+% RQ2: Which parameters exert the greatest influence on predicted gain?
+% RQ3: Under which conditions does the simplified model become unreliable?
+% Align results subsections directly to these questions.
+
+\begin{enumerate}[label=\textbf{RQ\arabic*:}]
+    \item Can a deterministic model reproduce the direction and approximate magnitude of undercut gain observed in historic Formula One races?
+    \item Which model parameters exert the greatest influence on predicted undercut gain or loss?
+    \item Under which racing conditions does the proposed modelling approach become unreliable?
+\end{enumerate}
+
+\section{Project Deliverables}
+\label{sec:deliverables}
+
+% Distinguish research/engineering artefacts from software artefacts.
+%
+% Research and engineering deliverables:
+% - documented model formulation;
+% - parameter definitions and assumptions;
+% - verification and validation method;
+% - sensitivity and limitations analysis.
+%
+% Software deliverables:
+% - desktop application containing the model;
+% - historic session/driver loading;
+% - configurable parameters;
+% - race trace output with pit/opportunity annotations.
+%
+% Do not let the software list dominate the engineering deliverables.
+
+Collectively, these deliverables provide both the engineering artefacts
+required to evaluate the proposed modelling approach and a practical
+software implementation capable of applying the model to historic Formula
+One race data.
+
+\subsection{Research \& Engineering Deliverables}
+\label{subsec:research-deliberables}
+
+\begin{itemize}
+    \item A documented deterministic undercut model.
+    \item A definition and justification of all model parameters and assumptions.
+    \item A documented verification and validation methodology.
+    \item Validation results using historic Formula One races.
+    \item A sensitivity analysis and critical discussion of model limitations.
+\end{itemize}
+
+\subsection{Software Deliverables}
+\label{subsec:software-deliverables}
+
+\begin{itemize}
+    \item A desktop engineering analysis application implementing the proposed model.
+    \item Historic race loading and session selection functionality.
+    \item Configurable engineering parameters.
+    \item Race trace visualisation with annotated pit stops and predicted undercut opportunities.
+\end{itemize}
+
+\section{Project Scope and Boundaries}
+\label{sec:scope}
+
+\subsection{Included Scope}
+% Define the intended operating domain precisely. Candidate boundaries:
+% - Formula One race sessions using historic timing/lap data;
+% - dry, green-flag running unless otherwise explicitly analysed;
+% - one attacking driver and one target driver;
+% - short offset windows around a pit stop decision;
+% - deterministic output based on supplied/estimated parameters;
+% - undercut as the principal strategy mechanism.
+
+\begin{itemize}
+    \item Historic Formula One race sessions using publicly available timing and lap data.
+    \item Dry race conditions under uninterrupted green-flag running.
+    \item Comparison between a single attacking driver and a single target driver.
+    \item Analysis of local decision windows surrounding an undercut opportunity.
+    \item Deterministic prediction using configurable engineering parameters.
+    \item Evaluation of the undercut as the primary strategic manoeuvre.
+\end{itemize}
+
+\subsection{Excluded Scope}
+% Explicitly list exclusions and give one sentence of rationale where needed:
+% - complete whole-race strategy optimisation;
+% - Safety Car, VSC, red flag and weather transitions;
+% - mechanical failures, team orders and driver intent;
+% - stochastic prediction of future incidents;
+% - proprietary team telemetry or confidential strategy methods;
+% - live operational use, unless actually implemented and validated.
+% Overcut may be contextual/future work rather than a full primary output.
+
+\begin{itemize}
+    \item Complete race strategy optimisation.
+    \item Safety Car, Virtual Safety Car and red-flag periods.
+    \item Wet-weather transitions and changing track conditions.
+    \item Mechanical failures and reliability-related retirements.
+    \item Team orders and strategic intent.
+    \item Prediction of future race incidents.
+    \item Proprietary telemetry and confidential Formula One team strategy systems.
+    \item Live race support or operational deployment.
+\end{itemize}
+
+\section{Success Criteria}
+\label{sec:success-criteria}
+
+% VERY HIGH VALUE and currently missing from the earlier scaffold.
+% Define how success will be judged before results are known.
+% Use measurable or at least auditable criteria, for example:
+% - equations and scenario logic pass defined verification tests;
+% - model produces physically/strategically sensible monotonic behaviour;
+% - predicted sign of gain/loss agrees with selected historic cases;
+% - prediction error is reported using a defined metric;
+% - parameter sensitivity is quantified rather than described informally;
+% - the race trace enables prediction and actual outcome to be compared.
+% Do not invent an arbitrary accuracy threshold unless justified.
+
+\begin{enumerate}
+    \item The mathematical formulation shall be successfully verified.
+    \item The software implementation shall correctly reproduce the mathematical model.
+    \item The model shall produce physically plausible behaviour when principal parameters are varied.
+    \item The model shall reproduce the direction of gain or loss observed in selected historic undercut scenarios.
+    \item Prediction error shall be quantified using appropriate performance metrics.
+    \item Model sensitivity shall be analysed for the principal configurable parameters.
+    \item The software shall provide a race trace visualisation capable of comparing predicted and observed outcomes.
+\end{enumerate}
+
+\section{Assumptions}
+\label{sec:project-assumptions}
+
+% Provide only project-level assumptions here; Chapter \ref{chap:model} gives
+% the mathematical consequences of each assumption.
+% Candidate assumptions:
+% - historic timing data are sufficiently accurate for the intended analysis;
+% - representative base pace and degradation estimates can be obtained;
+% - equivalent pit-lane loss for both drivers in the symmetric comparison;
+% - no disruptive race-control event during the comparison window;
+% - driver/car performance can be represented by an explicit pace offset where
+%   required;
+% - the decision is based on cumulative time, not on guaranteed overtaking.
+
+\begin{itemize}
+    \item Historic timing data are sufficiently accurate for retrospective analysis.
+    \item Representative degradation rates can be estimated for each tyre compound.
+    \item Pit-lane transit time is assumed equal for both drivers unless otherwise stated.
+    \item No Safety Car, Virtual Safety Car or red-flag period occurs during the comparison window.
+    \item Relative driver pace can be represented by configurable pace offsets.
+    \item The outcome of an undercut is evaluated using cumulative race time rather than the probability of completing an overtake on track.
+\end{itemize}
+
+\section{Project Plan and Milestones}
+\label{sec:project-plan}
+
+% HIGH PRIORITY if required by the project/report brief; otherwise concise.
+% Update dates to reflect the leave of absence and actual revised schedule.
+% Include:
+% - model definition freeze;
+% - minimum model implementation;
+% - data ingestion/race trace;
+% - verification;
+% - historic validation;
+% - sensitivity analysis;
+% - report completion and contingency.
+%
+% SUGGESTED FIGURE 2.1 / APPENDIX:
+% Revised Gantt chart. Keep detailed task notes in an appendix if too large.
+% Explain deviations from the original plan later in Chapter 4 or evaluation,
+% rather than pretending the original dates remained valid.
+
+\section{Risk Management}
+\label{sec:risk-management}
+
+% HIGH VALUE and was absent from the earlier scaffold.
+% Add a concise risk table:
+% Risk | Likelihood | Impact | Mitigation | Residual risk.
+% Include at minimum:
+% - insufficient/poor-quality historic data;
+% - API changes or rate limits;
+% - model complexity exceeding available time;
+% - inability to validate a parameter directly;
+% - overfitting conclusions to a small number of race cases;
+% - software failure or source loss;
+% - personal/time constraints following the revised project schedule.
+% Keep personal detail professional and proportionate.
+
+\input{Figures/Tables/2_risks}
+
+\section{Chapter Summary}
+\label{sec:problem-summary}
+
+% One short paragraph only:
+% - restate what has been bounded;
+% - identify the resulting modelling task;
+% - transition to Chapter \ref{chap:model}.

@@ -1,0 +1,95 @@
+Tyre and Strategy Factors
+
+    Tyre degradation rate – How quickly the leading car's tyres are wearing.
+
+    Tyre compound performance delta – Time difference between new and old tyres, and between compounds.
+
+    Out-lap tyre warm-up – How quickly the undercutting driver brings new tyres up to optimal temperature.
+
+    In-lap pace of leading car – How fast the driver being undercut can go on worn tyres.
+
+    Tyre compound choice – Whether the undercutting driver is switching to a faster compound.
+
+    Track temperature – Affects how quickly tyres heat up and how they perform.
+
+    Pit window overlap – Whether both drivers are on similar strategies (1-stop vs. 2-stop, etc.).
+
+Driver and Car Factors
+
+    Driver out-lap performance – How aggressively the undercutting driver can push immediately after the pit stop.
+
+    Driver in-lap performance (for rival) – How well the driver being undercut manages their lap before pitting.
+
+    Car's tyre warm-up characteristics – Some cars bring tyres up to temperature quicker than others.
+
+    Car balance and setup – Can affect tyre usage and out-lap pace.
+
+    Fuel load – A lighter car post-pit might be faster, aiding the undercut.
+
+    ERS deployment strategy – Using more energy on the out-lap for a faster time.
+
+Pit Stop Execution
+
+    Pit stop duration – Time taken to complete the stop; a slow stop ruins the undercut.
+
+    Pit entry and exit execution – A smooth entry and exit can save tenths.
+
+    Pit lane traffic – Other cars in the pit lane can cause delays.
+
+    Pit box location – Front vs. rear garages can affect pit lane timing.
+
+    Team communication/timing – Coordinating the pit stop precisely.
+
+Traffic and Track Position
+
+    Traffic after pit stop – Whether the undercutting driver rejoins into clean air or gets held up.
+
+    Blue flag situations – Lapped traffic may move aside, but still slow things slightly.
+
+    Track layout and overtaking difficulty – If it's hard to pass (e.g., Monaco), an undercut is more crucial.
+
+    Timing of rival’s pit stop – A delayed stop by the rival improves the undercut chance.
+
+Race and Track Conditions
+
+    Track evolution – If the track is rapidly improving (e.g., drying), later stoppers may gain more.
+
+    Weather conditions – Rain approaching? Teams may delay stops, impacting undercut viability.
+
+    Virtual Safety Car (VSC)/Safety Car deployment – Can neutralize gains or favor one strategy.
+
+    Wind direction and strength – Affects tyre grip and car balance.
+
+    Track temperature gradient – Cooling or heating may make earlier/later stops better.
+
+    Time of day/sunlight angle – Shaded vs. sunny parts of track affect grip and warm-up.
+
+Strategic and Psychological Factors
+
+    Team’s strategic confidence – Willingness to take the risk of early stop.
+
+    Opponent’s pit wall awareness – If they anticipate the undercut, they may pit to cover.
+
+    Undercut “bluff” potential – Sometimes a team feigns a pit to bait the rival into stopping early.
+
+    Championship/race context – A driver in a tight title fight may avoid risks.
+
+    Teammate position – A teammate ahead may create traffic for the rival.
+
+Statistical and Historical Insights
+
+    Historical data for that track – Previous success/failure of undercuts at that circuit.
+
+    Previous stints in the race – How earlier tyre changes fared.
+
+    Simulated undercut model – Teams use predictive models based on live telemetry.
+
+Technical and Regulatory Constraints
+
+    Pit lane speed limiter reliability – Any issue here could cost time.
+
+    Delta time rules under VSC/SC – Influence pit stop timing legality and effectiveness.
+
+    Tyre allocation limits – A driver might not have optimal tyres remaining.
+
+    Minimum tyre use regulations – Compulsory use of two compounds might force suboptimal strategy.

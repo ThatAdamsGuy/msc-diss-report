@@ -1,0 +1,183 @@
+\chapter{Model Implementation}
+\label{chap:implementation}
+
+% ============================================================================
+% CHAPTER PURPOSE
+% Explain how the Chapter \ref{chap:model} formulation was implemented as a
+% reproducible analysis tool. Software engineering is relevant where it protects
+% calculation correctness, traceability, experimentation or usability; avoid a
+% generic catalogue of frameworks and coding practices.
+% ============================================================================
+
+\section{Implementation Requirements}
+\label{sec:implementation-requirements}
+
+% HIGH PRIORITY. Translate research objectives into functional requirements:
+% - load/select historic meeting, session and drivers;
+% - obtain/prepare lap, stint, compound and pit information;
+% - configure assumptions/parameters;
+% - execute both scenarios for candidate decision laps;
+% - display numerical and race trace outputs;
+% - retain enough metadata for reproduction.
+% Add non-functional requirements only where relevant: determinism, separation
+% of model/UI, responsiveness, offline analysis and clear error handling.
+
+\section{Technology and Architecture Selection}
+\label{sec:technology-selection}
+
+\subsection{Initial Web-Based Approach}
+% Briefly describe the original Blazor/client-server proposal and what research
+% need it was intended to satisfy. Do not teach basic client-server architecture.
+% The generic web architecture figure should be removed unless directly useful.
+
+\subsection{Transition to WPF}
+% Preserve the existing rationale but tighten it into an engineering decision:
+% - limited project time and front-end experience;
+% - unreliable debugging/development setup;
+% - WPF enabled focus on model functionality and repeatable desktop analysis;
+% - trade-off: Windows-only tool and reduced deployment flexibility.
+% Avoid self-deprecating wording. Demonstrate risk management and scope control.
+
+\subsection{Final Architecture}
+% SUGGESTED FIGURE 4.1 -- MUST HAVE:
+% Data provider -> preprocessing/domain data -> model engine -> result objects ->
+% race trace/UI. Show where user parameters enter.
+% Explain separation of model engine from presentation so equations can be unit
+% tested and reused without the WPF UI.
+
+\section{Historic Data Acquisition}
+\label{sec:data-acquisition}
+
+\subsection{Data-Source Evaluation}
+% Clarify the final role of FastF1 and OpenF1. Earlier drafts mention moving from
+% FastF1 to OpenF1, while appendices still list FastF1. Resolve this explicitly:
+% - what each source was evaluated for;
+% - which is used in the final implementation;
+% - whether both are used for different responsibilities;
+% - licensing, rate limits, availability and fields required.
+% Cite official documentation/repositories and record exact versions/endpoints.
+
+\subsection{Meeting, Session and Driver Selection}
+% Explain mapping from championship/event/session to driver records.
+% Include sprint/race session handling if implemented.
+% LOW/MEDIUM PRIORITY screenshots can illustrate workflow, but avoid turning
+% this into a user manual.
+
+\subsection{Lap, Stint and Pit Stop Preparation}
+% HIGH PRIORITY. Describe transformations that affect model validity:
+% - invalid/incomplete laps;
+% - pit in/out laps;
+% - Safety Car/VSC filtering;
+% - compound and tyre-age reconstruction;
+% - missing sectors/lap times;
+% - data ordering and synchronisation;
+% - whether laps are fuel-corrected or left as observed.
+% This is engineering methodology, not merely implementation detail.
+
+\subsection{Caching and Reproducibility}
+% MEDIUM PRIORITY. If API responses are cached/localised, explain how this
+% protects reproducibility and avoids data changes/rate limits.
+% Record session identifiers and parameter sets used in validation.
+
+\section{Model Engine Implementation}
+\label{sec:model-engine-implementation}
+
+\subsection{Domain Representation}
+% Explain the principal model entities conceptually: driver state, tyre state,
+% scenario, lap prediction and comparison result. A small class/domain diagram
+% is useful only if it clarifies correspondence with Chapter 3 notation.
+
+\subsection{Scenario Calculation Workflow}
+% Map implementation steps directly to equations/sections:
+% 1. build decision state;
+% 2. predict each scenario lap;
+% 3. apply optional penalties;
+% 4. accumulate to common endpoint;
+% 5. generate gain/post stop metrics;
+% 6. repeat across candidate laps/offsets.
+% Include pseudocode or a flowchart rather than large C# listings.
+
+\subsection{Parameter Configuration and Traceability}
+% Explain how values are entered/derived and associated with a run.
+% Show validation of units/ranges and handling of missing values.
+% Consider a parameter-summary panel/export if implemented.
+
+\subsection{Error Handling}
+% MEDIUM PRIORITY. Cover only failures that affect engineering confidence:
+% unavailable API, incomplete session, invalid tyre age, no comparison window,
+% or impossible parameter values. State whether the user is warned or the case
+% is excluded; never silently substitute unsupported data.
+
+\section{Race Trace Visualisation}
+\label{sec:race-trace}
+
+\subsection{Race Trace Definition}
+% Briefly explain axes/reference convention for a reader unfamiliar with race
+% traces. State exactly how gap is calculated and what the reference line means.
+
+\subsection{Opportunity and Event Annotations}
+% VERY HIGH VALUE to practical contribution.
+% Mark as applicable:
+% - actual pit stops;
+% - tyre compounds/stint boundaries;
+% - model decision point;
+% - predicted gain/crossover;
+% - actual post stop outcome;
+% - excluded/invalid periods.
+%
+% SUGGESTED FIGURES:
+% 4.2 unannotated historic race trace;
+% 4.3 same trace with model annotations and explanatory callouts.
+% Use real application output when available, not only mock-ups.
+
+\subsection{Interaction and Usability}
+% MEDIUM PRIORITY. Briefly explain race/session loading, driver selection and
+% parameter options. Tie usability to rapid engineering interrogation rather
+% than claiming a full formal UX study unless one was conducted.
+
+\section{Software Verification}
+\label{sec:software-verification}
+
+% HIGH PRIORITY but concise. This belongs here/methodology Chapter 5, not as a
+% dominant research result.
+% Explain the test layers planned/used:
+% - unit tests for individual equations and sign conventions;
+% - boundary tests for tyre age, zero degradation and zero offset;
+% - integration tests from data state to scenario result;
+% - regression tests for known parameter sets;
+% - manual comparison with the Chapter 3 worked example.
+% Report actual results in Chapter \ref{chap:results} or an appendix.
+
+\section{Development Process and Key Iterations}
+\label{sec:development-process}
+
+% Retain the useful diary/sprint narrative from the earlier report, but make it
+% analytical rather than chronological padding. For each significant iteration:
+% - intended outcome;
+% - problem discovered;
+% - evidence/constraint;
+% - decision made;
+% - consequence for model/research scope.
+% Include revised dates following the leave of absence.
+% Candidates: data-source changes, Blazor->WPF, API reliability, race trace
+% development and model iteration.
+% Detailed sprint logs may go to an appendix; keep only consequential decisions
+% in the chapter.
+
+\section{Implementation Limitations}
+\label{sec:implementation-limitations}
+
+% Discuss software/data limitations separately from model limitations:
+% - dependency on third-party historic data;
+% - Windows/WPF platform restriction;
+% - manual parameters;
+% - incomplete data or API reliability;
+% - no live operational integration.
+% State consequence and mitigation. Do not repeat Chapter 6's engineering model
+% limitations verbatim.
+
+\section{Chapter Summary}
+\label{sec:implementation-summary}
+
+% One concise paragraph linking the implemented workflow to the verification and
+% validation methodology in Chapter \ref{chap:validation-method}.

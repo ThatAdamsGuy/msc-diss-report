@@ -1,0 +1,97 @@
+\begin{table}[htbp]
+\centering
+\caption{Notation used throughout the proposed undercut model.}
+\label{tab:model_notation}
+
+\begin{tabular}{|l|l|p{7.5cm}|l|}
+\hline
+\textbf{Symbol} & \textbf{Unit} & \textbf{Definition} & \textbf{Scope} \\
+\hline
+
+$i$ & -- &
+Lap index within the comparison window. &
+$i = 1,2,\ldots,n$ \\
+\hline
+
+$n$ & laps &
+Number of laps included in the comparison window. &
+Scenario-independent \\
+\hline
+
+$a$ & laps &
+Tyre age at the start of a lap. &
+Driver-specific \\
+\hline
+
+$d$ & -- &
+Driver identifier. &
+Attacking or target driver \\
+\hline
+
+$c$ & -- &
+Tyre compound identifier. &
+Soft, Medium or Hard \\
+\hline
+
+$s$ & -- &
+Strategy scenario. &
+Undercut or Stay Out \\
+\hline
+
+$B_d$ & s &
+Reference lap time of driver $d$, excluding tyre-related effects and configurable model adjustments. &
+Driver \\
+\hline
+
+$P_d$ & s &
+Pace adjustment of driver $d$ relative to the event reference pace. &
+Driver \\
+\hline
+
+$C_c$ & s &
+Lap time offset associated with tyre compound $c$. &
+Compound \\
+\hline
+
+$D_c(a)$ & s &
+Lap time loss due to tyre degradation as a function of tyre age. &
+Compound, tyre age \\
+\hline
+
+$W_c(i)$ & s &
+Warm-up penalty applied following a tyre change. &
+Compound, lap \\
+\hline
+
+$R_d(i)$ & s &
+Additional configurable lap time penalty due to traffic or other external effects. &
+Driver, lap \\
+\hline
+
+$L_{d,s}(i)$ & s &
+Predicted lap time of driver $d$ on lap $i$ under strategy scenario $s$. &
+Driver, scenario, lap \\
+\hline
+
+$P$ & s &
+Pit lane traversal and service loss common to equivalent stops. &
+Pit stop \\
+\hline
+
+$Q_s$ & s &
+Scenario-specific timing adjustments not already included in the predicted lap times. &
+Scenario \\
+\hline
+
+$T_s(n)$ & s &
+Cumulative predicted race time after $n$ comparison laps for strategy scenario $s$. &
+Scenario \\
+\hline
+
+$G(n)$ & s &
+Predicted undercut gain, defined as stay out scenario time minus undercut scenario time. &
+Comparison window \\
+\hline
+
+\end{tabular}
+\end{table}

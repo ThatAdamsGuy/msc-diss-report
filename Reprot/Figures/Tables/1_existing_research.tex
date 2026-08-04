@@ -1,0 +1,105 @@
+\begin{table}[htbp]
+\centering
+\caption{Comparison of Formula One race strategy modelling approaches.}
+\label{tab:existing_research}
+
+\small
+\renewcommand{\arraystretch}{1.25}
+
+\begin{tabularx}{\textwidth}{|
+>{\raggedright\arraybackslash}p{0.21\textwidth}|
+>{\raggedright\arraybackslash}p{0.18\textwidth}|
+>{\raggedright\arraybackslash}p{0.16\textwidth}|
+X|
+}
+\hline
+\textbf{Source}
+&
+\textbf{Method}
+&
+\textbf{Scope}
+&
+\textbf{Relevance to this project}
+\\
+\hline
+
+Bekker \& Lotz
+\cite{BekkerLotz2009}
+&
+Discrete-event simulation
+&
+Whole-race strategy
+&
+Demonstrates historical race simulation and validation against real race outcomes, supporting the use of simulation as a decision-support tool.
+\\
+\hline
+
+Carrasco Heine \& Thraves
+\cite{CarrascoHeineThraves2023}
+&
+Dynamic programming
+&
+Whole-race optimisation
+&
+Models tyre wear and cumulative race time. Supports lap time based optimisation but not isolated undercut analysis.
+\\
+\hline
+
+Piccinotti
+\cite{Piccinotti2021}
+&
+Monte Carlo planning
+&
+Whole-race planning
+&
+Uses historical race data and probabilistic simulation to evaluate strategic options under uncertainty.
+\\
+\hline
+
+Aguad \& Thraves
+\cite{AguadThraves2024}
+&
+Dynamic programming and game theory
+&
+Two-driver interaction
+&
+Introduces direct interaction between competing drivers, conceptually similar to the two-driver comparison considered in this work.
+\\
+\hline
+
+Thomas et al.
+\cite{ThomasEtAl2025}
+&
+Explainable reinforcement learning
+&
+Whole-race optimisation
+&
+Demonstrates modern AI-based strategy optimisation while maintaining model interpretability.
+\\
+\hline
+
+Hettmann
+\cite{Hettmann2024}
+&
+Machine learning
+&
+Pit stop prediction
+&
+Predicts pit stop timing from historical races rather than evaluating the engineering causes of successful undercuts.
+\\
+\hline
+
+Fatima \& Johrendt
+\cite{FatimaJohrendt2023}
+&
+Deep neural networks
+&
+Race outcome prediction
+&
+Illustrates the increasing application of deep learning to Formula One strategy, although with limited transparency.
+\\
+\hline
+
+\end{tabularx}
+
+\end{table}

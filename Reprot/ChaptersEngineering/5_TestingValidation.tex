@@ -1,0 +1,167 @@
+\chapter{Verification and Validation Methodology}
+\label{chap:validation-method}
+
+% ============================================================================
+% CHAPTER PURPOSE -- VERY HIGH PRIORITY
+% Define HOW correctness and credibility will be assessed. Keep results out of
+% this chapter except for tiny illustrative checks. Chapter \ref{chap:results}
+% reports outcomes.
+%
+% Distinguish terminology:
+% - software verification: was the model implemented correctly?
+% - model verification: do equations/logical behaviours behave as intended?
+% - validation: does the model adequately represent observed race behaviour for
+%   its stated purpose and operating domain?
+% ============================================================================
+
+\section{Evaluation Framework}
+\label{sec:evaluation-framework}
+
+% Introduce the chain of evidence:
+% equation checks -> software tests -> limiting/expected-behaviour tests ->
+% historic-case validation -> sensitivity/uncertainty analysis.
+% SUGGESTED FIGURE 5.1: verification and validation workflow.
+% Map each method to a success criterion from Section \ref{sec:success-criteria}.
+
+\section{Software and Calculation Verification}
+\label{sec:calculation-verification}
+
+\subsection{Unit-Test Design}
+% Define test families and expected values, not framework trivia:
+% - base lap with all penalties zero;
+% - tyre age/degradation increments;
+% - compound offset;
+% - warm-up only on intended laps;
+% - cumulative summation;
+% - sign convention for gain;
+% - initial gap to post stop gap conversion;
+% - common pit loss cancellation;
+% - invalid/missing inputs.
+% Put exhaustive test-case tables/screenshots in Appendix \ref{app:software-tests}.
+
+\subsection{Integration and Regression Testing}
+% Verify data ingestion -> model state -> result -> visual marker.
+% Fix at least one known scenario/parameter set as a regression case.
+% State pass/fail criteria before reporting results.
+
+\subsection{Independent Hand Calculation}
+% HIGH VALUE. Recalculate the worked example independently (spreadsheet/manual)
+% and compare it with software output. This is stronger evidence than tests that
+% reproduce the same implementation logic.
+
+\section{Model Behaviour Verification}
+\label{sec:model-behaviour-verification}
+
+% Test limiting and monotonic behaviours expected from the formulation:
+% - zero degradation and equal compounds -> near-zero tyre-driven gain;
+% - increased target degradation -> stronger undercut, all else equal;
+% - larger warm-up penalty -> weaker undercut;
+% - traffic penalty -> weaker undercut;
+% - zero offset laps -> no offset-lap gain;
+% - identical scenarios -> zero gain;
+% - used replacement tyre behaves consistently with starting age.
+% These tests answer "does the model make engineering sense?" before historic
+% validation.
+
+\section{Historic Validation Case Selection}
+\label{sec:case-selection}
+
+% VERY HIGH PRIORITY. Define transparent selection criteria to avoid cherry
+% picking. Aim for a small but varied set rather than one famous success.
+% Candidate categories:
+% - clear successful undercut;
+% - unsuccessful/neutral attempt;
+% - case compromised by traffic/warm-up;
+% - different circuits/compounds/offset lengths;
+% - optional negative-control period with no expected opportunity.
+% Explain data completeness and why the cases are observable.
+% Record excluded cases and reasons in Appendix \ref{app:validation-data}.
+
+\section{Historic Data Preparation}
+\label{sec:validation-data-prep}
+
+% Define consistently:
+% - decision lap and common comparison endpoint;
+% - actual tyre ages/compounds;
+% - treatment of in/out laps;
+% - removal/retention of laps affected by flags, traffic or errors;
+% - base pace and degradation estimation method;
+% - parameter values unavailable directly from data;
+% - actual observed gain metric.
+% This section is crucial for reproducibility and prevents hindsight bias.
+
+\section{Validation Metrics}
+\label{sec:validation-metrics}
+
+% Define metrics before seeing/reporting conclusions. Possible metrics:
+% - predicted and observed gain in seconds;
+% - signed error e = predicted - observed;
+% - absolute error;
+% - correct direction/classification of gain/loss;
+% - post stop gap error;
+% - opportunity-lap timing error if detecting a window.
+% For a small sample, do not overstate statistical power. Report each case and
+% summary statistics transparently.
+
+\section{Sensitivity Analysis Method}
+\label{sec:sensitivity-method}
+
+% VERY HIGH PRIORITY / likely major mark source.
+% Establish:
+% - baseline case/parameter set;
+% - parameter ranges and justification;
+% - one-at-a-time (OAT) method for interpretability;
+% - optional multi-parameter scenarios/interactions if time permits;
+% - output metric (usually change in G or threshold/crossover).
+% Minimum parameters:
+% - degradation rate/current tyre age;
+% - compound offset;
+% - replacement tyre warm-up;
+% - number of offset laps;
+% - relative driver/car base pace;
+% - traffic penalty if retained.
+% Pit loss should be treated with the symmetry discussion from Section
+% \ref{sec:pit-loss}; test unequal/rejoin effects only if relevant.
+%
+% MEDIUM/LOW PRIORITY extension:
+% factorial/global sensitivity or Monte Carlo uncertainty. Do not add this at
+% the expense of a complete, well-explained OAT analysis.
+
+\section{Uncertainty and Error Treatment}
+\label{sec:uncertainty-method}
+
+% HIGH VALUE. Identify uncertainty sources:
+% - noisy/traffic-affected historic lap times;
+% - degradation fit uncertainty;
+% - unknown warm-up/traffic penalty;
+% - driver/car pace changes;
+% - API missing/incorrect fields.
+% State whether uncertainty is represented by ranges, alternate assumptions,
+% confidence intervals, or qualitative caveats.
+% Avoid claiming precise predictive certainty from manually selected inputs.
+
+\section{Validation Threats and Bias Control}
+\label{sec:validation-threats}
+
+% MEDIUM/HIGH VALUE.
+% Address:
+% - hindsight in selecting known undercuts;
+% - circularity if parameters are fitted using the same outcome being predicted;
+% - confounding from driver pace, fuel, traffic and track evolution;
+% - small case count/generalisation;
+% - data-source limitations.
+% Explain mitigations such as fixed selection criteria, holdout cases, baseline
+% extraction before examining the outcome, and reporting failed cases.
+
+\section{Software Usability Check}
+\label{sec:usability-check}
+
+% LOW PRIORITY. Only include if actually done.
+% A short task-based check can confirm that a user can load a race, configure a
+% scenario and interpret an annotation. Do not imply formal human-subject UX
+% research without appropriate design/ethics.
+
+\section{Chapter Summary}
+\label{sec:validation-method-summary}
+
+% Summarise the evidence that will be reported in Chapter \ref{chap:results}.

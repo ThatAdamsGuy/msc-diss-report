@@ -1,0 +1,82 @@
+\begin{table}[htbp]
+\centering
+\caption{Project risk assessment and mitigation measures.}
+\label{tab:project-risks}
+
+\small
+\renewcommand{\arraystretch}{1.3}
+
+\begin{tabularx}{\textwidth}{|
+>{\raggedright\arraybackslash}p{0.25\textwidth}|
+>{\centering\arraybackslash}p{0.10\textwidth}|
+>{\centering\arraybackslash}p{0.10\textwidth}|
+X|
+>{\centering\arraybackslash}p{0.12\textwidth}|}
+\hline
+
+\textbf{Risk} &
+\textbf{Likelihood} &
+\textbf{Impact} &
+\textbf{Mitigation} &
+\textbf{Residual Risk}
+\\
+\hline
+
+Insufficient or poor-quality historic race data &
+Medium &
+High &
+Use multiple publicly available data sources (FastF1, OpenF1 and FIA timing where appropriate), validate imported data, and select alternative race case studies if necessary. &
+Low
+\\
+\hline
+
+API changes, outages or rate limits preventing data retrieval &
+Medium &
+Medium &
+Cache downloaded sessions locally, abstract API access within the software, and support loading previously downloaded data. &
+Low
+\\
+\hline
+
+Model complexity exceeds the available project timescale &
+Medium &
+High &
+Develop the model progressively, beginning with a simple deterministic formulation before incrementally introducing additional factors. Prioritise validation over unnecessary complexity. &
+Low
+\\
+\hline
+
+Unable to directly validate individual model parameters &
+High &
+Medium &
+Justify parameter values using published literature, engineering judgement and sensitivity analysis rather than relying solely on direct measurement. &
+Medium
+\\
+\hline
+
+Conclusions influenced by too few historic race case studies &
+Medium &
+High &
+Validate against multiple races, circuits and tyre strategies where practical, and explicitly discuss limitations on the generalisability of the results. &
+Medium
+\\
+\hline
+
+Loss or corruption of software source code &
+Low &
+High &
+Maintain version-controlled source code with regular remote backups and incremental commits throughout development. &
+Low
+\\
+\hline
+
+Project progress affected by time constraints &
+Medium &
+High &
+Prioritise completion of the core deterministic model and validation before implementing optional functionality. Defer lower-priority enhancements to future work where necessary. &
+Low
+\\
+\hline
+
+\end{tabularx}
+\end{table}

@@ -1,0 +1,336 @@
+\documentclass[11pt,a4paper]{report}
+
+\usepackage[british]{babel}
+\usepackage[none]{hyphenat} 
+\usepackage{array}  % Put this in your preamble
+
+% Define a new column type:
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% Aberstwyth MMP Project Report Template for LaTeX
+%
+% Authors: Neil Taylor (nst@aber.ac.uk) and Dr. Hannah Dee (hmd1@aber.ac.uk) 
+%
+% This has been adapted from the Leeds Thesis template and the 
+% Group Project template for Computer Science in Aberystywth University.
+% 
+% All comments and suggestions welcome.
+%
+% Template designed to be used with pdflatex: it may need alteration to
+% run with a different LaTeX engine.
+%
+% Note - this is offered as a starting point for your work. You are not 
+% required to use this template and can choose to create your own document 
+% without it.
+
+% This template is suitable for students with an engineering-style project, 
+% which will be most students in the department. If your project is a research-oriented 
+% project, look at the alternative template.
+
+% To build document on the unix command line, run four commands:
+ 
+% pdflatex mmp-report
+% bibtex mmp-report
+% pdflatex mmp-report
+% pdflatex mmp-report
+
+% you will end up with mmp-report.pdf. Before submitting, add your user ID as a prefix, 
+% e.g. abc01-mmp-report.pdf 
+\usepackage{StylesAndReferences/mmp-report}
+
+% the following packages are used for citations - You only need to include one. 
+%
+% Use the cite package if you are using the numeric style (e.g. IEEEannot). 
+% Use the natbib package if you are using the author-date style (e.g. authordate2annot). 
+% Only use one of these and comment out or remove the other one. 
+\usepackage{cite}
+%\usepackage{natbib}
+
+%Package used to embed PDF into report
+%Source - https://www.pdfconverters.net/how-to/insert-pdf-to-latex/
+\usepackage{pdfpages}
+
+%Packages used to list code in a reasonable and colour-coded format
+%Source - https://www.overleaf.com/learn/latex/Code_Highlighting_with_minted
+\usepackage{minted}
+\usepackage{listings}
+\usepackage{color}
+
+% **TODO**
+%Source - https://tex.stackexchange.com/questions/166743/automatic-line-break-in-tabular
+\usepackage{tabularx}
+\usepackage{longtable}
+
+% Source - https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell
+\usepackage{makecell}
+
+%Package used to include Braket (Dirac) Notation
+\usepackage{braket}
+
+% Source - https://tex.stackexchange.com/questions/204621/matrix-in-latex
+\usepackage{amsmath}
+
+% Source - https://tex.stackexchange.com/questions/73160/table-with-tabularx-and-multirow
+\usepackage{multirow}
+
+% Source - https://www.overleaf.com/learn/latex/Questions/How_can_I_write_a_%C2%B0_(degree)_symbol_in_LaTeX%3F
+\usepackage{gensymb}
+
+% Source - https://tex.stackexchange.com/questions/43008/absolute-value-symbols
+\usepackage{commath}
+
+% Source - https://tex.stackexchange.com/questions/156016/how-do-i-make-a-small-pmatrix
+\usepackage{mathtools}
+\newenvironment{brsm}{% % short for 'bracketed small matrix'
+  \bigl[ \begin{smallmatrix} }{%
+  \end{smallmatrix} \bigr]}
+
+% Source - https://tex.stackexchange.com/questions/1774/how-to-insert-pipe-symbol-in-latex
+\usepackage[T1]{fontenc}
+
+% Source - https://tex.stackexchange.com/questions/157389/how-to-center-column-values-in-a-table
+\usepackage{array}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+
+% Source - https://tex.stackexchange.com/questions/485794/reduce-padding-in-cell-with-lists-in-tabularx/
+\usepackage{enumitem}
+\newlist{tabitemize}{itemize}{1}
+\setlist[tabitemize]{nosep,
+                  topsep= 0pt,
+                  partopsep=0pt,
+                  leftmargin= *,
+                  label=\textbullet,
+                  before=\vspace{-0.6\baselineskip},
+                  after=\vspace{-\baselineskip}
+                  }
+
+\usepackage{pgfplots}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{pdflscape}
+
+\usepackage[nottoc]{tocbibind} 
+
+\usepackage{tocloft}    % for list of equations
+\usepackage{ragged2e}   % to undo \centering
+\usepackage{hyperref}   % to make references hyperlinks
+\usepackage{glossaries} 
+
+%\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink]{cleveref}
+
+\crefname{figure}{Figure}{Figures}
+\Crefname{figure}{Figure}{Figures}
+
+\crefname{table}{Table}{Tables}
+\Crefname{table}{Table}{Tables}
+
+\crefname{equation}{Equation}{Equations}
+\Crefname{equation}{Equation}{Equations}
+
+\crefname{chapter}{Chapter}{Chapters}
+\Crefname{chapter}{Chapter}{Chapters}
+
+\crefname{section}{Section}{Sections}
+\Crefname{section}{Section}{Sections}
+
+\crefname{appendix}{Appendix}{Appendices}
+\Crefname{appendix}{Appendix}{Appendices}
+
+% List of Equations
+\newcommand{\listequationsname}{List of Equations}
+\newlistof{myequations}{equ}{\listequationsname}
+
+\newcommand{\myequation}[1]{%
+    \addcontentsline{equ}{myequations}{%
+        \protect\numberline{\theequation}#1%
+    }%
+}
+
+\setlength{\cftmyequationsindent}{1.5em}
+\setlength{\cftmyequationsnumwidth}{2.3em}
+
+% Source - https://tex.stackexchange.com/questions/37420/is-it-possible-to-count-text-in-tables-using-texcount
+%TC:group table 1 1 
+
+%%%% Title and Section Colours %%%%
+% Modify these values to change the colours used for title, sections and subsections.
+% Each value is a range of 0-255 in RGB colourspace.
+% Idea courtesy of discussion at 
+% https://www.overleaf.com/learn/latex/Using_colours_in_LaTeX
+% and
+% https://tex.stackexchange.com/questions/75667/change-colour-on-chapter-section-headings-lyx
+% 
+% If you prefer to have black headers, then comment out the following lines
+\definecolor{mmpTitle}{RGB}{255, 128, 000}
+\definecolor{mmpSection}{RGB}{255,128,000}
+\definecolor{mmpSubsection}{RGB}{083,086,090}
+
+\chapterfont{\color{mmpTitle}}  % sets colour of chapters
+\sectionfont{\color{mmpSection}}  % sets colour of sections 
+\subsectionfont{\color{mmpSubsection}} % sets colour subsections
+\subsubsectionfont{\color{mmpSubsection}} % sets colour subsections
+
+%%%% end of Title and Section Colours %%%%
+\renewcommand{\listequationsname}{{\color{mmpTitle}\Huge\bfseries List of Equations}}
+\renewcommand{\cfttoctitlefont}{\color{mmpTitle}\Huge\bfseries}
+\renewcommand{\cftloftitlefont}{\color{mmpTitle}\Huge\bfseries}
+\renewcommand{\cftlottitlefont}{\color{mmpTitle}\Huge\bfseries}
+%\renewcommand{\cftmyequationstitlefont}{\color{mmpTitle}\Huge\bfseries}
+
+
+
+%%%% Report Type %%%%
+%% comment/uncomment depending on the type of report you want to generate
+\reporttype{Engineering}
+%\reporttype{Research}
+%%%% end of Report Type %%%%
+
+
+\begin{document}
+
+%TC:ignore
+
+% all of the include directives below refer to tex files
+% so \include{cover} includes cover.tex - to change the content,
+% edit the tex file
+
+\pagenumbering{roman}
+
+% This is the front page
+\include{FrontMatter/cover}                        
+
+% Set up page numbering
+\pagestyle{empty}
+
+% declarations of originality 
+\include{FrontMatter/declaration}               
+
+\include{FrontMatter/acknowledgements} % Acknowledgements
+
+\include{FrontMatter/abstract}                 % Abstract
+
+\pagenumbering{roman}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0 pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+
+
+% Set up page numbering
+\pagenumbering{arabic}
+
+\tableofcontents
+\newpage
+
+\listoffigures
+\newpage
+
+\listoftables
+\newpage
+
+\addcontentsline{toc}{chapter}{List of Equations}
+\listofmyequations
+\newpage
+
+\include{FrontMatter/table_of_abbreviations}
+\include{FrontMatter/table_of_units}
+
+\setchapterheaderfooter
+
+
+%TC:endignore
+
+% include the chapters
+\include{ChaptersEngineering/1_Background}
+\include{ChaptersEngineering/2_ProblemDefinition}
+\include{ChaptersEngineering/3_ModelDevelopment}
+\include{ChaptersEngineering/4_ModelImplementation}
+\include{ChaptersEngineering/5_TestingValidation}
+\include{ChaptersEngineering/6_ResultsEvaluation}
+\include{ChaptersEngineering/7_Conclusion}
+% add any additional chapters here
+
+%TC:ignore
+\setemptyheader
+
+\nocite{*} % include everything from the bibliography, irrespective of whether it has been referenced.
+
+% the following line is included so that the bibliography is also shown in the table of contents. There is the possibility that this is added to the previous page for the bibliography. To address this, a newline is added so that it appears on the first page for the bibliography. 
+%\addcontentsline{toc}{chapter}{Bibliography} % Adds References to contents page
+
+%
+% example of including an annotated bibliography. The current style is an author date one. If you want to change, comment out the line and uncomment the subsequent line. You should also modify the packages included at the top (see the notes earlier in the file) and then trash your aux files and re-run. 
+%\bibliographystyle{StylesAndReferences/authordate2annot}
+\bibliographystyle{StylesAndReferences/IEEEannotU}
+\bibliography{StylesAndReferences/references} % References file
+
+\cleardoublepage
+\phantomsection
+\chapter*{Selected Background Reading}
+\addcontentsline{toc}{chapter}{Selected Background Reading}
+
+[x - any bibliography books]
+
+\begin{description}
+
+\item[Milliken \& Milliken (1995)]
+Race Car Vehicle Dynamics.
+SAE International.
+
+\item[Bentley (2011)]
+Ultimate Speed Secrets.
+Motorbooks.
+
+\item[Smith (1996)]
+Drive to Win.
+Aero Publishers.
+
+\end{description}
+
+\setemptyheader
+
+\addcontentsline{toc}{chapter}{Appendices}
+\pagebreak
+
+% start the appendix - sets up different numbering
+\fancypagestyle{plain}{%
+%\fancyhf{} % clear all header and footer fields
+\fancyhead[L]{Appendix\ \thechapter}
+\fancyhead[R]{\leftmark}}
+
+\appendix
+\fancyhead[L]{Appendix\ \thechapter}
+\fancyhead[R]{\leftmark}
+\fancyhead[C]{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+
+\fancyhead[L]{Appendix\ \thechapter}
+\fancyhead[R]{\leftmark}
+\fancyfoot[C]{{\thepage} of \pageref{LastPage}}
+
+\renewcommand{\thesection}{\thechapter.\arabic{section}}
+
+% include any appendices here
+\include{Appendices/appendixA}
+\include{Appendices/appendixB}
+\include{Appendices/appendixC}
+\include{Appendices/appendixD}
+\include{Appendices/appendixE}
+\include{Appendices/appendixF}
+
+\fancypagestyle{plain}{%
+   \fancyhead{} %[C]{Annotated Bibliography}
+   \fancyfoot[C]{{\thepage} of \pageref{LastPage}} % except the center
+   \renewcommand{\headrulewidth}{0pt}
+   \renewcommand{\footrulewidth}{0pt}
+}
+
+%TC:endignore
+
+\end{document}
