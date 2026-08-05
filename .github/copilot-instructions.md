@@ -1,7 +1,7 @@
 # Copilot Instructions
 
 ## Project Guidelines
-- ASSISTANT_MEMORY: On every new thread/context, automatically parse and analyze all files in the AgentInformation folder (under the workspace root) so the agent is aware of project state. Also maintain and incrementally update an execution/log of actions as work proceeds.
+- ASSISTANT_MEMORY: On every new thread/context, parse and analyze all files in the AgentInformation folder at repo root 'C:\Users\harry\Documents\Motorsport Engineering\9_Thesis\msc-diss-report\AgentInformation' so the agent is aware of project state. Append future agent log entries to 'AgentInformation/agent_work_log.json' (not the repository root) and incrementally update the execution log as work proceeds.
 
 ## Agent Log Readme
 This repository-level agent work log records every substantive change or investigation performed by the autonomous agent(s).
@@ -369,8 +369,6 @@ Where \(P(i)\) is non-zero only on a pit lap.
 Internal implementation should model terms separately and return a breakdown, not only the final total.
 
 Example breakdown:
-
-```text
 Reference pace:        90.000 s
 Compound offset:       +0.300 s
 Degradation:           +0.800 s
@@ -379,8 +377,6 @@ Traffic:               +0.000 s
 Pit lane loss:         +20.500 s
 --------------------------------
 Predicted lap time:   113.100 s
-```
-
 This traceability is academically valuable and useful for debugging.
 
 ---
@@ -457,11 +453,7 @@ At the end of one additional normal lap for both drivers.
 ## 5.4 Undercut success
 
 The primary binary success criterion should be based on the core gap:
-
-```text
 GapAfterPitSequence < 0
-```
-
 This means the attacker is predicted to be ahead after the target completes its stop.
 
 However, the tool should also expose the stabilised gap because:
@@ -595,8 +587,6 @@ The agent should build null-safe data mapping and explicit eligibility checks.
 Use a clean, layered .NET solution.
 
 Suggested structure:
-
-```text
 UndercutTool.sln
 
 src/
@@ -609,8 +599,6 @@ tests/
   UndercutTool.Domain.Tests/
   UndercutTool.Application.Tests/
   UndercutTool.Infrastructure.Tests/
-```
-
 ## 8.1 Domain project
 
 Contains pure engineering concepts and calculations.
@@ -676,14 +664,8 @@ Use MVVM. Avoid model logic in code-behind.
 # 9. Suggested domain types
 
 ## 9.1 DriverId
-
-```csharp
 public readonly record struct DriverId(string Value);
-```
-
 ## 9.2 TyreCompound
-
-```csharp
 public enum TyreCompound
 {
     Soft,
@@ -693,13 +675,9 @@ public enum TyreCompound
     Wet,
     Unknown
 }
-```
-
 For the first implementation, dry compounds may be the only valid prediction compounds. Wet races can be explicitly unsupported.
 
 ## 9.3 DriverRaceState
-
-```csharp
 public sealed record DriverRaceState(
     DriverId DriverId,
     string Acronym,
@@ -709,8 +687,6 @@ public sealed record DriverRaceState(
     int TyreAgeLaps,
     double ReferencePaceSeconds,
     double DegradationRateSecondsPerLap);
-```
-
 May also include:
 
 - team;
@@ -721,8 +697,6 @@ May also include:
 - pit status.
 
 ## 9.4 RaceDecisionState
-
-```csharp
 public sealed record RaceDecisionState(
     string EventName,
     string SessionName,
@@ -730,26 +704,16 @@ public sealed record RaceDecisionState(
     double InitialAttackerGapToTargetSeconds,
     DriverRaceState Attacker,
     DriverRaceState Target);
-```
-
 ## 9.5 TyreSetSpecification
-
-```csharp
 public sealed record TyreSetSpecification(
     TyreCompound Compound,
     int InitialAgeLaps);
-```
-
 ## 9.6 LapModelParameters
-
-```csharp
 public sealed record LapModelParameters(
     IReadOnlyDictionary<TyreCompound, double> CompoundOffsetsSeconds,
     WarmUpModelParameters WarmUp,
     double PitLaneLossSeconds,
     TrafficModelParameters Traffic);
-```
-
 Reference compound convention:
 
 - Soft compound offset = 0 seconds;
@@ -760,18 +724,10 @@ This has previously been the preferred work convention.
 ## 9.7 WarmUpModelParameters
 
 Initial option:
-
-```csharp
 public sealed record WarmUpModelParameters(
     IReadOnlyList<double> PenaltiesByLapAfterPitSeconds);
-```
-
 Example:
-
-```text
 [1.8, 0.5, 0.0]
-```
-
 Meaning:
 
 - out lap: +1.8 s;
@@ -779,28 +735,18 @@ Meaning:
 - thereafter: 0.
 
 ## 9.8 TrafficModelParameters
-
-```csharp
 public sealed record TrafficModelParameters(
     bool ApplyAttackerTrafficPenalty,
     bool ApplyTargetTrafficPenalty,
     double PenaltySecondsPerAffectedLap,
     double MinimumGapAheadSeconds,
     double MinimumGapBehindSeconds);
-```
-
 The UI should make clear which values affect lap time and which affect feasibility.
 
 A more explicit split may be better:
-
-```csharp
 public sealed record TrafficPenaltyParameters(...);
 public sealed record RejoinFeasibilityParameters(...);
-```
-
 ## 9.9 PredictionRequest
-
-```csharp
 public sealed record PredictionRequest(
     RaceDecisionState RaceState,
     TyreSetSpecification AttackerReplacementTyre,
@@ -808,11 +754,7 @@ public sealed record PredictionRequest(
     int TargetResponseLaps,
     LapModelParameters ModelParameters,
     bool IncludeStabilisedLap);
-```
-
 ## 9.10 LapPredictionBreakdown
-
-```csharp
 public sealed record LapPredictionBreakdown(
     double ReferencePaceSeconds,
     double CompoundOffsetSeconds,
@@ -827,13 +769,9 @@ public sealed record LapPredictionBreakdown(
         DegradationSeconds +
         WarmUpSeconds +
         TrafficSeconds +
-        PitLossSeconds;
+         PitLossSeconds;
 }
-```
-
 ## 9.11 PredictedLap
-
-```csharp
 public sealed record PredictedLap(
     int LapNumber,
     DriverId DriverId,
@@ -843,11 +781,7 @@ public sealed record PredictedLap(
     int TyreAgeAtStart,
     LapPredictionBreakdown Breakdown,
     double CumulativePredictionTimeSeconds);
-```
-
 ## 9.12 PredictionResult
-
-```csharp
 public sealed record PredictionResult(
     IReadOnlyList<PredictedLap> AttackerLaps,
     IReadOnlyList<PredictedLap> TargetLaps,
@@ -855,21 +789,15 @@ public sealed record PredictionResult(
     double? GapAfterStabilisedLapSeconds,
     bool UndercutSuccessful,
     IReadOnlyList<PredictionWarning> Warnings);
-```
-
 ---
 
 # 10. Core services
 
 ## 10.1 ILapTimePredictor
-
-```csharp
 public interface ILapTimePredictor
 {
     PredictedLap Predict(LapPredictionInput input);
 }
-```
-
 Responsibilities:
 
 - calculate each term;
@@ -877,14 +805,10 @@ Responsibilities:
 - contain no race sequence logic.
 
 ## 10.2 IPitSequencePredictor
-
-```csharp
 public interface IPitSequencePredictor
 {
     PredictionResult Predict(PredictionRequest request);
 }
-```
-
 Responsibilities:
 
 - create the lap sequence;
@@ -894,19 +818,13 @@ Responsibilities:
 - calculate evaluation gaps.
 
 ## 10.3 IHistoricRaceDataProvider
-
-```csharp
 public interface IHistoricRaceDataProvider
 {
     Task<IReadOnlyList<MeetingSummary>> GetMeetingsAsync(...);
     Task<IReadOnlyList<SessionSummary>> GetSessionsAsync(...);
     Task<RaceDecisionState> GetDecisionStateAsync(...);
 }
-```
-
 ## 10.4 IValidationService
-
-```csharp
 public interface IValidationService
 {
     Task<ValidationResult> ValidateAsync(
@@ -914,8 +832,6 @@ public interface IValidationService
         PredictionResult prediction,
         CancellationToken cancellationToken);
 }
-```
-
 Validation must not be called by the predictor.
 
 ---
@@ -939,8 +855,6 @@ Validate:
 ## 11.2 Sequence construction
 
 Pseudo-code:
-
-```text
 decisionLap = n
 targetPitLap = n + targetResponseLaps
 targetOutLap = targetPitLap + 1
@@ -972,8 +886,6 @@ for lap from n to finalEndLap:
 
     if lap == stabilisedEndLap:
         calculate stabilised gap
-```
-
 ## 11.3 Tyre age progression
 
 Clarify whether tyre age represents age at lap start or lap end.
@@ -1006,14 +918,10 @@ Replacement tyre state begins on the out lap.
 ## 11.5 Relative gap
 
 At each evaluation point:
-
-```text
 predictedGap =
     initialAttackerGapToTarget
     + attackerPredictedElapsed
     - targetPredictedElapsed
-```
-
 With the chosen sign convention:
 
 - negative = attacker ahead;
@@ -1094,11 +1002,7 @@ Inputs:
 ### Step 4: Run prediction
 
 Prominent action:
-
-```text
 Predict Undercut
-```
-
 ### Step 5: Review result
 
 Primary cards:
@@ -1142,12 +1046,8 @@ Each parameter should show:
 - whether editable.
 
 Example:
-
-```text
 Attacker degradation: 0.085 s/lap
 Source: user configured
-```
-
 ## 13.4 Validation state
 
 Disable the Predict button when inputs are invalid and show precise errors.
@@ -1255,8 +1155,6 @@ The C# model engine must be runnable against hand-authored JSON fixtures with no
 # 16. Suggested JSON contract
 
 Example:
-
-```json
 {
   "eventName": "Austrian Grand Prix",
   "season": 2024,
@@ -1283,8 +1181,6 @@ Example:
   },
   "initialAttackerGapToTargetSeconds": 1.5
 }
-```
-
 Use explicit units in property names where practical.
 
 ---
@@ -1367,15 +1263,11 @@ That last case must be allowed as an output, not forced into one binary narrativ
 Create small human-calculable fixtures.
 
 Example:
-
-```text
 Initial gap: +2.0 s
 Attacker elapsed: 200.0 s
 Target elapsed: 203.0 s
 Predicted gap: -1.0 s
 Result: attacker ahead
-```
-
 ## 17.5 Data adapter tests
 
 Use stored JSON fixtures, not live internet calls, for repeatable tests.
@@ -1746,15 +1638,11 @@ Recommendation:
 > Implement the engine so it can support a partial first interval, even if the initial UI uses a simplified full-lap convention.
 
 A generic prediction step type could be:
-
-```csharp
 public enum PredictionSegmentType
 {
     RemainingLap,
     FullLap
 }
-```
-
 This issue should be resolved before final validation claims are made.
 
 ---
@@ -1786,8 +1674,6 @@ Only after the model tests are trusted should the agent begin WPF or FastF1 inte
 # 27. Final conceptual summary
 
 The intended engineering flow is:
-
-```text
 Known race state at decision point
                 +
 User-configured engineering parameters
@@ -1810,8 +1696,6 @@ Present:
   - undercut success
   - model term breakdowns
   - warnings and assumptions
-```
-
 The tool should remain focused on this flow.
 
 The strongest implementation will be the one that makes every assumption visible, every output traceable, and every result reproducible.

@@ -25,9 +25,20 @@ public partial class MainWindow : Window
 
         Loaded += async (_, _) =>
         {
-            // default: last 5 years
+            // OpenF1 has free historical data from 2023 onwards
             var now = DateTime.UtcNow.Year;
-            await vm.LoadAsync(now - 4, now).ConfigureAwait(false);
+            await vm.LoadAsync(2023, now).ConfigureAwait(false);
+        };
+
+        EventButton.Click += (_, _) =>
+        {
+            var dlg = new EventSelectorWindow(vm);
+            var res = dlg.ShowDialog();
+            if (res == true && vm.SelectedEvent is not null)
+            {
+                // Update the display text with selected event
+                SelectedEventDisplay.Text = $"{vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year})";
+            }
         };
     }
 }

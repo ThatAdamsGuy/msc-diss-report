@@ -68,5 +68,152 @@
       "references": [ ".github/copilot-instructions.md" ],
       "notes": "Created .nuget/packages and added NuGet.Config to avoid reliance on machine-specific Visual Studio fallback package folders. Subsequent CI may still need validation."
     }
+    ,
+    {
+      "id": "step-20260805-004",
+      "timestamp": "2026-08-05T00:20:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Move project NuGet.Config into new-code/UndercutAnalyser and record log location preference",
+      "rationale": "User requested code-related config live inside the project folder so project root is the effective code root",
+      "filesChanged": [ "new-code/UndercutAnalyser/NuGet.Config" ],
+      "commandsRun": [
+        "dotnet restore \"C:\\Users\\harry\\Documents\\Motorsport Engineering\\9_Thesis\\msc-diss-report\\new-code\\UndercutAnalyser\\UndercutAnalyser.csproj\" --packages \"C:\\Users\\harry\\Documents\\Motorsport Engineering\\9_Thesis\\msc-diss-report\\new-code\\UndercutAnalyser\\.nuget\\packages\""
+      ],
+      "testsRun": [],
+      "buildResult": "restore completed to project-local packages folder",
+      "references": [ ".github/copilot-instructions.md" ],
+      "notes": "Agent will keep agent_work_log.json in AgentInformation and place code-related config under new-code/UndercutAnalyser. If you want existing packages moved, delete the root .nuget/packages to force restore into the project-local folder."
+    },
+    {
+      "id": "step-20260805-005",
+      "timestamp": "2026-08-05T00:35:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Added Event Selector window, view model selection and UI wiring",
+      "rationale": "Provide a UI to browse and select race events using the Ergast API",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/EventSelectorWindow.xaml",
+        "new-code/UndercutAnalyser/EventSelectorWindow.xaml.cs",
+        "new-code/UndercutAnalyser/ViewModels/EventSelectorViewModel.cs",
+        "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "dotnet build succeeded (CLI)",
+      "references": [ "new-code/UndercutAnalyser/Infrastructure/ErgastApiClient.cs", "new-code/UndercutAnalyser/Domain/Models/EventRace.cs" ],
+      "notes": "EventSelectorWindow allows filtering and grouped display by year. OK/Cancel dialog returns the selected event. Visual Studio/MSBuild tooling may require a full IDE reload to pick up new XAML files; dotnet CLI build succeeded."
+    },
+    {
+      "id": "step-20260805-006",
+      "timestamp": "2026-08-05T00:40:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Redesigned MainWindow UI with clearer event display and button layout",
+      "rationale": "User reported Event button had a text entry box instead of a picker dialog. Restructured to show selected event display and trigger EventSelectorWindow via cleaner button layout.",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/MainWindow.xaml",
+        "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "dotnet build succeeded",
+      "references": [ "new-code/UndercutAnalyser/EventSelectorWindow.xaml", "new-code/UndercutAnalyser/ViewModels/EventSelectorViewModel.cs" ],
+      "notes": "MainWindow now has: event selection area with display text, Choose Event button that opens EventSelectorWindow dialog, Parameters/Predict buttons, and placeholder content area. Selected event updates the display text when dialog closes OK."
+    },
+    {
+      "id": "step-20260805-007",
+      "timestamp": "2026-08-05T00:45:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Enhanced EventSelectorWindow with status display, improved ListView template, and better error handling",
+      "rationale": "User reported ListView was empty with no events to pick. Added status text showing event count and error message if API fails. Improved ListView display template with race name and circuit. Added error handling to Ergast client with debug output.",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/EventSelectorWindow.xaml",
+        "new-code/UndercutAnalyser/EventSelectorWindow.xaml.cs",
+        "new-code/UndercutAnalyser/Infrastructure/ErgastApiClient.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "dotnet build succeeded",
+      "references": [ "new-code/UndercutAnalyser/ViewModels/EventSelectorViewModel.cs" ],
+      "notes": "EventSelectorWindow now displays event count or error message, has improved ListView template showing RaceName and CircuitName, and watches collection changes to update status. Ergast client catches both HttpRequestException and JsonException with debug output to assist diagnosing API issues."
+    },
+    {
+      "id": "step-20260805-008",
+      "timestamp": "2026-08-05T00:50:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Migrated from Ergast API to OpenF1 API for fetching race events",
+      "rationale": "User reported 404 errors from Ergast API endpoint. Switched to OpenF1 (https://openf1.org) which provides free historical F1 data (2023+) via a modern /meetings endpoint.",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/Infrastructure/OpenF1ApiClient.cs",
+        "new-code/UndercutAnalyser/ViewModels/EventSelectorViewModel.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "dotnet build succeeded",
+      "references": [ "new-code/UndercutAnalyser/Services/IEventDataProvider.cs", "new-code/UndercutAnalyser/Domain/Models/EventRace.cs" ],
+      "notes": "Replaced ErgastApiClient with OpenF1ApiClient. New client queries https://api.openf1.org/v1/meetings?year={year} and maps OpenF1 meeting fields (meeting_official_name, circuit_short_name, location, date_start) to EventRace properties. Removed old ErgastApiClient.cs file. EventSelectorViewModel now uses OpenF1ApiClient by default."
+    },
+    {
+      "id": "step-20260805-009",
+      "timestamp": "2026-08-05T00:55:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Filtered OpenF1 Sessions endpoint to race sessions only and limited year range to 2023+",
+      "rationale": "User noted API was loading pre-season testing sessions, not races. OpenF1 Sessions endpoint includes all session types. Also limited loading to 2023 onwards since that's the start of OpenF1 free historical data and avoids unnecessary API calls.",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/Infrastructure/OpenF1ApiClient.cs",
+        "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "dotnet build succeeded",
+      "references": [],
+      "notes": "Changed query to sessions?year={year}&session_type=Race to filter for Grand Prix races only. Added HashSet tracking to deduplicate meetings (some meetings might have multiple race sessions). MainWindow now loads year range 2023 to current year instead of last 5 years."
+    },
+    {
+      "id": "step-20260805-010",
+      "timestamp": "2026-08-05T01:00:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Fixed API pagination and initial list display showing all events populated",
+      "rationale": "User reported only first result was being added and list was empty until filtering. Added limit=1000 parameter to OpenF1 query to fetch all races. Fixed EventSelectorWindow to display unfiltered list on load by clearing filter after events load.",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/Infrastructure/OpenF1ApiClient.cs",
+        "new-code/UndercutAnalyser/EventSelectorWindow.xaml.cs",
+        "new-code/UndercutAnalyser/ViewModels/EventSelectorViewModel.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "dotnet build succeeded",
+      "references": [],
+      "notes": "Added &limit=1000 to API query to ensure all races are fetched (not just default limit). EventSelectorWindow now calls EventsView.Refresh() on filter text change. LoadAsync calls SetFilter(null) to ensure unfiltered view is displayed when dialog opens. Added debug output showing race count per year."
+    },
+    {
+      "id": "step-20260805-011",
+      "timestamp": "2026-08-05T01:05:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Switched to single API call to meetings endpoint to avoid rate limiting",
+      "rationale": "User reported hitting OpenF1 rate limits with per-year queries. Changed from querying /sessions once per year to querying /meetings?session_type=Race once for all races, then filter locally by year.",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/Infrastructure/OpenF1ApiClient.cs",
+        "new-code/UndercutAnalyser/ViewModels/EventSelectorViewModel.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "dotnet build succeeded",
+      "references": [],
+      "notes": "OpenF1ApiClient now queries meetings?session_type=Race endpoint in a single call (year parameter ignored for API, but kept for interface compatibility). EventSelectorViewModel.LoadAsync now calls API once, receives all races, filters locally by year range (startYear to endYear), and sorts by year descending then date ascending."
+    },
+    {
+      "id": "step-20260805-012",
+      "timestamp": "2026-08-05T01:10:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Fixed threading issue when updating ObservableCollection from async API call",
+      "rationale": "API call completes on background thread but ObservableCollection must be updated on UI thread. User reported NotSupportedException when adding to Events collection.",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/ViewModels/EventSelectorViewModel.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "dotnet build succeeded",
+      "references": [],
+      "notes": "Added using System.Windows and Application.Current.Dispatcher.Invoke() to marshal collection updates back to UI thread before adding items to Events. Also added try-catch with debug output for LoadAsync errors. Wrapped filteredRaces in .ToList() before dispatcher call to avoid threading issues in LINQ enumeration."
+    }
   ]
 }

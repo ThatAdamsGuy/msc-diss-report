@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+	<!-- Prevent MSBuild from relying on machine-specific fallback package folders that may not exist on CI/dev machines -->
+	<RestoreAdditionalProjectFallbackFolders></RestoreAdditionalProjectFallbackFolders>
+	<!-- Ensure restores default to the project-local packages folder -->
+	<RestorePackagesPath>$(MSBuildThisFileDirectory).nuget\packages</RestorePackagesPath>
+  </PropertyGroup>
+</Project>

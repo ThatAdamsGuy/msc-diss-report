@@ -5,27 +5,32 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UndercutAnalyser"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Undercut Prediction Tool" Height="600" Width="900">
     <Grid Margin="8">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
-                <Button x:Name="EventButton" Content="Event" Width="100" Margin="0,0,8,0" />
-                <Button x:Name="ParametersButton" Content="Parameters" Width="100" />
-            </StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <ListBox x:Name="EventsList" Grid.Row="1" ItemsSource="{Binding EventsView}" DisplayMemberPath="RaceName">
-                <ListBox.GroupStyle>
-                    <GroupStyle>
-                        <GroupStyle.HeaderTemplate>
-                            <DataTemplate>
-                                <TextBlock FontWeight="Bold" FontSize="14" Text="{Binding Name}" />
-                            </DataTemplate>
-                        </GroupStyle.HeaderTemplate>
-                    </GroupStyle>
-                </ListBox.GroupStyle>
-            </ListBox>
-        </Grid>
+        <!-- Event Selection Area -->
+        <Border Grid.Row="0" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="0,0,0,8" Margin="0,0,0,8">
+            <StackPanel>
+                <TextBlock FontSize="12" Foreground="#666666">Selected Event</TextBlock>
+                <TextBlock x:Name="SelectedEventDisplay" FontSize="14" FontWeight="Bold" Margin="0,4,0,0">No event selected</TextBlock>
+                <Button x:Name="EventButton" Content="Choose Event" Width="120" Margin="0,8,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Navigation Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="ParametersButton" Content="Parameters" Width="100" Margin="0,0,8,0" />
+            <Button x:Name="PredictButton" Content="Predict" Width="100" />
+        </StackPanel>
+
+        <!-- Content Area (placeholder for future views) -->
+        <Border Grid.Row="2" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8">
+            <TextBlock Text="Content area" Foreground="#999999" />
+        </Border>
+    </Grid>
 </Window>
