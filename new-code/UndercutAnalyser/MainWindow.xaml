@@ -6,7 +6,26 @@
         xmlns:local="clr-namespace:UndercutAnalyser"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
+    <Grid Margin="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
+                <Button x:Name="EventButton" Content="Event" Width="100" Margin="0,0,8,0" />
+                <Button x:Name="ParametersButton" Content="Parameters" Width="100" />
+            </StackPanel>
 
-    </Grid>
+            <ListBox x:Name="EventsList" Grid.Row="1" ItemsSource="{Binding EventsView}" DisplayMemberPath="RaceName">
+                <ListBox.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock FontWeight="Bold" FontSize="14" Text="{Binding Name}" />
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListBox.GroupStyle>
+            </ListBox>
+        </Grid>
 </Window>

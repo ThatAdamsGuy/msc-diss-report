@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "agent": "UndercutToolAgent",
+  "createdBy": "GitHub Copilot",
+  "createdAt": "2026-08-05T00:00:00Z",
+  "entries": [
+    {
+      "id": "step-20260805-001",
+      "timestamp": "2026-08-05T00:00:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Read and parsed Undercut_Tool_Agent_Context.md; created agent work log artifacts",
+      "rationale": "User requested that future work be recorded in a parseable document",
+      "filesChanged": ["agent_work_log.json", "AGENT_WORK_LOG_README.md"],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": null,
+      "references": ["new-code/UndercutAnalyser/Undercut_Tool_Agent_Context.md"],
+      "notes": "Initial log entry created. The agent will append one JSON object per future action."
+    },
+    {
+      "id": "step-20260805-002",
+      "timestamp": "2026-08-05T00:10:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Scaffolded WPF UI and Ergast event selector",
+      "rationale": "User requested initial UI with Event/Parameters buttons and an Event selector that queries F1 data API; Ergast (OpenF1-style) chosen for event listing to avoid Python bridge complexity",
+      "filesChanged": [
+        "new-code/UndercutAnalyser/Domain/Models/EventRace.cs",
+        "new-code/UndercutAnalyser/Services/IEventDataProvider.cs",
+        "new-code/UndercutAnalyser/Infrastructure/ErgastApiClient.cs",
+        "new-code/UndercutAnalyser/ViewModels/EventSelectorViewModel.cs",
+        "new-code/UndercutAnalyser/MainWindow.xaml",
+        "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+      ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": "Build not executed in agent environment; attempted run_build failed due to unavailable build tool",
+      "references": [
+        "new-code/UndercutAnalyser/Undercut_Tool_Agent_Context.md",
+        "new-code/UndercutAnalyser/MainWindow.xaml"
+      ],
+      "notes": "EventSelectorViewModel loads races for the last five years on window load. Please build the solution locally in Visual Studio to verify compilation and run the UI."
+    },
+    {
+      "id": "step-20260805-003",
+      "timestamp": "2026-08-05T00:15:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Added classic Visual Studio solution file to fix Solution Explorer visibility",
+      "rationale": "Existing .slnx contained an empty <Solution /> element. Adding a .sln referencing the project enables Visual Studio to display project contents in Solution Explorer.",
+      "filesChanged": [ "new-code/UndercutAnalyser/UndercutAnalyser.sln" ],
+      "commandsRun": [],
+      "testsRun": [],
+      "buildResult": null,
+      "references": [ "new-code/UndercutAnalyser/UndercutAnalyser.slnx", "new-code/UndercutAnalyser/UndercutAnalyser.csproj" ],
+      "notes": "Open the new .sln file (new-code/UndercutAnalyser/UndercutAnalyser.sln) in Visual Studio to load the project and restore normal Solution Explorer behaviour."
+    },
+    {
+      "id": "step-20260805-001",
+      "timestamp": "2026-08-05T00:00:00Z",
+      "author": "GitHub Copilot",
+      "summary": "Added NuGet.Config to set repo-local package folder and restored packages",
+      "rationale": "Resolve build failure caused by missing machine-specific fallback package folder during package resolution",
+      "filesChanged": [ "NuGet.Config" ],
+      "commandsRun": [
+        "dotnet restore \"C:\\Users\\harry\\Documents\\Motorsport Engineering\\9_Thesis\\msc-diss-report\\new-code\\UndercutAnalyser\\UndercutAnalyser.csproj\" --packages \"C:\\Users\\harry\\Documents\\Motorsport Engineering\\9_Thesis\\msc-diss-report\\.nuget\\packages\""
+      ],
+      "testsRun": [],
+      "buildResult": "dotnet restore/build succeeded when using repo-local packages folder",
+      "references": [ ".github/copilot-instructions.md" ],
+      "notes": "Created .nuget/packages and added NuGet.Config to avoid reliance on machine-specific Visual Studio fallback package folders. Subsequent CI may still need validation."
+    }
+  ]
+}
