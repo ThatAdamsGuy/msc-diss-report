@@ -39,6 +39,6 @@ namespace UndercutAnalyser
             StatusText.Text = count == 0 ? "No events loaded. Check your internet connection." : $"{count} events available";
         }
 
-        public EventRace? SelectedEvent => _vm.SelectedEvent;
+        public EventMeeting? SelectedEvent => _vm.SelectedEvent;
     }
 }

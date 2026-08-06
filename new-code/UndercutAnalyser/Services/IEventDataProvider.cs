@@ -11,6 +11,6 @@ namespace UndercutAnalyser.Services
         /// </summary>
         /// <param name="year">Season year (e.g. 2023)</param>
         /// <returns>List of races in that season</returns>
-        Task<IReadOnlyList<EventRace>> GetRacesBySeasonAsync(int year);
+        Task<IReadOnlyList<EventMeeting>> GetRacesBySeasonAsync(int year);
     }
 }

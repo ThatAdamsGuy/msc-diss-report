@@ -15,23 +15,23 @@ namespace UndercutAnalyser.ViewModels
     public sealed class EventSelectorViewModel : INotifyPropertyChanged
     {
         private readonly IEventDataProvider _provider;
-        private EventRace? _selectedEvent;
+        private EventMeeting? _selectedEvent;
 
-        public ObservableCollection<EventRace> Events { get; } = new();
+        public ObservableCollection<EventMeeting> Events { get; } = new();
 
         public ICollectionView EventsView { get; }
 
         public EventSelectorViewModel(IEventDataProvider? provider = null)
         {
-            _provider = provider ?? new OpenF1ApiClient();
+            _provider = provider ?? new OpenF1RaceDataClient();
             EventsView = CollectionViewSource.GetDefaultView(Events);
-            EventsView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(EventRace.Year)));
+            EventsView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(EventMeeting.Year)));
         }
 
         /// <summary>
         /// Currently selected event (bindable).
         /// </summary>
-        public EventRace? SelectedEvent
+        public EventMeeting? SelectedEvent
         {
             get => _selectedEvent;
             set
@@ -58,7 +58,7 @@ namespace UndercutAnalyser.ViewModels
                 var lower = text.Trim().ToLowerInvariant();
                 EventsView.Filter = o =>
                 {
-                    if (o is not EventRace er) return false;
+                    if (o is not EventMeeting er) return false;
                     return er.RaceName?.ToLowerInvariant().Contains(lower) == true
                            || er.CircuitName?.ToLowerInvariant().Contains(lower) == true
                            || er.Location?.ToLowerInvariant().Contains(lower) == true;
@@ -78,7 +78,10 @@ namespace UndercutAnalyser.ViewModels
 
                 // Filter locally for the requested year range
                 var filteredRaces = allRaces
-                    .Where(r => r.Year >= startYear && r.Year <= endYear && r.MeetingName != "Pre-Season Testing")
+                    .Where(r => r.Year >= startYear 
+                        && r.Year <= endYear 
+                        && r.MeetingName != "Pre-Season Testing" 
+                        && r.DateEnd <= DateTime.Now)
                     .OrderByDescending(r => r.Year)
                     .ThenBy(r => r.Date)
                     .ToList();
@@ -97,7 +100,7 @@ namespace UndercutAnalyser.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"LoadAsync error: {ex.Message}");
+                UndercutAnalyser.Infrastructure.Logger.Error(ex, "LoadAsync");
                 // API call failed; leave Events empty
             }
         }

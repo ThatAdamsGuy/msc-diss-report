@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace UndercutAnalyser.Domain.Models
 {
-    public sealed record EventRace
+    public sealed record EventMeeting
     {
         [JsonPropertyName("meeting_key")]
         public int MeetingKey { get; init; }
@@ -48,10 +48,10 @@ namespace UndercutAnalyser.Domain.Models
         public string GmtOffset { get; init; } = string.Empty;
 
         [JsonPropertyName("date_start")]
-        public DateTime DateStart { get; init; }
+        public DateTime? DateStart { get; init; }
 
         [JsonPropertyName("date_end")]
-        public DateTime DateEnd { get; init; }
+        public DateTime? DateEnd { get; init; }
 
         [JsonPropertyName("year")]
         public int Year { get; init; }
