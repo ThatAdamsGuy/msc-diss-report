@@ -112,5 +112,24 @@ namespace UndercutAnalyser.Infrastructure
                 return Array.Empty<RaceControlMessage>();
             }
         }
+
+        public async Task<IReadOnlyList<EventStint>> GetStintsBySessionKeyAsync(int sessionKey)
+        {
+            var url = $"stints?session_key={sessionKey}";
+            try
+            {
+                using var resp = await _http.GetAsync(url).ConfigureAwait(false);
+                resp.EnsureSuccessStatusCode();
+                using var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                var stints = await JsonSerializer.DeserializeAsync<List<EventStint>>(stream, JsonOptions).ConfigureAwait(false)
+                    ?? new List<EventStint>();
+                return stints;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"GetStintsBySessionKeyAsync sessionKey={sessionKey}");
+                return Array.Empty<EventStint>();
+            }
+        }
     }
 }

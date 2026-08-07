@@ -19,6 +19,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private int? _currentMeetingKey;
     private IReadOnlyList<EventLap> _currentLaps = Array.Empty<EventLap>();
     private IReadOnlyList<Driver> _currentDrivers = Array.Empty<Driver>();
+    private IReadOnlyList<EventStint> _currentStints = Array.Empty<EventStint>();
+    private ReferenceLapTimeResult? _currentReference;
     private double _fuelSecondsPer10Kg = 0.3;
     private double _fuelKg = 110;
 
@@ -73,6 +75,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 _currentMeetingKey = meetingKey;
                 _currentLaps = Array.Empty<EventLap>();
                 _currentDrivers = Array.Empty<Driver>();
+                _currentStints = Array.Empty<EventStint>();
+                _currentReference = null;
                 RawDataButton.IsEnabled = false;
 
                 SelectedEventDisplay.Text = "Loading race data...";
@@ -94,6 +98,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     var laps = await client.GetLapsBySessionKeyAsync(sessionKey).ConfigureAwait(false);
                     var drivers = await client.GetDriversByMeetingAndSessionAsync(meetingKey, sessionKey).ConfigureAwait(false);
                     var raceControlMessages = await client.GetRaceControlMessagesBySessionKeyAsync(sessionKey).ConfigureAwait(false);
+                    var stints = await client.GetStintsBySessionKeyAsync(sessionKey).ConfigureAwait(false);
 
                     var reference = ReferenceLapTimeCalculator.Calculate(
                         laps,
@@ -105,6 +110,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     {
                         _currentLaps = laps;
                         _currentDrivers = drivers;
+                        _currentStints = stints;
+                        _currentReference = reference;
                         RawDataButton.IsEnabled = true;
                         SelectedEventDisplay.Text =
                             $"{vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year}) - Rows: {reference.TotalLapRows}, Session laps: {reference.MaxSessionLapNumber}, Drivers: {drivers.Count}, " +
@@ -137,7 +144,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             }
 
-            var rawDataView = new RawDataView(_currentLaps, _currentDrivers)
+            var rawDataView = new RawDataView(
+                _currentLaps,
+                _currentDrivers,
+                _currentStints,
+                _currentReference,
+                FuelSecondsPer10Kg,
+                FuelKg)
             {
                 Owner = this
             };

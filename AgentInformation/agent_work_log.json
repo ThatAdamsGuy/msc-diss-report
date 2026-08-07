@@ -369,6 +369,31 @@
                                            "https://api.openf1.org/v1/race_control?session_key=11326"
                                        ],
                         "notes":  "Added observable properties FuelSecondsPer10Kg=0.3 and FuelKg=110 with TODO to move into Parameters menu. Fuel correction uses fuelEffectPerLap * (maxSessionLapNumber - lapNumber) on clean non-pit-out, non-SC/VSC laps."
+                    },
+                    {
+                        "id":  "step-20260806-016",
+                        "timestamp":  "2026-08-06T01:20:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Enhanced Raw Data view with extra info, mode switching, reference row, pit/stint styling",
+                        "rationale":  "User requested extra info bar, pit lap highlighting, reference lap row, individual/cumulative switcher, and stint-based compound borders matched to drivers.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/Domain/Models/EventStint.cs",
+                                             "new-code/UndercutAnalyser/Infrastructure/OpenF1RaceDataClient.cs",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/ViewModels/DriverLapRow.cs",
+                                             "new-code/UndercutAnalyser/RawDataView.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+                                           "https://api.openf1.org/v1/stints?session_key=11253"
+                                       ],
+                        "notes":  "Added stints API retrieval and mapped compounds by driver/lap range. Raw data cells now show orange pit-lap fill, red/yellow/white compound borders with black grid lines, reference bottom row, and cumulative display mode."
                     }
                 ]
 }
