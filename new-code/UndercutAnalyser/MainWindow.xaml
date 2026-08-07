@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UndercutAnalyser"
         mc:Ignorable="d"
-        Title="Undercut Prediction Tool" Height="600" Width="900">
+        Title="Undercut Prediction Tool" Height="900" Width="1600">
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

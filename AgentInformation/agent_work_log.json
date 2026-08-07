@@ -616,6 +616,30 @@
 
                                        ],
                         "notes":  "Relocated view files from project root to Views/ without namespace changes. Removed accidental nested directory from initial move attempt."
+                    },
+                    {
+                        "id":  "step-20260807-027",
+                        "timestamp":  "2026-08-07T04:20:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Added Parameters window with tyre table and fuel inputs",
+                        "rationale":  "User requested a dedicated parameter window with tyre pace/degradation/lap range fields and existing fuel parameters.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/ViewModels/TyreParameterRow.cs",
+                                             "new-code/UndercutAnalyser/Views/ParameterWindow.xaml",
+                                             "new-code/UndercutAnalyser/Views/ParameterWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Tyre rows added for Soft/Medium/Hard, soft pace/degradation fixed at 0 and non-editable, float values rounded to 2dp, lap min/max textboxes added with hyphen, fuel fields added and wired through Parameters button dialog."
                     }
                 ]
 }

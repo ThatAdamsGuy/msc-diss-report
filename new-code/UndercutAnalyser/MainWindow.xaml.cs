@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,6 +29,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private ReferenceLapTimeResult? _currentReference;
     private readonly WpfPlot _raceTracePlot = new();
     private readonly Dictionary<int, bool> _traceVisibilityByDriver = new();
+    private List<TyreParameterRow> _tyreParameterRows =
+    [
+        new TyreParameterRow("Soft", 0, 0, false),
+        new TyreParameterRow("Medium", 0, 0, true),
+        new TyreParameterRow("Hard", 0, 0, true)
+    ];
     private double _fuelSecondsPer10Kg = 0.3;
     private double _fuelKg = 110;
 
@@ -69,6 +72,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ApplyFuelCorrectionCheckBox.Checked += (_, _) => RenderRaceTrace();
         ApplyFuelCorrectionCheckBox.Unchecked += (_, _) => RenderRaceTrace();
         LegendSortComboBox.SelectionChanged += (_, _) => RenderRaceTrace();
+
+        ParametersButton.Click += (_, _) =>
+        {
+            var window = new ParameterWindow(FuelSecondsPer10Kg, FuelKg, _tyreParameterRows)
+            {
+                Owner = this
+            };
+
+            if (window.ShowDialog() == true)
+            {
+                FuelSecondsPer10Kg = window.FuelSecondsPer10Kg;
+                FuelKg = window.FuelKg;
+                _tyreParameterRows = window.ResultTyreRows.Select(x => x.Clone()).ToList();
+
+                if (_currentLaps.Count > 0)
+                {
+                    RenderRaceTrace();
+                }
+            }
+        };
 
         Loaded += async (_, _) =>
         {
