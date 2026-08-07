@@ -591,6 +591,31 @@
 
                                        ],
                         "notes":  "Legend toggles now keep all traces plotted; deselected traces are visually reduced to ~15% by blending toward white. Right-click on a legend item isolates that driver. EventSelectorWindow now accepts double-click on selected row to confirm."
+                    },
+                    {
+                        "id":  "step-20260807-026",
+                        "timestamp":  "2026-08-07T03:45:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Moved UI view files into Views folder",
+                        "rationale":  "User requested refactor to separate views into dedicated folder.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/Views/MainWindow.xaml",
+                                             "new-code/UndercutAnalyser/Views/MainWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/Views/EventSelectorWindow.xaml",
+                                             "new-code/UndercutAnalyser/Views/EventSelectorWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/Views/RawDataView.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Relocated view files from project root to Views/ without namespace changes. Removed accidental nested directory from initial move attempt."
                     }
                 ]
 }
