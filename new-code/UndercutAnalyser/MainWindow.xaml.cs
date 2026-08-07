@@ -222,9 +222,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var traceLegendPanel = FindName("TraceLegendPanel") as WrapPanel;
         traceLegendPanel?.Children.Clear();
 
-        plot.Title("Engineering Race Trace (Dynamic Field Reference)");
+        plot.Title("Engineering Race Trace (Constant Reference)");
         plot.XLabel("Lap Number");
-        plot.YLabel("Cumulative Delta to Moving Field Median (s)");
+        plot.YLabel("Cumulative Delta to Constant Reference (s)");
 
         if (_currentLaps.Count == 0)
         {
@@ -260,11 +260,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var referenceByLapNumber = eligibleLaps
-            .GroupBy(x => x.Lap.LapNumber)
-            .ToDictionary(
-                g => g.Key,
-                g => Median(g.Select(x => (double)x.AdjustedLapSeconds).OrderBy(v => v).ToArray()));
+        var constantReference = _currentReference?.AverageLapTimeSeconds;
+        if (!constantReference.HasValue || constantReference.Value <= 0)
+        {
+            _raceTracePlot.Refresh();
+            return;
+        }
 
         var driverByNumber = _currentDrivers
             .GroupBy(d => d.DriverNumber)
@@ -307,12 +308,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             foreach (var item in driverLaps)
             {
                 var lapNumber = item.Lap.LapNumber;
-                if (!referenceByLapNumber.TryGetValue(lapNumber, out var movingReference))
-                {
-                    continue;
-                }
-
-                var lapDelta = movingReference - item.AdjustedLapSeconds;
+                var lapDelta = constantReference.Value - item.AdjustedLapSeconds;
                 cumulativeDelta += lapDelta;
 
                 xs.Add(lapNumber);
@@ -350,7 +346,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         // TODO: add alternative trace mode "Reference Pace" alongside engineering mode.
 
         var baseline = plot.Add.HorizontalLine(0);
-        baseline.Text = "Field Median";
+        baseline.Text = "Constant Reference";
         baseline.LineWidth = 1.5f;
         baseline.LinePattern = LinePattern.Dashed;
 

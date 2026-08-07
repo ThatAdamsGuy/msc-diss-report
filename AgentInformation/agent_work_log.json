@@ -640,6 +640,27 @@
 
                                        ],
                         "notes":  "Tyre rows added for Soft/Medium/Hard, soft pace/degradation fixed at 0 and non-editable, float values rounded to 2dp, lap min/max textboxes added with hyphen, fuel fields added and wired through Parameters button dialog."
+                    },
+                    {
+                        "id":  "step-20260807-028",
+                        "timestamp":  "2026-08-07T04:45:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Switched race trace from moving reference to constant reference baseline",
+                        "rationale":  "User identified implementation drift and requested cumulative delta be computed against fixed reference lap value from reference calculation.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Removed per-lap referenceByLapNumber usage. Trace now uses constantReference = _currentReference.AverageLapTimeSeconds and lapDelta = constantReference - adjustedLapSeconds. Updated chart labels/baseline text accordingly."
                     }
                 ]
 }
