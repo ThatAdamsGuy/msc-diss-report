@@ -1071,13 +1071,7 @@ CommunityToolkit.Mvvm is appropriate.
 
 ## 14.2 Chart library
 
-Potential options:
-
-- LiveCharts2;
-- ScottPlot;
-- OxyPlot.
-
-Choose one based on ease of WPF support and licensing. Encapsulate chart generation behind a view model so the domain does not depend on the library.
+Prefer ScottPlot for WPF charting (free, open source, actively maintained) for race-trace visualisations.
 
 ## 14.3 Navigation
 

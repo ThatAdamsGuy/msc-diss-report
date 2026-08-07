@@ -19,8 +19,14 @@ namespace UndercutAnalyser.Domain.Models
         [JsonPropertyName("code")]
         public string Code { get; init; } = string.Empty;
 
+        [JsonPropertyName("broadcast_name")]
+        public string BroadcastName { get; init; } = string.Empty;
+
         [JsonPropertyName("team_name")]
         public string TeamName { get; init; } = string.Empty;
+
+        [JsonPropertyName("team_colour")]
+        public string TeamColour { get; init; } = string.Empty;
 
         public string FullName => string.IsNullOrEmpty(FirstName) ? LastName : FirstName + " " + LastName;
     }

@@ -394,6 +394,203 @@
                                            "https://api.openf1.org/v1/stints?session_key=11253"
                                        ],
                         "notes":  "Added stints API retrieval and mapped compounds by driver/lap range. Raw data cells now show orange pit-lap fill, red/yellow/white compound borders with black grid lines, reference bottom row, and cumulative display mode."
+                    },
+                    {
+                        "id":  "step-20260807-017",
+                        "timestamp":  "2026-08-07T00:40:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Implemented ScottPlot race trace in main view with cumulative reference deltas",
+                        "rationale":  "User requested race trace as main view using ScottPlot with Y=0 as reference lap baseline, all drivers, X=lap number, per-driver colors, and solid vs dashed style by driver number.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.csproj",
+                                             "new-code/UndercutAnalyser/Domain/Models/Driver.cs",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet add \"UndercutAnalyser.csproj\" package ScottPlot.WPF"
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "ScottPlot.WPF added. Plot hosted in code-behind to avoid designer SkiaSharp load issues. Lowest driver number rendered solid; others dashed. Y-axis shows cumulative (lapDuration-referenceLap) with baseline horizontal line at zero."
+                    },
+                    {
+                        "id":  "step-20260807-018",
+                        "timestamp":  "2026-08-07T01:25:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Redesigned race trace to Engineering Mode with dynamic lap-by-lap field reference",
+                        "rationale":  "User identified fixed-baseline traces were not representative and requested moving field-average style behavior like race engineering traces.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Added top-bar controls for including pit laps, including SC/VSC laps, and fuel correction. Trace now uses cumulative delta vs moving per-lap field median with consistent filtering and adjustment logic. Added TODO note for future Reference Pace mode."
+                    },
+                    {
+                        "id":  "step-20260807-019",
+                        "timestamp":  "2026-08-07T01:40:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Added broadcast name to race trace legend labels",
+                        "rationale":  "User requested broadcast name be included in chart legend for clearer driver identification.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/Domain/Models/Driver.cs",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Mapped OpenF1 driver field broadcast_name and updated legend formatting to CODE (BroadcastName) when available."
+                    },
+                    {
+                        "id":  "step-20260807-020",
+                        "timestamp":  "2026-08-07T02:00:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Adjusted race trace line style to teammate-based lower/higher driver number rule",
+                        "rationale":  "User requested lower driver number be solid and higher driver number dashed while preserving team colours.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Line style now determined per team group (team name fallback to team colour): lower-numbered teammate solid, higher-numbered teammate dashed."
+                    },
+                    {
+                        "id":  "step-20260807-021",
+                        "timestamp":  "2026-08-07T02:10:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Increased race-trace marker size and matched marker color to line color",
+                        "rationale":  "User requested larger lap point dots and same color as each driver line.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Set scatter marker size to 8 and marker fill/outline colors to the same value as line color."
+                    },
+                    {
+                        "id":  "step-20260807-022",
+                        "timestamp":  "2026-08-07T02:25:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Disabled race trace interactivity when no event is loaded",
+                        "rationale":  "User requested graph scrolling/interaction be deactivated until event data is loaded.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Added SetRaceTraceEnabled helper; graph input disabled by default, during loading, and on no-session/error states; re-enabled after successful data load. Also dims plot opacity while disabled."
+                    },
+                    {
+                        "id":  "step-20260807-023",
+                        "timestamp":  "2026-08-07T02:40:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Added legend sort option for race trace",
+                        "rationale":  "User requested ability to sort legend by driver number or by team then driver number.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Added LegendSortComboBox with two modes and wired SelectionChanged to re-render. Plot series addition order now follows selected legend sort strategy."
+                    },
+                    {
+                        "id":  "step-20260807-024",
+                        "timestamp":  "2026-08-07T03:00:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Added clickable legend names to show/hide driver traces",
+                        "rationale":  "User requested clicking legend names to toggle trace visibility.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Implemented custom legend panel with toggle items per driver; toggles preserve visibility state and re-render chart. Existing legend sorting order is respected."
+                    },
+                    {
+                        "id":  "step-20260807-025",
+                        "timestamp":  "2026-08-07T03:25:00Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Updated legend toggle behavior and event selector double-click",
+                        "rationale":  "User requested dimming traces instead of hiding, right-click isolate in legend, and double-click event selection.",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/EventSelectorWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+
+                                        ],
+                        "testsRun":  [
+
+                                     ],
+                        "buildResult":  "Build successful",
+                        "references":  [
+
+                                       ],
+                        "notes":  "Legend toggles now keep all traces plotted; deselected traces are visually reduced to ~15% by blending toward white. Right-click on a legend item isolates that driver. EventSelectorWindow now accepts double-click on selected row to confirm."
                     }
                 ]
 }

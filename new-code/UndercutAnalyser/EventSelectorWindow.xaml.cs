@@ -26,6 +26,14 @@ namespace UndercutAnalyser
             };
 
             EventsListView.SelectionChanged += (_, __) => OkButton.IsEnabled = EventsListView.SelectedItem != null;
+            EventsListView.MouseDoubleClick += (_, __) =>
+            {
+                if (EventsListView.SelectedItem is not null)
+                {
+                    DialogResult = true;
+                    Close();
+                }
+            };
             OkButton.Click += (_, __) => { DialogResult = true; Close(); };
             CancelButton.Click += (_, __) => { DialogResult = false; Close(); };
 

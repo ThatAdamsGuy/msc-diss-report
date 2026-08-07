@@ -22,16 +22,43 @@
             </StackPanel>
         </Border>
 
-        <!-- Navigation Buttons -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-            <Button x:Name="ParametersButton" Content="Parameters" Width="100" Margin="0,0,8,0" />
-            <Button x:Name="PredictButton" Content="Predict" Width="100" Margin="0,0,8,0" />
-            <Button x:Name="RawDataButton" Content="Raw Data" Width="100" IsEnabled="False" />
-        </StackPanel>
+        <!-- Navigation Buttons + Trace Controls -->
+        <DockPanel Grid.Row="1" Margin="0,0,0,8" LastChildFill="False">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <Button x:Name="ParametersButton" Content="Parameters" Width="100" Margin="0,0,8,0" />
+                <Button x:Name="PredictButton" Content="Predict" Width="100" Margin="0,0,8,0" />
+                <Button x:Name="RawDataButton" Content="Raw Data" Width="100" Margin="0,0,12,0" IsEnabled="False" />
+            </StackPanel>
 
-        <!-- Content Area (placeholder for future views) -->
+            <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="8,4" CornerRadius="4" DockPanel.Dock="Right">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Engineering Trace" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <CheckBox x:Name="IncludePitLapsCheckBox" Content="Include pit laps" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <CheckBox x:Name="IncludeScVscLapsCheckBox" Content="Include SC/VSC laps" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <CheckBox x:Name="ApplyFuelCorrectionCheckBox" Content="Apply fuel correction" IsChecked="True" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Legend sort:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="LegendSortComboBox" Width="170" SelectedIndex="0" VerticalAlignment="Center">
+                        <ComboBoxItem Content="Driver Number"/>
+                        <ComboBoxItem Content="Team, then Number"/>
+                    </ComboBox>
+                </StackPanel>
+            </Border>
+        </DockPanel>
+
+        <!-- Main Race Trace Area -->
         <Border Grid.Row="2" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8">
-            <TextBlock Text="Content area" Foreground="#999999" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,6">
+                    <WrapPanel x:Name="TraceLegendPanel" Orientation="Horizontal" />
+                </ScrollViewer>
+
+                <Grid Grid.Row="1" x:Name="RaceTraceHost" />
+            </Grid>
         </Border>
     </Grid>
 </Window>
