@@ -478,19 +478,14 @@ Do not implement these as facts without a supported model.
 
 ## 6.1 One-lap response example
 
-For decision lap \(n\):
+For decision lap \(n\) with `TargetResponseLaps = 1`:
 
-| Lap | Attacking driver | Target driver |
-|---|---|---|
-| \(n\) | Pit lap, includes pit loss | Standard reference lap |
-| \(n+1\) | Out lap, includes warm up and optional traffic | Pit lap, includes pit loss |
-| \(n+2\) | Standard predicted lap | Out lap, includes warm up and optional traffic |
-| \(n+3\) | Standard predicted lap | Standard predicted lap |
-
-Required outputs:
-
-- end of \(n+2\): gap after pit sequence;
-- end of \(n+3\): stabilised gap.
+| Lap | Attacking driver | Target driver | Comparison |
+|---|---|---|---|
+| \(n\) | Pit lap, includes pit loss | Standard reference lap | — |
+| \(n+1\) | Out lap, includes warm up and optional traffic | Pit lap, includes pit loss | **Primary** `GapAtN1Seconds` |
+| \(n+2\) | Standard predicted lap | Out lap, includes warm up and optional traffic | Secondary `GapAtN2Seconds` |
+| \(n+3\) | Standard predicted lap | Standard predicted lap | Tertiary `GapAtN3Seconds` |
 
 ## 6.2 Generalised response delay
 
@@ -499,8 +494,11 @@ For `TargetResponseLaps = r`:
 - attacker pits on lap \(n\);
 - target pits on lap \(n+r\);
 - target out lap is \(n+r+1\);
-- core endpoint is end of \(n+r+1\);
-- stabilised endpoint is end of \(n+r+2\).
+- primary endpoint is end of \(n+r+1\) → `GapAtN1Seconds`;
+- secondary endpoint is end of \(n+r+2\) → `GapAtN2Seconds`;
+- tertiary endpoint is end of \(n+r+3\) → `GapAtN3Seconds`.
+
+The naming `GapAtN1`, `GapAtN2`, `GapAtN3` refers to the number of laps after the attacker's out lap completes, not absolute lap numbers.
 
 The implementation should not hard-code a one-lap response.
 
@@ -685,8 +683,11 @@ public sealed record DriverRaceState(
     double CumulativeRaceTimeSeconds,
     TyreCompound Compound,
     int TyreAgeLaps,
-    double ReferencePaceSeconds,
-    double DegradationRateSecondsPerLap);
+    double ReferencePaceSeconds);  // Driver-specific baseline; auto-derived from clean historic laps, user-overridable
+
+// Note: DegradationRateSecondsPerLap is NOT per-driver. It is per-compound and lives in
+// LapModelParameters.DegradationRatesSeconds (keyed by TyreCompound). Both drivers share
+// the same compound degradation rates from the model parameters.
 May also include:
 
 - team;
@@ -711,28 +712,27 @@ public sealed record TyreSetSpecification(
 ## 9.6 LapModelParameters
 public sealed record LapModelParameters(
     IReadOnlyDictionary<TyreCompound, double> CompoundOffsetsSeconds,
+    IReadOnlyDictionary<TyreCompound, double> DegradationRatesSecondsPerLap,
     WarmUpModelParameters WarmUp,
     double PitLaneLossSeconds,
+    double MarginalThresholdSeconds,   // Default 0.25 s
     TrafficModelParameters Traffic);
+
 Reference compound convention:
 
 - Soft compound offset = 0 seconds;
 - other compounds relative to Soft.
 
-This has previously been the preferred work convention.
+Degradation rates are per-compound, not per-driver. Both the attacker and target use the same rate for a given compound.
+
+**Fuel effect is excluded from LapModelParameters and from the prediction engine.** The dissertation explicitly excludes it on the grounds that both drivers burn fuel at equal rates over the short comparison window. Fuel correction may be applied to the race trace visualisation for display purposes but must not enter the prediction model.
 
 ## 9.7 WarmUpModelParameters
 
-Initial option:
+A single flat penalty applied to the first out lap only (the dissertation base model):
 public sealed record WarmUpModelParameters(
-    IReadOnlyList<double> PenaltiesByLapAfterPitSeconds);
-Example:
-[1.8, 0.5, 0.0]
-Meaning:
-
-- out lap: +1.8 s;
-- first normal lap: +0.5 s;
-- thereafter: 0.
+    double OutLapPenaltySeconds);
+This is the penalty W in the lap time equation. It applies only to the out lap; subsequent laps are unaffected. A per-lap list is a future extension if non-linear warm-up is needed.
 
 ## 9.8 TrafficModelParameters
 public sealed record TrafficModelParameters(
@@ -752,8 +752,9 @@ public sealed record PredictionRequest(
     TyreSetSpecification AttackerReplacementTyre,
     TyreSetSpecification TargetReplacementTyre,
     int TargetResponseLaps,
-    LapModelParameters ModelParameters,
-    bool IncludeStabilisedLap);
+    LapModelParameters ModelParameters);
+
+// All three comparison gaps are always calculated. There is no IncludeStabilisedLap flag.
 ## 9.10 LapPredictionBreakdown
 public sealed record LapPredictionBreakdown(
     double ReferencePaceSeconds,
@@ -785,10 +786,19 @@ public sealed record PredictedLap(
 public sealed record PredictionResult(
     IReadOnlyList<PredictedLap> AttackerLaps,
     IReadOnlyList<PredictedLap> TargetLaps,
-    double GapAfterPitSequenceSeconds,
-    double? GapAfterStabilisedLapSeconds,
-    bool UndercutSuccessful,
+    double GapAtN1Seconds,          // Primary: attacker out lap done, target just pitted
+    double GapAtN2Seconds,          // Secondary: target out lap done
+    double GapAtN3Seconds,          // Tertiary: both on first normal lap
+    UndercutClassification Classification,  // Ahead / Marginal / Behind based on GapAtN1
+    double MarginalThresholdSeconds,        // Default 0.25 s, configurable
     IReadOnlyList<PredictionWarning> Warnings);
+
+public enum UndercutClassification
+{
+    PredictedAhead,
+    PredictedMarginal,
+    PredictedBehind
+}
 ---
 
 # 10. Core services
@@ -858,34 +868,39 @@ Pseudo-code:
 decisionLap = n
 targetPitLap = n + targetResponseLaps
 targetOutLap = targetPitLap + 1
-coreEndLap = targetOutLap
-stabilisedEndLap = coreEndLap + 1
+primaryEndLap   = n + 1              // attacker out lap done, target just pitted
+secondaryEndLap = targetOutLap       // target out lap done
+tertiaryEndLap  = targetOutLap + 1  // both on first normal lap
 
-for lap from n to finalEndLap:
+for lap from n to tertiaryEndLap:
     predict attacker lap:
         if lap == n:
-            pit lap
+            pit lap (old tyre + full pit loss)
         else if lap == n + 1:
-            out lap
+            out lap (new tyre, age = replacement age, warm up penalty W)
         else:
             standard lap
 
     predict target lap:
         if lap == targetPitLap:
-            pit lap
+            pit lap (old tyre + full pit loss)
         else if lap == targetOutLap:
-            out lap
+            out lap (new tyre, age = replacement age, warm up penalty W)
         else:
             standard lap
 
     update cumulative times
     update tyre age/state
 
-    if lap == coreEndLap:
-        calculate core gap
+    if lap == primaryEndLap:
+        calculate GapAtN1 = G0 + attackerElapsed - targetElapsed
 
-    if lap == stabilisedEndLap:
-        calculate stabilised gap
+    if lap == secondaryEndLap:
+        calculate GapAtN2
+
+    if lap == tertiaryEndLap:
+        calculate GapAtN3
+        derive Classification from GapAtN1 and marginalThreshold
 ## 11.3 Tyre age progression
 
 Clarify whether tyre age represents age at lap start or lap end.

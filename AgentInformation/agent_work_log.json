@@ -661,6 +661,17 @@
 
                                        ],
                         "notes":  "Removed per-lap referenceByLapNumber usage. Trace now uses constantReference = _currentReference.AverageLapTimeSeconds and lapDelta = constantReference - adjustedLapSeconds. Updated chart labels/baseline text accordingly."
+                    },
+                    {
+                        "id":  "step-20260806-002",
+                        "timestamp":  "2026-08-08T18:29:41.9422388+01:00",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Updated copilot-instructions.md to align with dissertation and user decisions",
+                        "rationale":  "User confirmed: drop Stay Out/?G for now; primary point n+1; single warm-up penalty; degradation per-compound; fuel excluded from prediction engine; three-way marginal classification",
+                        "filesChanged":  [
+                                             ".github/copilot-instructions.md"
+                                         ],
+                        "notes":  "GapAtN1/N2/N3 naming; UndercutClassification Ahead/Marginal/Behind; OutLapPenaltySeconds; DegradationRatesSecondsPerLap on LapModelParameters; ReferencePaceSeconds driver-specific auto-derived; ?G deferred as future work"
                     }
                 ]
 }
