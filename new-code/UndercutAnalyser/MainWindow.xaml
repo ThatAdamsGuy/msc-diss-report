@@ -26,7 +26,7 @@
         <DockPanel Grid.Row="1" Margin="0,0,0,8" LastChildFill="False">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                 <Button x:Name="ParametersButton" Content="Parameters" Width="100" Margin="0,0,8,0" />
-                <Button x:Name="PredictButton" Content="Predict" Width="100" Margin="0,0,8,0" />
+                <Button x:Name="PredictButton" Content="Predict" Width="100" Margin="0,0,8,0" IsEnabled="False" />
                 <Button x:Name="RawDataButton" Content="Raw Data" Width="100" Margin="0,0,12,0" IsEnabled="False" />
             </StackPanel>
 

@@ -31,21 +31,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<int, bool> _traceVisibilityByDriver = new();
     private List<TyreParameterRow> _tyreParameterRows =
     [
-        new TyreParameterRow("Soft", 0, 0, false),
-        new TyreParameterRow("Medium", 0, 0, true),
-        new TyreParameterRow("Hard", 0, 0, true)
+        new TyreParameterRow("Soft",   0, 0, isEditable: false, isDegradationEditable: true),
+        new TyreParameterRow("Medium", 0, 0, isEditable: true,  isDegradationEditable: true),
+        new TyreParameterRow("Hard",   0, 0, isEditable: true,  isDegradationEditable: true)
     ];
     private double _fuelSecondsPer10Kg = 0.3;
     private double _fuelKg = 110;
+    private StrategyWindow? _strategyWindow;
 
-    // TODO: move these to the Parameters menu view model and bind editable controls.
     public double FuelSecondsPer10Kg
     {
         get => _fuelSecondsPer10Kg;
         set => SetField(ref _fuelSecondsPer10Kg, value);
     }
 
-    // TODO: move these to the Parameters menu view model and bind editable controls.
     public double FuelKg
     {
         get => _fuelKg;
@@ -73,25 +72,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ApplyFuelCorrectionCheckBox.Unchecked += (_, _) => RenderRaceTrace();
         LegendSortComboBox.SelectionChanged += (_, _) => RenderRaceTrace();
 
-        ParametersButton.Click += (_, _) =>
-        {
-            var window = new ParameterWindow(FuelSecondsPer10Kg, FuelKg, _tyreParameterRows)
-            {
-                Owner = this
-            };
-
-            if (window.ShowDialog() == true)
-            {
-                FuelSecondsPer10Kg = window.FuelSecondsPer10Kg;
-                FuelKg = window.FuelKg;
-                _tyreParameterRows = window.ResultTyreRows.Select(x => x.Clone()).ToList();
-
-                if (_currentLaps.Count > 0)
-                {
-                    RenderRaceTrace();
-                }
-            }
-        };
+        ParametersButton.Click += (_, _) => OpenStrategyWindow(openOnPredict: false);
 
         Loaded += async (_, _) =>
         {
@@ -126,6 +107,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 _currentReference = null;
                 _traceVisibilityByDriver.Clear();
                 RawDataButton.IsEnabled = false;
+                PredictButton.IsEnabled = false;
                 SetRaceTraceEnabled(false);
                 RenderRaceTrace();
 
@@ -164,6 +146,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                         _currentRaceControlMessages = raceControlMessages;
                         _currentReference = reference;
                         RawDataButton.IsEnabled = true;
+                        PredictButton.IsEnabled = true;
                         SetRaceTraceEnabled(true);
                         SelectedEventDisplay.Text =
                             $"{vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year}) - Rows: {reference.TotalLapRows}, Session laps: {reference.MaxSessionLapNumber}, Drivers: {drivers.Count}, " +
@@ -187,6 +170,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     RawDataButton.IsEnabled = false;
+                    PredictButton.IsEnabled = false;
                     SetRaceTraceEnabled(false);
                     SelectedEventDisplay.Text = $"Error loading race data: {ex.Message}";
                     RenderRaceTrace();
@@ -213,6 +197,44 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             };
             rawDataView.Show();
         };
+
+        PredictButton.Click += (_, _) => OpenStrategyWindow(openOnPredict: true);
+    }
+
+    private void OpenStrategyWindow(bool openOnPredict)
+    {
+        if (_strategyWindow is null)
+        {
+            _strategyWindow = new StrategyWindow(
+                FuelSecondsPer10Kg,
+                FuelKg,
+                _tyreParameterRows,
+                SelectedEventDisplay.Text,
+                _currentDrivers,
+                _currentLaps,
+                _currentStints,
+                _currentRaceControlMessages)
+            {
+                Owner = this
+            };
+
+            _strategyWindow.ParametersChanged += (_, _) =>
+            {
+                FuelSecondsPer10Kg = _strategyWindow.FuelSecondsPer10Kg;
+                FuelKg = _strategyWindow.FuelKg;
+                _tyreParameterRows = _strategyWindow.GetTyreRowSnapshot().Select(r => r.Clone()).ToList();
+                if (_currentLaps.Count > 0)
+                    RenderRaceTrace();
+            };
+        }
+
+        if (openOnPredict)
+            _strategyWindow.MainTabs.SelectedItem = _strategyWindow.PredictTab;
+        else
+            _strategyWindow.MainTabs.SelectedItem = _strategyWindow.ParametersTab;
+
+        _strategyWindow.Show();
+        _strategyWindow.Activate();
     }
 
     private void RenderRaceTrace()

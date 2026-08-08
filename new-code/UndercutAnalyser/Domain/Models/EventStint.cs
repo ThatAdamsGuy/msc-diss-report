@@ -20,7 +20,7 @@ namespace UndercutAnalyser.Domain.Models
         public int LapStart { get; init; }
 
         [JsonPropertyName("lap_end")]
-        public int LapEnd { get; init; }
+        public int? LapEnd { get; init; }
 
         [JsonPropertyName("compound")]
         public string Compound { get; init; } = string.Empty;

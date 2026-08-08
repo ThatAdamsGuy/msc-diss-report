@@ -11,17 +11,22 @@ namespace UndercutAnalyser.ViewModels
         private string _minLaps = string.Empty;
         private string _maxLaps = string.Empty;
 
-        public TyreParameterRow(string compound, double paceOffset, double degradationRate, bool isEditable)
+        public TyreParameterRow(string compound, double paceOffset, double degradationRate, bool isEditable, bool isDegradationEditable = true)
         {
             Compound = compound;
             IsEditable = isEditable;
+            IsDegradationEditable = isDegradationEditable;
             PaceOffset = paceOffset;
             DegradationRate = degradationRate;
         }
 
         public string Compound { get; }
 
+        /// <summary>Whether the pace offset field is editable. False for the Soft reference compound.</summary>
         public bool IsEditable { get; }
+
+        /// <summary>Whether the degradation rate field is editable. True for all compounds including Soft.</summary>
+        public bool IsDegradationEditable { get; }
 
         public double PaceOffset
         {
@@ -49,7 +54,7 @@ namespace UndercutAnalyser.ViewModels
 
         public TyreParameterRow Clone()
         {
-            return new TyreParameterRow(Compound, PaceOffset, DegradationRate, IsEditable)
+            return new TyreParameterRow(Compound, PaceOffset, DegradationRate, IsEditable, IsDegradationEditable)
             {
                 MinLaps = MinLaps,
                 MaxLaps = MaxLaps
