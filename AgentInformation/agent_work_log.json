@@ -672,6 +672,44 @@
                                              ".github/copilot-instructions.md"
                                          ],
                         "notes":  "GapAtN1/N2/N3 naming; UndercutClassification Ahead/Marginal/Behind; OutLapPenaltySeconds; DegradationRatesSecondsPerLap on LapModelParameters; ReferencePaceSeconds driver-specific auto-derived; ?G deferred as future work"
+                    },
+                    {
+                        "id":  "step-20260806-003",
+                        "timestamp":  "2026-08-08T18:40:20.1896159+01:00",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Built deterministic undercut prediction engine (domain types + services)",
+                        "rationale":  "User requested prediction engine implementation following dissertation analysis and instruction update",
+                        "filesChanged":  [
+                                             "Domain/Prediction/TyreCompound.cs",
+                                             "Domain/Prediction/WarmUpModelParameters.cs",
+                                             "Domain/Prediction/TrafficModelParameters.cs",
+                                             "Domain/Prediction/LapModelParameters.cs",
+                                             "Domain/Prediction/TyreSetSpecification.cs",
+                                             "Domain/Prediction/DriverPredictionState.cs",
+                                             "Domain/Prediction/PredictionRequest.cs",
+                                             "Domain/Prediction/LapPredictionBreakdown.cs",
+                                             "Domain/Prediction/PredictedLap.cs",
+                                             "Domain/Prediction/PredictionResult.cs",
+                                             "Services/ILapTimePredictor.cs",
+                                             "Services/LapTimePredictor.cs",
+                                             "Services/IPitSequencePredictor.cs",
+                                             "Services/PitSequencePredictor.cs"
+                                         ],
+                        "buildResult":  "SUCCESS",
+                        "notes":  "L=B+C+D+W+R+P model. Per-compound degradation. Single out-lap warm-up penalty. Three gaps (n+1 primary, n+2, n+3). Three-way classification (Ahead/Marginal/Behind, +/-0.25s). Negative gap = attacker ahead. Tyre state transitions correct: old tyre on pit lap, replacement starts on out lap."
+                    },
+                    {
+                        "id":  "step-20260806-004",
+                        "timestamp":  "2026-08-08T19:13:40.2044760+01:00",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Added DeltaG fields to PredictionResult; corrected DeltaG definition following dissertation section 3.6 rewrite",
+                        "rationale":  "New dissertation section 3.6 defines DeltaG(n)=G(n)-G0 (gap change during pit sequence) not DeltaG=Gund-Gref (vs Stay Out). No Stay Out scenario required. Trivially derived from existing engine outputs.",
+                        "filesChanged":  [
+                                             "Domain/Prediction/PredictionResult.cs",
+                                             "Services/PitSequencePredictor.cs"
+                                         ],
+                        "buildResult":  "SUCCESS",
+                        "notes":  "PredictionResult now has InitialGapSeconds + DeltaGAtN1/N2/N3Seconds. DeltaG = G(n) - G0 = T_A(n) - T_T(n). Negative = attacker gained time. Stale \u0027deferred\u0027 note removed from code XML doc. No instructions changes needed."
                     }
                 ]
 }
