@@ -159,11 +159,11 @@
                                     <ColumnDefinition Width="100"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Label Grid.Column="0" Content="Attacker:"/>
+                                <Label Grid.Column="0" Content="Attacking driver:"/>
                                 <ComboBox Grid.Column="1" x:Name="AttackerCombo"
                                           SelectionChanged="AttackerCombo_SelectionChanged"/>
 
-                                <Label Grid.Column="3" Content="Target:"/>
+                                <Label Grid.Column="3" Content="Target driver:"/>
                                 <ComboBox Grid.Column="4" x:Name="TargetCombo"
                                           SelectionChanged="TargetCombo_SelectionChanged"/>
 
@@ -178,7 +178,7 @@
                         </GroupBox>
 
                         <!-- ── Driver states ─────────────────────────────────────── -->
-                        <GroupBox Header="Driver state at decision point">
+                        <GroupBox Header="Driver state at decision lap (Sector Line Two)">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="150"/>
@@ -193,9 +193,9 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="Attacker"
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="Attacking"
                                            FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,2,0,6"/>
-                                <TextBlock Grid.Row="0" Grid.Column="2" Text="Target"
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="Target driver"
                                            FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,2,0,6"/>
 
                                 <Label Grid.Row="1" Grid.Column="0" Content="Reference pace (s):"/>
@@ -294,11 +294,11 @@
                                 <StackPanel Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="4"
                                             Orientation="Horizontal" VerticalAlignment="Center">
                                     <CheckBox x:Name="AttackerTrafficCheck"
-                                              Content="Apply to attacker out lap"
+                                              Content="Apply to attacking driver out lap"
                                               VerticalAlignment="Center" Margin="0,0,16,0"
                                               Checked="TrafficCheck_Changed" Unchecked="TrafficCheck_Changed"/>
                                     <CheckBox x:Name="TargetTrafficCheck"
-                                              Content="Apply to target out lap"
+                                              Content="Apply to target driver out lap"
                                               VerticalAlignment="Center"
                                               Checked="TrafficCheck_Changed" Unchecked="TrafficCheck_Changed"/>
                                 </StackPanel>
@@ -318,13 +318,13 @@
                                 <TextBlock x:Name="G0Label" Foreground="#444444" FontSize="11"
                                            Margin="0,0,0,8" TextWrapping="Wrap"/>
 
-                                <TextBlock Text="Gap at each evaluation point  (negative = attacker ahead)"
+                                <TextBlock Text="Gap at each evaluation point  (negative = attacking driver ahead)"
                                            FontWeight="SemiBold" Margin="0,0,0,6"/>
                                 <UniformGrid Columns="3" Margin="0,0,0,10">
                                     <Border BorderBrush="#C0C0C0" BorderThickness="1" CornerRadius="4"
                                             Padding="10,8" Margin="0,0,6,0">
                                         <StackPanel>
-                                            <TextBlock Text="After attacker out lap" FontSize="11" Foreground="#666"/>
+                                            <TextBlock Text="After attacking driver out lap" FontSize="11" Foreground="#666"/>
                                             <TextBlock x:Name="GapN1Label" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
                                             <TextBlock x:Name="DeltaN1Label" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
                                             <TextBlock Text="(primary)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>
@@ -333,7 +333,7 @@
                                     <Border BorderBrush="#C0C0C0" BorderThickness="1" CornerRadius="4"
                                             Padding="10,8" Margin="0,0,6,0">
                                         <StackPanel>
-                                            <TextBlock Text="After target out lap" FontSize="11" Foreground="#666"/>
+                                            <TextBlock Text="After target driver out lap" FontSize="11" Foreground="#666"/>
                                             <TextBlock x:Name="GapN2Label" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
                                             <TextBlock x:Name="DeltaN2Label" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
                                             <TextBlock Text="(secondary)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>
@@ -453,7 +453,7 @@
                           RowStyle="{StaticResource ScanRowStyle}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Lap"      Binding="{Binding DecisionLap}"      Width="45"/>
-                        <DataGridTextColumn Header="Attacker" Binding="{Binding Attacker}"          Width="75"/>
+                        <DataGridTextColumn Header="Attacking" Binding="{Binding Attacker}"         Width="75"/>
                         <DataGridTextColumn Header="Target"   Binding="{Binding Target}"            Width="75"/>
                         <DataGridTextColumn Header="Att. tyre" Binding="{Binding AttackerCompound}" Width="80"/>
                         <DataGridTextColumn Header="Att. age"  Binding="{Binding AttackerTyreAge}"  Width="65"/>
@@ -480,3 +480,5 @@
 
     </TabControl>
 </Window>
+
+

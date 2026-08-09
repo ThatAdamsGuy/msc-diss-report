@@ -10,7 +10,7 @@ namespace UndercutAnalyser.Services
     ///
     /// Sequence (TargetResponseLaps = r, decision lap = n):
     ///
-    ///   Lap  | Attacker                          | Target
+    ///   Lap  | Attacking driver                 | Target driver
     ///   n    | Pit lap (old tyre + full pit loss) | Standard lap (old tyre, no pit loss)
     ///   n+1  | Out lap (new tyre, W + R if set)  | Pit lap if r=1; else standard lap
     ///   n+2  | Standard lap                      | Out lap if r=1; pit lap if r=2; etc.

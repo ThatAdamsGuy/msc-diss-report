@@ -58,7 +58,7 @@ public partial class StrategyWindow : Window
         public string Target     { get; init; } = string.Empty;
         public int    DecisionLap { get; init; }
 
-        // Tyre state at decision point
+        // Tyre state at decision lap (Sector Line Two)
         public string AttackerCompound { get; init; } = string.Empty;
         public int    AttackerTyreAge  { get; init; }
         public string TargetCompound   { get; init; } = string.Empty;
@@ -938,7 +938,7 @@ public partial class StrategyWindow : Window
     {
         ScanGrid.ItemsSource = rows;
         var opportunityCount = rows.Count(r => r.IsOpportunity);
-        ScanRowCountText.Text = $"{rows.Count} decision points scanned — {opportunityCount} opportunit{(opportunityCount == 1 ? "y" : "ies")} found";
+        ScanRowCountText.Text = $"{rows.Count} decision laps scanned — {opportunityCount} opportunit{(opportunityCount == 1 ? "y" : "ies")} found";
         ScanExportCsvButton.IsEnabled = rows.Count > 0;
     }
 

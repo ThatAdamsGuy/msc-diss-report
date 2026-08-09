@@ -8,8 +8,8 @@ namespace UndercutAnalyser.Domain.Prediction
     ///   Negative = attacking driver is currently ahead (unusual for an undercut attempt).
     ///   Positive = attacking driver is currently behind the target driver (normal case).
     ///
-    /// TargetResponseLaps is the number of laps between the attacker's pit stop (lap n)
-    /// and the target's pit stop (lap n + TargetResponseLaps). Must be >= 1.
+    /// TargetResponseLaps is the number of laps between the attacking driver's pit stop (lap n)
+    /// and the target driver's pit stop (lap n + TargetResponseLaps). Must be >= 1.
     /// The conventional undercut case is TargetResponseLaps = 1.
     ///
     /// The prediction produces three comparison gaps:
