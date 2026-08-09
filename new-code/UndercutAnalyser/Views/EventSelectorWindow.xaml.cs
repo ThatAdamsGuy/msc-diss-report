@@ -5,10 +5,16 @@ using UndercutAnalyser.Domain.Models;
 
 namespace UndercutAnalyser
 {
+    /// <summary>
+    /// Dialog for selecting an event/meeting from the loaded season list.
+    /// </summary>
     public partial class EventSelectorWindow : Window
     {
         private readonly EventSelectorViewModel _vm;
 
+        /// <summary>
+        /// Creates the selector dialog and wires filter/selection UI events.
+        /// </summary>
         public EventSelectorWindow(EventSelectorViewModel vm)
         {
             InitializeComponent();
@@ -41,12 +47,18 @@ namespace UndercutAnalyser
             _vm.Events.CollectionChanged += (_, __) => UpdateStatus();
         }
 
+        /// <summary>
+        /// Updates the footer text to show whether events were successfully loaded.
+        /// </summary>
         private void UpdateStatus()
         {
             var count = _vm.Events.Count;
             StatusText.Text = count == 0 ? "No events loaded. Check your internet connection." : $"{count} events available";
         }
 
+        /// <summary>
+        /// Returns the currently selected event when the dialog closes with OK.
+        /// </summary>
         public EventMeeting? SelectedEvent => _vm.SelectedEvent;
     }
 }

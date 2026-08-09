@@ -4,6 +4,9 @@ using System.Runtime.CompilerServices;
 
 namespace UndercutAnalyser.ViewModels
 {
+    /// <summary>
+    /// Editable parameter row for one compound in the Parameters tab.
+    /// </summary>
     public sealed class TyreParameterRow : INotifyPropertyChanged
     {
         private double _paceOffset;
@@ -11,6 +14,9 @@ namespace UndercutAnalyser.ViewModels
         private string _minLaps = string.Empty;
         private string _maxLaps = string.Empty;
 
+        /// <summary>
+        /// Creates one compound parameter row with editability flags.
+        /// </summary>
         public TyreParameterRow(string compound, double paceOffset, double degradationRate, bool isEditable, bool isDegradationEditable = true)
         {
             Compound = compound;
@@ -52,6 +58,9 @@ namespace UndercutAnalyser.ViewModels
             set => SetField(ref _maxLaps, value ?? string.Empty);
         }
 
+        /// <summary>
+        /// Creates a deep copy so edits can be propagated safely between windows.
+        /// </summary>
         public TyreParameterRow Clone()
         {
             return new TyreParameterRow(Compound, PaceOffset, DegradationRate, IsEditable, IsDegradationEditable)
@@ -63,6 +72,9 @@ namespace UndercutAnalyser.ViewModels
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        /// <summary>
+        /// Standard setter helper that raises PropertyChanged when value changes.
+        /// </summary>
         private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
         {
             if (Equals(field, value))

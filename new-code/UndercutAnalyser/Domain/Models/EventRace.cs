@@ -3,6 +3,10 @@ using System.Text.Json.Serialization;
 
 namespace UndercutAnalyser.Domain.Models
 {
+    /// <summary>
+    /// Meeting-level metadata (event name, circuit, country and date window) from OpenF1.
+    /// In this tool a meeting corresponds to a race weekend/event.
+    /// </summary>
     public sealed record EventMeeting
     {
         [JsonPropertyName("meeting_key")]
@@ -60,8 +64,13 @@ namespace UndercutAnalyser.Domain.Models
         public bool IsCancelled { get; init; }
 
         // Convenience properties for UI binding
+        /// <summary>Display race name used in selectors and headings.</summary>
         public string RaceName => MeetingOfficialName;
+
+        /// <summary>Short circuit label for compact UI display.</summary>
         public string CircuitName => CircuitShortName;
+
+        /// <summary>Primary event date shown in UI lists (meeting start date).</summary>
         public DateTime? Date => DateStart != default ? DateStart : null;
     }
 }

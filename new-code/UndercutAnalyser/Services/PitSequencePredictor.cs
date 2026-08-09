@@ -21,7 +21,7 @@ namespace UndercutAnalyser.Services
     /// The three comparison gaps are calculated using:
     ///   G(n) = G0 + attackerElapsed − targetElapsed
     ///
-    ///   GapAtN1 — end of lap n+1  (primary)
+    ///   GapAtN1 — end of lap n+r   (primary: target pit lap complete)
     ///   GapAtN2 — end of lap n+r+1 (target out lap done)
     ///   GapAtN3 — end of lap n+r+2 (both on first normal lap)
     ///
@@ -31,11 +31,18 @@ namespace UndercutAnalyser.Services
     {
         private readonly ILapTimePredictor _lapPredictor;
 
+        /// <summary>
+        /// Creates the sequence predictor with a lap-time predictor dependency.
+        /// </summary>
         public PitSequencePredictor(ILapTimePredictor lapPredictor)
         {
             _lapPredictor = lapPredictor;
         }
 
+        /// <summary>
+        /// Runs the full attacker/target pit sequence from lap n through the tertiary
+        /// endpoint and returns gaps, gain/loss deltas, classification, and warnings.
+        /// </summary>
         public PredictionResult Predict(PredictionRequest req)
         {
             var warnings = new List<string>();
@@ -43,7 +50,7 @@ namespace UndercutAnalyser.Services
 
             var p = req.ModelParameters;
             int n = req.DecisionLap;
-            int r = req.TargetResponseLaps;
+            int r = Math.Max(1, req.TargetResponseLaps);
 
             // Key lap numbers
             int attackerPitLap  = n;
@@ -52,15 +59,18 @@ namespace UndercutAnalyser.Services
             int targetOutLap    = n + r + 1;
 
             // Comparison endpoints
-            int primaryEndLap   = n + 1;           // GapAtN1
-            int secondaryEndLap = n + r + 1;       // GapAtN2 — target out lap done
-            int tertiaryEndLap  = n + r + 2;       // GapAtN3 — both on normal lap
+            // Primary:   end of target pit lap   (n + r)
+            // Secondary: end of target out lap   (n + r + 1)
+            // Tertiary:  following normal lap    (n + r + 2)
+            int primaryEndLap   = targetPitLap;        // GapAtN1
+            int secondaryEndLap = targetOutLap;        // GapAtN2
+            int tertiaryEndLap  = targetOutLap + 1;    // GapAtN3
 
             // Running tyre state for each driver
             var attackerCompound = req.Attacker.CurrentCompound;
-            var attackerAge      = req.Attacker.CurrentTyreAgeLaps;
+            var attackerAge      = Math.Max(0, req.Attacker.CurrentTyreAgeLaps);
             var targetCompound   = req.Target.CurrentCompound;
-            var targetAge        = req.Target.CurrentTyreAgeLaps;
+            var targetAge        = Math.Max(0, req.Target.CurrentTyreAgeLaps);
 
             // Cumulative predicted time within the prediction window
             double attackerElapsed = 0.0;
@@ -157,9 +167,9 @@ namespace UndercutAnalyser.Services
                 if (lap == tertiaryEndLap)  gapAtN3 = gap;
             }
 
-            // Classify at the core pit-sequence endpoint: when the target out lap is complete.
-            // This is always GapAtN2 in this predictor (works for r=1 and r>1).
-            var classificationGap = gapAtN2;
+            // Classify at the primary endpoint: end of the target pit lap (n + r).
+            // For r=1 this is n+1 (the standard undercut success point).
+            var classificationGap = gapAtN1;
             var classification = Classify(classificationGap, p.MarginalThresholdSeconds);
 
             double g0 = req.InitialAttackerGapToTargetSeconds;
@@ -181,6 +191,10 @@ namespace UndercutAnalyser.Services
 
         // ── Helpers ──────────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Converts a signed primary gap into Ahead/Marginal/Behind using a symmetric
+        /// marginal threshold around zero.
+        /// </summary>
         private static UndercutClassification Classify(double gap, double threshold)
         {
             if (double.IsNaN(gap)) return UndercutClassification.PredictedBehind;
@@ -190,11 +204,15 @@ namespace UndercutAnalyser.Services
             return UndercutClassification.PredictedMarginal;
         }
 
+        /// <summary>
+        /// Performs lightweight input sanity checks and records warnings for values that
+        /// are unusual or outside the intended modelling envelope.
+        /// </summary>
         private static void Validate(PredictionRequest req, List<string> warnings)
         {
             if (req.TargetResponseLaps < 1)
             {
-                warnings.Add($"TargetResponseLaps is {req.TargetResponseLaps}; must be at least 1. Treating as 1.");
+                warnings.Add($"TargetResponseLaps is {req.TargetResponseLaps}; must be at least 1. Clamped to 1.");
             }
 
             if (req.Attacker.ReferencePaceSeconds <= 0)
@@ -224,12 +242,12 @@ namespace UndercutAnalyser.Services
 
             if (req.Attacker.CurrentTyreAgeLaps < 0)
             {
-                warnings.Add("Attacker current tyre age is negative — treating as 0.");
+                warnings.Add("Attacker current tyre age is negative — clamped to 0.");
             }
 
             if (req.Target.CurrentTyreAgeLaps < 0)
             {
-                warnings.Add("Target current tyre age is negative — treating as 0.");
+                warnings.Add("Target current tyre age is negative — clamped to 0.");
             }
         }
     }

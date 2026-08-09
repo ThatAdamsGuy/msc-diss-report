@@ -29,11 +29,10 @@ namespace UndercutAnalyser.Domain.Prediction
     ///   Positive gap = attacking driver is behind the target.
     ///
     /// Absolute predicted gaps (G(n) = G0 + T_A(n) - T_T(n)):
-    ///   GapAtN1Seconds — PRIMARY: end of attacker's out lap; target has just pitted.
-    ///     Attacker's tyres are already warm. Being ahead here is the most secure outcome.
-    ///   GapAtN2Seconds — SECONDARY: end of target's out lap; both have completed a stop.
-    ///   GapAtN3Seconds — TERTIARY: both drivers on their first normal lap post-stop.
-    ///     Cleanest symmetric comparison; most useful on slow warm-up circuits.
+    ///   GapAtN1Seconds — PRIMARY: end of target pit lap (n + response delay).
+    ///     This is the undercut success point used for classification.
+    ///   GapAtN2Seconds — SECONDARY: end of target out lap.
+    ///   GapAtN3Seconds — TERTIARY: following normal lap for both drivers.
     ///
     /// Gap change (ΔG(n) = G(n) - G0 = T_A(n) - T_T(n)):
     ///   DeltaGAtN1Seconds / DeltaGAtN2Seconds / DeltaGAtN3Seconds

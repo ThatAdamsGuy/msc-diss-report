@@ -8,6 +8,9 @@ using UndercutAnalyser.Domain.Models;
 
 namespace UndercutAnalyser.ViewModels
 {
+    /// <summary>
+    /// One row in the Raw Data table, exposing lap cells via dynamic string keys.
+    /// </summary>
     public sealed class DriverLapRow
     {
         public string DriverName { get; }
@@ -20,6 +23,9 @@ namespace UndercutAnalyser.ViewModels
         private readonly double? _referenceLapSeconds;
         private readonly bool _cumulativeMode;
 
+        /// <summary>
+        /// Creates a row backed by lap/stint dictionaries for fast per-cell lookup.
+        /// </summary>
         public DriverLapRow(
             string driverName,
             Dictionary<int, EventLap> lapsByNumber,
@@ -78,12 +84,18 @@ namespace UndercutAnalyser.ViewModels
             }
         }
 
+        /// <summary>
+        /// Returns formatted cell text for a lap (individual or cumulative view).
+        /// </summary>
         private string GetLapText(int lapNumber)
         {
             var value = GetLapValue(lapNumber);
             return value.HasValue ? value.Value.ToString("F3") : string.Empty;
         }
 
+        /// <summary>
+        /// Returns numeric cell value according to current mode (individual or cumulative).
+        /// </summary>
         private double? GetLapValue(int lapNumber)
         {
             if (_cumulativeMode)
@@ -112,6 +124,9 @@ namespace UndercutAnalyser.ViewModels
             return GetIndividualLapValue(lapNumber);
         }
 
+        /// <summary>
+        /// Returns single-lap value either from reference row constant or raw lap duration.
+        /// </summary>
         private double? GetIndividualLapValue(int lapNumber)
         {
             if (_isReferenceRow)
@@ -127,6 +142,9 @@ namespace UndercutAnalyser.ViewModels
             return null;
         }
 
+        /// <summary>
+        /// Builds tooltip detail text for a lap cell, including raw lap JSON and inferred metadata.
+        /// </summary>
         public string GetLapDetail(int lapNumber)
         {
             if (_isReferenceRow)
@@ -153,6 +171,9 @@ namespace UndercutAnalyser.ViewModels
             return string.Empty;
         }
 
+        /// <summary>
+        /// Chooses cell background (reference row shading and pit-lap highlighting).
+        /// </summary>
         private Brush GetBackground(int lapNumber)
         {
             if (_isReferenceRow)
@@ -163,6 +184,9 @@ namespace UndercutAnalyser.ViewModels
             return _pitLaps.Contains(lapNumber) ? Brushes.Orange : Brushes.Transparent;
         }
 
+        /// <summary>
+        /// Chooses tyre-compound border colour for a lap cell.
+        /// </summary>
         private Brush GetBorderBrush(int lapNumber)
         {
             if (_compoundByLap.TryGetValue(lapNumber, out var compound))
@@ -186,6 +210,9 @@ namespace UndercutAnalyser.ViewModels
             return Brushes.Transparent;
         }
 
+        /// <summary>
+        /// Returns border thickness to visually emphasise laps with known compounds.
+        /// </summary>
         private Thickness GetBorderThickness(int lapNumber)
         {
             if (_compoundByLap.ContainsKey(lapNumber))

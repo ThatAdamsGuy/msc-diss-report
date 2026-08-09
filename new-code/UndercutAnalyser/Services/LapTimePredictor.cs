@@ -22,6 +22,10 @@ namespace UndercutAnalyser.Services
     /// </summary>
     public sealed class LapTimePredictor : ILapTimePredictor
     {
+        /// <summary>
+        /// Calculates one deterministic lap prediction from the supplied lap state and
+        /// model parameters, returning a full term-by-term breakdown.
+        /// </summary>
         public LapPredictionBreakdown Predict(LapPredictionInput input)
         {
             var p = input.ModelParameters;

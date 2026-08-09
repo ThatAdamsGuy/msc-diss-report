@@ -4,8 +4,16 @@ using System.Text.Json.Serialization;
 
 namespace UndercutAnalyser.Infrastructure
 {
+    /// <summary>
+    /// Resilient JSON converter for nullable DateTime fields from mixed-format APIs.
+    /// Accepts null, ISO strings, common date patterns, and Unix epoch numbers.
+    /// </summary>
     public sealed class DateTimeNullableJsonConverter : JsonConverter<DateTime?>
     {
+        /// <summary>
+        /// Attempts to parse a nullable DateTime value from the current JSON token.
+        /// Returns null (rather than throwing) when parsing fails.
+        /// </summary>
         public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             try
@@ -58,6 +66,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Writes DateTime values in round-trip ISO-8601 format, or null when absent.
+        /// </summary>
         public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
         {
             if (value.HasValue)
@@ -66,6 +77,9 @@ namespace UndercutAnalyser.Infrastructure
                 writer.WriteNullValue();
         }
 
+        /// <summary>
+        /// Emits non-fatal parse diagnostics to debugger output during development.
+        /// </summary>
         private static void DebuggerLog(Exception ex)
         {
             try

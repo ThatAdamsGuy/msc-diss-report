@@ -11,6 +11,10 @@ using UndercutAnalyser.ViewModels;
 
 namespace UndercutAnalyser;
 
+/// <summary>
+/// Tabular inspector for raw lap/stint data, including a reference-lap row and
+/// optional cumulative view for quick engineering diagnostics.
+/// </summary>
 public sealed class RawDataView : Window
 {
     private readonly DataGrid _rawDataGrid;
@@ -27,6 +31,9 @@ public sealed class RawDataView : Window
     private int[] _lapNumbers = Array.Empty<int>();
     private bool _cumulativeMode;
 
+    /// <summary>
+    /// Creates the raw-data window and initialises grid layout and row content.
+    /// </summary>
     public RawDataView(
         IReadOnlyList<EventLap> laps,
         IReadOnlyList<Driver> drivers,
@@ -123,6 +130,9 @@ public sealed class RawDataView : Window
         UpdateExtraInfo();
     }
 
+    /// <summary>
+    /// Builds dynamic lap-number columns for the raw data grid.
+    /// </summary>
     private void BuildGrid()
     {
         _lapNumbers = _laps
@@ -170,6 +180,9 @@ public sealed class RawDataView : Window
         }
     }
 
+    /// <summary>
+    /// Recomputes grid rows from current lap/stint data and selected view mode.
+    /// </summary>
     private void RefreshRows()
     {
         var driverByNumber = _drivers
@@ -223,6 +236,9 @@ public sealed class RawDataView : Window
         _rawDataGrid.ItemsSource = rows;
     }
 
+    /// <summary>
+    /// Derives pit-in laps from pit-out markers for cell highlighting.
+    /// </summary>
     private HashSet<int> BuildPitLaps(Dictionary<int, EventLap> driverLaps)
     {
         var pitLaps = new HashSet<int>();
@@ -238,6 +254,9 @@ public sealed class RawDataView : Window
         return pitLaps;
     }
 
+    /// <summary>
+    /// Expands stint ranges into lap-to-compound mapping for border colouring.
+    /// </summary>
     private Dictionary<int, string> BuildCompoundsByLap(int driverNumber, Dictionary<int, List<EventStint>> stintsByDriver)
     {
         var compoundByLap = new Dictionary<int, string>();
@@ -262,6 +281,9 @@ public sealed class RawDataView : Window
         return compoundByLap;
     }
 
+    /// <summary>
+    /// Updates summary text describing reference, fuel assumptions, and data counts.
+    /// </summary>
     private void UpdateExtraInfo()
     {
         var referenceAvg = _reference?.AverageLapTimeSeconds;

@@ -5,8 +5,15 @@ using System.Text.Json.Serialization;
 
 namespace UndercutAnalyser.Infrastructure
 {
+    /// <summary>
+    /// Resilient JSON converter for nullable float values, accepting number tokens and
+    /// numeric strings in common invariant/culture formats.
+    /// </summary>
     public sealed class FloatNullableJsonConverter : JsonConverter<float?>
     {
+        /// <summary>
+        /// Attempts to parse a nullable float from JSON and returns null on failure.
+        /// </summary>
         public override float? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             try
@@ -52,6 +59,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Writes a nullable float as JSON number, or null when absent.
+        /// </summary>
         public override void Write(Utf8JsonWriter writer, float? value, JsonSerializerOptions options)
         {
             if (value.HasValue)

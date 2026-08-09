@@ -14,6 +14,10 @@ namespace UndercutAnalyser.ViewModels
         public string Code { get; init; } = string.Empty;
         public string DisplayName { get; init; } = string.Empty;
         public string TeamName { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Returns the display label shown in ComboBox selections.
+        /// </summary>
         public override string ToString() => DisplayName;
     }
 
@@ -23,6 +27,10 @@ namespace UndercutAnalyser.ViewModels
     public sealed class LapItem
     {
         public int LapNumber { get; init; }
+
+        /// <summary>
+        /// Returns the display label shown in decision-lap selection controls.
+        /// </summary>
         public override string ToString() => $"Lap {LapNumber}";
     }
 
@@ -234,6 +242,9 @@ namespace UndercutAnalyser.ViewModels
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        /// <summary>
+        /// Standard setter helper that updates a backing field and notifies WPF bindings.
+        /// </summary>
         private bool SetField<T>(ref T field, T value, [CallerMemberName] string? name = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return false;

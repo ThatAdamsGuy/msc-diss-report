@@ -12,6 +12,10 @@ using UndercutAnalyser.Services;
 
 namespace UndercutAnalyser.ViewModels
 {
+    /// <summary>
+    /// View-model for event selection: loads meetings, supports filtering, and exposes
+    /// current selection for downstream race-data loading.
+    /// </summary>
     public sealed class EventSelectorViewModel : INotifyPropertyChanged
     {
         private readonly IEventDataProvider _provider;
@@ -21,6 +25,9 @@ namespace UndercutAnalyser.ViewModels
 
         public ICollectionView EventsView { get; }
 
+        /// <summary>
+        /// Creates the view-model and initialises grouped event view (grouped by year).
+        /// </summary>
         public EventSelectorViewModel(IEventDataProvider? provider = null)
         {
             _provider = provider ?? new OpenF1RaceDataClient();
@@ -67,6 +74,10 @@ namespace UndercutAnalyser.ViewModels
             OnPropertyChanged(nameof(EventsView));
         }
 
+        /// <summary>
+        /// Loads events from the data provider, filters by requested year range, and
+        /// populates the observable list on the UI thread.
+        /// </summary>
         public async Task LoadAsync(int startYear, int endYear)
         {
             Events.Clear();
@@ -106,6 +117,10 @@ namespace UndercutAnalyser.ViewModels
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        /// <summary>
+        /// Raises PropertyChanged for WPF bindings.
+        /// </summary>
         private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

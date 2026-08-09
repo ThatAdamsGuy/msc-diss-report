@@ -5,8 +5,14 @@ using UndercutAnalyser.Domain.Models;
 
 namespace UndercutAnalyser.Services
 {
+    /// <summary>
+    /// Inclusive UTC time window used to represent SC/VSC active intervals.
+    /// </summary>
     public sealed record TimeWindow(DateTime StartUtc, DateTime EndUtc);
 
+    /// <summary>
+    /// Summary output of reference-lap derivation, including diagnostics on excluded laps.
+    /// </summary>
     public sealed record ReferenceLapTimeResult(
         int TotalLapRows,
         int MaxSessionLapNumber,
@@ -18,8 +24,16 @@ namespace UndercutAnalyser.Services
         double? AverageLapTimeSeconds,
         IReadOnlyList<TimeWindow> SafetyCarWindows);
 
+    /// <summary>
+    /// Computes a constant reference lap from historical session laps after excluding
+    /// pit-out and SC/VSC-affected laps, with optional fuel correction.
+    /// </summary>
     public static class ReferenceLapTimeCalculator
     {
+        /// <summary>
+        /// Builds the reference-lap result used by race-trace visualisation and default
+        /// pace baselining.
+        /// </summary>
         public static ReferenceLapTimeResult Calculate(
             IReadOnlyList<EventLap> laps,
             IReadOnlyList<RaceControlMessage> raceControlMessages,
@@ -79,6 +93,9 @@ namespace UndercutAnalyser.Services
                 SafetyCarWindows: windows);
         }
 
+        /// <summary>
+        /// Converts race-control SC/VSC messages into UTC active windows for lap filtering.
+        /// </summary>
         private static IReadOnlyList<TimeWindow> BuildSafetyCarWindows(IReadOnlyList<RaceControlMessage> raceControlMessages)
         {
             var windows = new List<TimeWindow>();
@@ -150,12 +167,15 @@ namespace UndercutAnalyser.Services
             return windows;
         }
 
+        /// <summary>
+        /// Returns true when any part of the lap interval overlaps an SC/VSC window.
+        /// </summary>
         private static bool IsInAnyWindow(DateTime lapStartUtc, DateTime lapEndUtc, IReadOnlyList<TimeWindow> windows)
         {
             foreach (var window in windows)
             {
-                if ((lapStartUtc >= window.StartUtc && lapStartUtc <= window.EndUtc)
-                    || (lapEndUtc >= window.StartUtc && lapEndUtc <= window.EndUtc))
+                if (lapStartUtc <= window.EndUtc
+                    && lapEndUtc >= window.StartUtc)
                 {
                     return true;
                 }
@@ -164,6 +184,9 @@ namespace UndercutAnalyser.Services
             return false;
         }
 
+        /// <summary>
+        /// Normalises incoming DateTime values to UTC so all overlap checks are consistent.
+        /// </summary>
         private static DateTime AsUtc(DateTime input)
         {
             if (input.Kind == DateTimeKind.Utc)

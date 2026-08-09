@@ -8,6 +8,10 @@ using UndercutAnalyser.Services;
 
 namespace UndercutAnalyser.Infrastructure
 {
+    /// <summary>
+    /// Thin HTTP client for OpenF1 endpoints used by this tool.
+    /// Methods return empty collections on recoverable API/deserialisation failures and log errors.
+    /// </summary>
     public sealed class OpenF1RaceDataClient : IEventDataProvider
     {
         private readonly HttpClient _http;
@@ -17,6 +21,9 @@ namespace UndercutAnalyser.Infrastructure
                         Converters = { new DateTimeNullableJsonConverter(), new FloatNullableJsonConverter() }
         };
 
+        /// <summary>
+        /// Creates the OpenF1 client, optionally reusing a caller-provided HttpClient.
+        /// </summary>
         public OpenF1RaceDataClient(HttpClient? http = null)
         {
             _http = http ?? new HttpClient
@@ -26,6 +33,9 @@ namespace UndercutAnalyser.Infrastructure
         }
 
         // IEventDataProvider implementation - reuse meetings endpoint
+        /// <summary>
+        /// Returns all meetings for a season year from OpenF1.
+        /// </summary>
         public async Task<IReadOnlyList<EventMeeting>> GetRacesBySeasonAsync(int year)
         {
             var url = "meetings";
@@ -37,6 +47,9 @@ namespace UndercutAnalyser.Infrastructure
             return races;
         }
 
+        /// <summary>
+        /// Loads session metadata for a given meeting (practice, qualifying, race, etc.).
+        /// </summary>
         public async Task<IReadOnlyList<EventSession>> GetSessionsByMeetingKeyAsync(int meetingKey)
         {
             var url = $"sessions?meeting_key={meetingKey}";
@@ -56,6 +69,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Loads lap-level timing rows for one session key.
+        /// </summary>
         public async Task<IReadOnlyList<EventLap>> GetLapsBySessionKeyAsync(int sessionKey)
         {
             var url = $"laps?session_key={sessionKey}";
@@ -75,6 +91,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Loads driver roster information scoped to meeting and session.
+        /// </summary>
         public async Task<IReadOnlyList<Driver>> GetDriversByMeetingAndSessionAsync(int meetingKey, int sessionKey)
         {
             var url = $"drivers?meeting_key={meetingKey}&session_key={sessionKey}";
@@ -94,6 +113,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Loads race-control messages (including SC/VSC events) for one session.
+        /// </summary>
         public async Task<IReadOnlyList<RaceControlMessage>> GetRaceControlMessagesBySessionKeyAsync(int sessionKey)
         {
             var url = $"race_control?session_key={sessionKey}";
@@ -113,6 +135,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Loads stint metadata (compound and lap range) for one session.
+        /// </summary>
         public async Task<IReadOnlyList<EventStint>> GetStintsBySessionKeyAsync(int sessionKey)
         {
             var url = $"stints?session_key={sessionKey}";

@@ -3,6 +3,10 @@ using System.Text.Json.Serialization;
 
 namespace UndercutAnalyser.Domain.Models
 {
+    /// <summary>
+    /// One lap timing record for one driver from OpenF1.
+    /// This is raw session data used to derive decision-state inputs (gaps, tyre state, pace).
+    /// </summary>
     public sealed record EventLap
     {
         [JsonPropertyName("meeting_key")]
@@ -29,6 +33,10 @@ namespace UndercutAnalyser.Domain.Models
         [JsonPropertyName("duration_sector_3")]
         public float? DurationSector3 { get; init; }
 
+        /// <summary>
+        /// Elapsed time from lap start to Sector Line Two crossing (S1 + S2).
+        /// Used as the decision-point timestamp when deriving initial attacker-target gap.
+        /// </summary>
         public float? LapTimeAtSectorTwoLine { get => DurationSector1 + DurationSector2; }
 
         [JsonPropertyName("i1_speed")]
@@ -44,16 +52,16 @@ namespace UndercutAnalyser.Domain.Models
         public float? LapDuration { get; init; }
 
         [JsonPropertyName("segments_sector_1")]
-        [JsonNumberHandling(System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString)]
-        public int?[] SegmentsSector1 { get; init; } = Array.Empty<int?>();
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public int?[] SegmentsSector1 { get; init; } = [];
 
         [JsonPropertyName("segments_sector_2")]
-        [JsonNumberHandling(System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString)]
-        public int?[] SegmentsSector2 { get; init; } = Array.Empty<int?>();
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public int?[] SegmentsSector2 { get; init; } = [];
 
         [JsonPropertyName("segments_sector_3")]
-        [JsonNumberHandling(System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString)]
-        public int?[] SegmentsSector3 { get; init; } = Array.Empty<int?>();
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public int?[] SegmentsSector3 { get; init; } = [];
 
         [JsonPropertyName("st_speed")]
         public int? StSpeed { get; init; }

@@ -5,7 +5,7 @@ using System.Windows;
 namespace UndercutAnalyser;
 
 /// <summary>
-/// Interaction logic for App.xaml
+/// WPF application entry point and lifecycle host.
 /// </summary>
 public partial class App : Application
 {

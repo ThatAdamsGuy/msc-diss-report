@@ -103,6 +103,10 @@ public partial class StrategyWindow : Window
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Creates the strategy workspace with the currently loaded race context and
+    /// user-adjustable model parameters.
+    /// </summary>
     public StrategyWindow(
         double fuelSecondsPer10Kg,
         double fuelKg,
@@ -143,6 +147,9 @@ public partial class StrategyWindow : Window
 
     // ── Tab selection — populate Predict tab lazily on first switch ──────────
 
+    /// <summary>
+    /// Lazily initialises the Predict tab the first time the user opens it.
+    /// </summary>
     private void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (MainTabs.SelectedItem == PredictTab && !_predictPopulated)
@@ -154,6 +161,9 @@ public partial class StrategyWindow : Window
 
     // ── Closing: hide instead of destroy so MainWindow can re-show it ────────
 
+    /// <summary>
+    /// Hides the window instead of destroying it so current inputs remain available.
+    /// </summary>
     private void StrategyWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
         e.Cancel = true;
@@ -164,6 +174,9 @@ public partial class StrategyWindow : Window
     // PARAMETERS TAB
     // ══════════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Commits fuel parameter edits and notifies the main window to refresh trace calculations.
+    /// </summary>
     private void FuelBox_LostFocus(object sender, RoutedEventArgs e)
     {
         var changed = false;
@@ -186,11 +199,17 @@ public partial class StrategyWindow : Window
             ParametersChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Relays tyre parameter table edits to the main window for immediate trace updates.
+    /// </summary>
     private void TyreRow_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         ParametersChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Restores default tyre and fuel parameters in the Parameters tab.
+    /// </summary>
     private void ResetParamsButton_Click(object sender, RoutedEventArgs e)
     {
         _fuelSecondsPer10Kg = 0.3;
@@ -211,9 +230,15 @@ public partial class StrategyWindow : Window
     }
 
     /// <summary>Returns a fresh snapshot of the tyre rows for external use (e.g. MainWindow).</summary>
+    /// <summary>
+    /// Returns an immutable snapshot of tyre parameters for cross-window propagation.
+    /// </summary>
     public IReadOnlyList<TyreParameterRow> GetTyreRowSnapshot() =>
         TyreRows.Select(r => r.Clone()).ToList();
 
+    /// <summary>
+    /// Builds the baseline tyre parameter rows used by the reset action.
+    /// </summary>
     private static List<TyreParameterRow> DefaultTyreRows() =>
     [
         new TyreParameterRow("Soft",   0, 0, isEditable: false, isDegradationEditable: true),
@@ -225,6 +250,9 @@ public partial class StrategyWindow : Window
     // PREDICT TAB
     // ══════════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Populates Predict-tab controls from loaded race data and current view-model defaults.
+    /// </summary>
     private void PopulatePredictTab()
     {
         PopulateDrivers();
@@ -232,6 +260,9 @@ public partial class StrategyWindow : Window
         PopulateDefaultPredictParams();
     }
 
+    /// <summary>
+    /// Loads selectable attacker and target drivers into predict controls.
+    /// </summary>
     private void PopulateDrivers()
     {
         var driversByNumber = _drivers
@@ -269,6 +300,9 @@ public partial class StrategyWindow : Window
         if (TargetCombo.Items.Count > 1) TargetCombo.SelectedIndex = 1;
     }
 
+    /// <summary>
+    /// Loads candidate decision laps into the predict lap selector.
+    /// </summary>
     private void PopulateLaps()
     {
         if (_laps.Count == 0) return;
@@ -283,6 +317,9 @@ public partial class StrategyWindow : Window
         DecisionLapCombo.SelectedIndex = Math.Min(mid, DecisionLapCombo.Items.Count - 1);
     }
 
+    /// <summary>
+    /// Pushes default or current model parameter values into Predict-tab input boxes.
+    /// </summary>
     private void PopulateDefaultPredictParams()
     {
         PitLossBox.Text = _vm.PitLaneLoss.ToString("F1", CultureInfo.InvariantCulture);
@@ -324,6 +361,9 @@ public partial class StrategyWindow : Window
         if (_vm.Target is not null) RefreshDriverState(_vm.Target, isAttacker: false);
     }
 
+    /// <summary>
+    /// Refreshes compound, tyre age, and derived baseline pace for the selected driver.
+    /// </summary>
     private void RefreshDriverState(DriverItem driver, bool isAttacker)
     {
         var lap = _vm.DecisionLap?.LapNumber ?? 1;
@@ -377,6 +417,9 @@ public partial class StrategyWindow : Window
         TryDeriveInitialGap();
     }
 
+    /// <summary>
+    /// Returns laps suitable for baseline pace derivation (excluding pit-in/out and SC/VSC laps).
+    /// </summary>
     private List<EventLap> GetCleanLapsForDriver(int driverNumber)
     {
         var windows = BuildSafetyCarWindows();
@@ -392,6 +435,9 @@ public partial class StrategyWindow : Window
             .ToList();
     }
 
+    /// <summary>
+    /// Derives the starting attacker-target gap at Sector Line Two on the decision lap.
+    /// </summary>
     private void TryDeriveInitialGap()
     {
         var attacker = _vm.Attacker;
@@ -494,6 +540,9 @@ public partial class StrategyWindow : Window
 
     // ── Run prediction ───────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Validates Predict-tab inputs, runs the pit-sequence predictor, and renders results.
+    /// </summary>
     private void RunButton_Click(object sender, RoutedEventArgs e)
     {
         ValidationText.Visibility = Visibility.Collapsed;
@@ -523,6 +572,9 @@ public partial class StrategyWindow : Window
         }
     }
 
+    /// <summary>
+    /// Returns a user-facing validation message when required predict inputs are incomplete.
+    /// </summary>
     private string? ValidatePredictInputs()
     {
         if (_vm.Attacker is null) return "Select an attacker driver.";
@@ -538,6 +590,9 @@ public partial class StrategyWindow : Window
         return null;
     }
 
+    /// <summary>
+    /// Maps current UI state into a strongly-typed prediction request.
+    /// </summary>
     private PredictionRequest BuildPredictionRequest()
     {
         var attacker = new DriverPredictionState(
@@ -568,6 +623,9 @@ public partial class StrategyWindow : Window
             ModelParameters: BuildModelParameters());
     }
 
+    /// <summary>
+    /// Builds lap-model parameter dictionaries from editable tyre rows and predict inputs.
+    /// </summary>
     private LapModelParameters BuildModelParameters()
     {
         var offsets = new Dictionary<TyreCompound, double>
@@ -605,6 +663,9 @@ public partial class StrategyWindow : Window
 
     // ── Result display ────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Renders prediction outcome cards, lap-by-lap breakdown table, and warnings.
+    /// </summary>
     private void PopulateResult(PredictionResult result)
     {
         var (bg, text) = result.Classification switch
@@ -685,6 +746,9 @@ public partial class StrategyWindow : Window
         ResultGroup.Visibility = Visibility.Visible;
     }
 
+    /// <summary>
+    /// Prompts for a destination and exports the latest single prediction to CSV.
+    /// </summary>
     private void ExportCsvButton_Click(object sender, RoutedEventArgs e)
     {
         if (_lastResult is null) return;
@@ -708,6 +772,9 @@ public partial class StrategyWindow : Window
         }
     }
 
+    /// <summary>
+    /// Writes one prediction result (inputs, outputs, and lap breakdown) to CSV.
+    /// </summary>
     private void ExportCsv(string path, PredictionResult result)
     {
         var attCode = _vm.Attacker?.Code ?? "ATT";
@@ -787,6 +854,9 @@ public partial class StrategyWindow : Window
     // SCAN TAB
     // ══════════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Populates the Scan-tab driver selector from currently loaded session drivers.
+    /// </summary>
     private void PopulateScanTab()
     {
         var driversByNumber = _drivers
@@ -824,6 +894,9 @@ public partial class StrategyWindow : Window
         await RunScanAndDisplayAsync(allNumbers);
     }
 
+    /// <summary>
+    /// Runs scan analysis asynchronously, managing progress indicators and button states.
+    /// </summary>
     private async Task RunScanAndDisplayAsync(IReadOnlyList<int> driverNumbers)
     {
         ScanButton.IsEnabled = false;
@@ -858,6 +931,9 @@ public partial class StrategyWindow : Window
         DisplayScanResults(rows);
     }
 
+    /// <summary>
+    /// Binds scan rows to the grid and updates scan summary counters.
+    /// </summary>
     private void DisplayScanResults(List<ScanResultRow> rows)
     {
         ScanGrid.ItemsSource = rows;
@@ -919,7 +995,7 @@ public partial class StrategyWindow : Window
                 var (attackerCompound, attackerTyreAge) = GetTyreStateAtLap(attackerNumber, lapNumber);
                 if (attackerTyreAge < minAge) continue;
 
-                // Who is directly ahead on track at the end of this lap?
+                // Who is directly ahead on track at Sector Line Two on the decision lap?
                 if (!orderPerLap.TryGetValue(lapNumber, out var order)) continue;
                 var attackerPos = order.IndexOf(attackerNumber);
                 if (attackerPos <= 0) continue; // nobody ahead (P1) or not found
@@ -1037,8 +1113,9 @@ public partial class StrategyWindow : Window
     }
 
     /// <summary>
-    /// Builds a per-lap list of driver numbers in on-track finishing order (ascending finish time).
-    /// Only drivers with complete timing on that lap are included.
+    /// Builds a per-lap list of driver numbers in on-track order at Sector Line Two
+    /// (ascending timestamp at DateStart + S1 + S2).
+    /// Only drivers with complete Sector 1/2 timing on that lap are included.
     /// </summary>
     private static Dictionary<int, List<int>> BuildOnTrackOrderPerLap(
         Dictionary<int, Dictionary<int, EventLap>> lapIndex)
@@ -1053,17 +1130,19 @@ public partial class StrategyWindow : Window
 
         foreach (var lapNum in allLapNumbers)
         {
-            var finishes = new List<(int driverNumber, DateTime finish)>();
+            var sectorTwoCrossings = new List<(int driverNumber, DateTime crossing)>();
             foreach (var (driverNum, lapMap) in lapIndex)
             {
                 if (!lapMap.TryGetValue(lapNum, out var lap)) continue;
-                if (!lap.DateStart.HasValue || !lap.LapDuration.HasValue) continue;
-                var finish = ToUtc(lap.DateStart.Value).AddSeconds(lap.LapDuration.Value);
-                finishes.Add((driverNum, finish));
+                if (!lap.DateStart.HasValue || !lap.LapTimeAtSectorTwoLine.HasValue) continue;
+
+                var crossing = ToUtc(lap.DateStart.Value).AddSeconds(lap.LapTimeAtSectorTwoLine.Value);
+                sectorTwoCrossings.Add((driverNum, crossing));
             }
-            result[lapNum] = finishes
-                .OrderBy(f => f.finish)
-                .Select(f => f.driverNumber)
+
+            result[lapNum] = sectorTwoCrossings
+                .OrderBy(x => x.crossing)
+                .Select(x => x.driverNumber)
                 .ToList();
         }
 
@@ -1073,6 +1152,9 @@ public partial class StrategyWindow : Window
     /// <summary>
     /// Returns the compound and tyre age (laps on this tyre at the start of <paramref name="lapNumber"/>)
     /// from stint data. Falls back to "UNKNOWN" / 0 if no stint found.
+    /// </summary>
+    /// <summary>
+    /// Returns compound and tyre age at lap start from stint data, with lap-based fallback.
     /// </summary>
     private (string compound, int age) GetTyreStateAtLap(int driverNumber, int lapNumber)
     {
@@ -1103,6 +1185,9 @@ public partial class StrategyWindow : Window
         return ("UNKNOWN", lapNumber - lastPitOutLap);
     }
 
+    /// <summary>
+    /// Derives pit-in lap numbers from pit-out flags for one driver (pit-out lap minus one).
+    /// </summary>
     private HashSet<int> GetDerivedPitInLapNumbers(int driverNumber)
     {
         var pitOutLaps = _laps
@@ -1119,6 +1204,9 @@ public partial class StrategyWindow : Window
     /// <summary>
     /// Computes the average clean-lap time for every driver, excluding pit-out laps,
     /// derived pit-in laps (lap immediately before pit-out), and SC/VSC laps.
+    /// </summary>
+    /// <summary>
+    /// Derives baseline pace per driver from clean laps used by scan simulations.
     /// </summary>
     private Dictionary<int, double> DeriveReferencePacePerDriver(List<TimeWindow> safetyCarWindows)
     {
@@ -1152,6 +1240,9 @@ public partial class StrategyWindow : Window
             .ToDictionary(x => x.DriverNumber, x => x.Pace);
     }
 
+    /// <summary>
+    /// Exports currently displayed scan results to CSV.
+    /// </summary>
     private void ScanExportCsvButton_Click(object sender, RoutedEventArgs e)
     {
         if (ScanGrid.ItemsSource is not List<ScanResultRow> rows || rows.Count == 0) return;

@@ -28,6 +28,9 @@ namespace UndercutAnalyser.Domain.Models
         [JsonPropertyName("team_colour")]
         public string TeamColour { get; init; } = string.Empty;
 
+        /// <summary>
+        /// Human-readable full name for UI display and exports.
+        /// </summary>
         public string FullName => string.IsNullOrEmpty(FirstName) ? LastName : FirstName + " " + LastName;
     }
 }

@@ -17,7 +17,8 @@ using UndercutAnalyser.ViewModels;
 namespace UndercutAnalyser;
 
 /// <summary>
-/// Interaction logic for MainWindow.xaml
+/// Main application workspace for selecting events, loading race data, and viewing
+/// the engineering race trace with configurable filtering options.
 /// </summary>
 public partial class MainWindow : Window, INotifyPropertyChanged
 {
@@ -53,6 +54,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    /// <summary>
+    /// Initialises the main workspace, wires UI events, and prepares the race trace panel.
+    /// </summary>
     public MainWindow()
     {
         InitializeComponent();
@@ -201,6 +205,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PredictButton.Click += (_, _) => OpenStrategyWindow(openOnPredict: true);
     }
 
+    /// <summary>
+    /// Opens the strategy workspace window and selects either the Parameters or Predict tab.
+    /// Reuses the same window instance so edits persist while the app is open.
+    /// </summary>
     private void OpenStrategyWindow(bool openOnPredict)
     {
         if (_strategyWindow is null)
@@ -237,6 +245,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _strategyWindow.Activate();
     }
 
+    /// <summary>
+    /// Rebuilds the engineering race trace using current filters and fuel-correction settings.
+    /// Each driver's line shows cumulative lap-by-lap delta to a constant reference lap.
+    /// </summary>
     private void RenderRaceTrace()
     {
         var plot = _raceTracePlot.Plot;
@@ -282,8 +294,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var constantReference = _currentReference?.AverageLapTimeSeconds;
-        if (!constantReference.HasValue || constantReference.Value <= 0)
+        // Keep the reference basis consistent with the fuel-correction toggle and
+        // current lap-eligibility filters by deriving it from the same adjusted laps.
+        var constantReference = eligibleLaps.Average(x => x.AdjustedLapSeconds);
+        if (constantReference <= 0)
         {
             _raceTracePlot.Refresh();
             return;
@@ -330,7 +344,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             foreach (var item in driverLaps)
             {
                 var lapNumber = item.Lap.LapNumber;
-                var lapDelta = constantReference.Value - item.AdjustedLapSeconds;
+                var lapDelta = constantReference - item.AdjustedLapSeconds;
                 cumulativeDelta += lapDelta;
 
                 xs.Add(lapNumber);
@@ -365,7 +379,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             scatter.MarkerLineColor = displayColor;
         }
 
-        // TODO: add alternative trace mode "Reference Pace" alongside engineering mode.
+        // Future extension: add an alternative trace mode that plots absolute reference pace
+        // rather than cumulative delta-to-reference.
 
         var baseline = plot.Add.HorizontalLine(0);
         baseline.Text = "Constant Reference";
@@ -376,6 +391,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _raceTracePlot.Refresh();
     }
 
+    /// <summary>
+    /// Derives pit-in laps from pit-out flags (pit-in is lapNumber - 1 for the same driver).
+    /// This allows pit-in exclusion even though OpenF1 exposes only pit-out flags.
+    /// </summary>
     private static HashSet<(int DriverNumber, int LapNumber)> BuildPitInLapLookup(IReadOnlyList<EventLap> laps)
     {
         var lookup = new HashSet<(int DriverNumber, int LapNumber)>();
@@ -388,6 +407,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return lookup;
     }
 
+    /// <summary>
+    /// Returns whether a lap passes current plotting filters (pit-lap and SC/VSC inclusion).
+    /// </summary>
     private static bool IsLapEligible(
         EventLap lap,
         bool includePitLaps,
@@ -416,6 +438,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return true;
     }
 
+    /// <summary>
+    /// Converts SC/VSC race-control messages into UTC activity windows for filtering laps.
+    /// </summary>
     private static IReadOnlyList<TimeWindow> BuildSafetyCarWindows(IReadOnlyList<RaceControlMessage> raceControlMessages)
     {
         var windows = new List<TimeWindow>();
@@ -468,12 +493,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return windows;
     }
 
+    /// <summary>
+    /// True when any portion of a lap interval overlaps the supplied SC/VSC window.
+    /// </summary>
     private static bool IntersectsWindow(DateTime lapStartUtc, DateTime lapEndUtc, TimeWindow window)
     {
-        return (lapStartUtc >= window.StartUtc && lapStartUtc <= window.EndUtc)
-               || (lapEndUtc >= window.StartUtc && lapEndUtc <= window.EndUtc);
+        return lapStartUtc <= window.EndUtc
+               && lapEndUtc >= window.StartUtc;
     }
 
+    /// <summary>
+    /// Normalises DateTime values to UTC for consistent cross-lap time comparisons.
+    /// </summary>
     private static DateTime AsUtc(DateTime input)
     {
         if (input.Kind == DateTimeKind.Utc)
@@ -489,6 +520,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return DateTime.SpecifyKind(input, DateTimeKind.Utc);
     }
 
+    /// <summary>
+    /// Returns the median of a sorted numeric array (or 0 for empty input).
+    /// </summary>
     private static double Median(double[] orderedValues)
     {
         if (orderedValues.Length == 0)
@@ -502,6 +536,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             : orderedValues[mid];
     }
 
+    /// <summary>
+    /// Chooses line style so teammates can be distinguished: one solid, one dashed.
+    /// </summary>
     private static bool ShouldUseSolidLineForDriver(
         int driverNumber,
         IEnumerable<int> plottedDriverNumbers,
@@ -526,6 +563,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return driverNumber == teammateNumbers.Min();
     }
 
+    /// <summary>
+    /// Builds a stable grouping key for teammate detection (team name, then colour fallback).
+    /// </summary>
     private static string GetTeamGroupKey(Driver driver, int driverNumber)
     {
         if (!string.IsNullOrWhiteSpace(driver.TeamName))
@@ -541,6 +581,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return "driver:" + driverNumber.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// Provides a legend sort key that clusters drivers by team where possible.
+    /// </summary>
     private static string GetTeamSortKey(int driverNumber, IReadOnlyDictionary<int, Driver> driverByNumber)
     {
         if (!driverByNumber.TryGetValue(driverNumber, out var driver))
@@ -561,6 +604,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return "ZZZ";
     }
 
+    /// <summary>
+    /// Builds a readable legend label combining driver code and broadcast name.
+    /// </summary>
     private static string BuildLegendDriverName(Driver driver, int driverNumber)
     {
         var code = string.IsNullOrWhiteSpace(driver.Code)
@@ -572,6 +618,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             : $"{code} ({driver.BroadcastName})";
     }
 
+    /// <summary>
+    /// Adds one interactive legend toggle that controls visibility of a driver's trace line.
+    /// Right-click isolates that single driver.
+    /// </summary>
     private void AddLegendToggle(int driverNumber, string driverName, WpfBrush textBrush, bool isSolid, bool isVisible)
     {
         var stylePrefix = isSolid ? "━" : "┅";
@@ -617,6 +667,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         traceLegendPanel?.Children.Add(toggle);
     }
 
+    /// <summary>
+    /// Parses a WPF brush from team colour hex, with deterministic fallback colours.
+    /// </summary>
     private static WpfBrush ParseLegendBrush(string hex, int fallbackSeed)
     {
         if (!string.IsNullOrWhiteSpace(hex))
@@ -653,6 +706,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return new WpfSolidColorBrush(fallback[Math.Abs(fallbackSeed) % fallback.Length]);
     }
 
+    /// <summary>
+    /// Parses a ScottPlot colour from team colour hex, with deterministic fallback colours.
+    /// </summary>
     private static ScottPlot.Color ParseScottPlotColor(string hex, int fallbackSeed)
     {
         if (!string.IsNullOrWhiteSpace(hex))
@@ -688,12 +744,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return fallback[Math.Abs(fallbackSeed) % fallback.Length];
     }
 
+    /// <summary>
+    /// Enables or disables race-trace interaction and dims the plot when disabled.
+    /// </summary>
     private void SetRaceTraceEnabled(bool enabled)
     {
         _raceTracePlot.UserInputProcessor.IsEnabled = enabled;
         _raceTracePlot.Opacity = enabled ? 1.0 : 0.6;
     }
 
+    /// <summary>
+    /// Standard property setter helper that raises PropertyChanged only when value changes.
+    /// </summary>
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))

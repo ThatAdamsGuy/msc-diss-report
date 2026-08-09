@@ -9,6 +9,9 @@ namespace UndercutAnalyser.Infrastructure
     /// </summary>
     internal static class Logger
     {
+        /// <summary>
+        /// Writes an informational diagnostic message to trace/debug outputs.
+        /// </summary>
         public static void Info(string message)
         {
             var m = FormatMessage("INFO", message);
@@ -20,6 +23,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Writes an error diagnostic message to trace/debug outputs.
+        /// </summary>
         public static void Error(string message)
         {
             var m = FormatMessage("ERROR", message);
@@ -31,6 +37,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Writes an exception diagnostic message, including stack trace and optional context.
+        /// </summary>
         public static void Error(Exception ex, string? context = null)
         {
             var ctx = string.IsNullOrEmpty(context) ? string.Empty : $" [{context}]";
@@ -43,6 +52,9 @@ namespace UndercutAnalyser.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Formats a UTC timestamped log line with severity level.
+        /// </summary>
         private static string FormatMessage(string level, string message)
         {
             return $"[{DateTime.UtcNow:O}] {level}: {message}";
