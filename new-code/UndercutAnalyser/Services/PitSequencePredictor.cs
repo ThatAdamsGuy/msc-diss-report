@@ -16,14 +16,14 @@ namespace UndercutAnalyser.Services
     ///   n+2  | Standard lap                      | Out lap if r=1; pit lap if r=2; etc.
     ///   ...
     ///   n+r+1| Standard lap                      | Out lap (new tyre, W + R if set)
-    ///   n+r+2| Standard lap                      | Standard lap  ← tertiary endpoint
+    ///   n+r+2| Standard lap                      | Standard lap  ← both drivers normal lap complete endpoint
     ///
     /// The three comparison gaps are calculated using:
     ///   G(n) = G0 + attackerElapsed − targetElapsed
     ///
-    ///   GapAfterTargetPitSeconds — PRIMARY: end of lap n+r (target driver pit lap complete)
-    ///   GapAtN2Seconds          — SECONDARY: end of lap n+r+1 (target driver out lap complete)
-    ///   GapAtN3Seconds          — TERTIARY: end of lap n+r+2 (both drivers on first normal lap)
+    ///   GapAtTargetPitLapCompleteSeconds         — TargetPitLapComplete: end of lap n+r
+    ///   GapAtTargetOutLapCompleteSeconds         — TargetOutLapComplete: end of lap n+r+1
+    ///   GapAtBothDriversNormalLapCompleteSeconds — BothDriversNormalLapComplete: end of lap n+r+2
     ///
     /// Sign convention: negative = attacking driver ahead.
     /// </summary>
@@ -40,8 +40,9 @@ namespace UndercutAnalyser.Services
         }
 
         /// <summary>
-        /// Runs the full attacking-driver/target-driver pit sequence from lap n through the tertiary
-        /// endpoint and returns gaps, gain/loss deltas, classification, and warnings.
+        /// Runs the full attacking-driver/target-driver pit sequence from lap n through the
+        /// BothDriversNormalLapComplete endpoint and returns gaps, gain/loss deltas,
+        /// classification, and warnings.
         /// </summary>
         public PredictionResult Predict(PredictionRequest req)
         {
@@ -59,12 +60,12 @@ namespace UndercutAnalyser.Services
             int targetOutLap    = n + r + 1;
 
             // Comparison endpoints
-            // Primary:   end of target pit lap   (n + r)
-            // Secondary: end of target out lap   (n + r + 1)
-            // Tertiary:  following normal lap    (n + r + 2)
-            int primaryEndLap   = targetPitLap;        // GapAfterTargetPitSeconds
-            int secondaryEndLap = targetOutLap;        // GapAtN2Seconds
-            int tertiaryEndLap  = targetOutLap + 1;    // GapAtN3Seconds
+            // TargetPitLapComplete:         end of target pit lap (n + r)
+            // TargetOutLapComplete:         end of target out lap (n + r + 1)
+            // BothDriversNormalLapComplete: following normal lap  (n + r + 2)
+            int targetPitLapCompleteLap = targetPitLap;
+            int targetOutLapCompleteLap = targetOutLap;
+            int bothDriversNormalLapCompleteLap = targetOutLap + 1;
 
             // Running tyre state for each driver
             var attackerCompound = req.Attacker.CurrentCompound;
@@ -79,11 +80,11 @@ namespace UndercutAnalyser.Services
             var attackerLaps = new List<PredictedLap>();
             var targetLaps   = new List<PredictedLap>();
 
-            double gapAtN1 = double.NaN;
-            double gapAtN2 = double.NaN;
-            double gapAtN3 = double.NaN;
+            double gapAtTargetPitLapComplete = double.NaN;
+            double gapAtTargetOutLapComplete = double.NaN;
+            double gapAtBothDriversNormalLapComplete = double.NaN;
 
-            for (int lap = n; lap <= tertiaryEndLap; lap++)
+            for (int lap = n; lap <= bothDriversNormalLapCompleteLap; lap++)
             {
                 // ── Attacker ─────────────────────────────────────────────────────────
                 bool attackerIsPitLap  = lap == attackerPitLap;
@@ -162,31 +163,31 @@ namespace UndercutAnalyser.Services
                 // Negative = attacker ahead.
                 double gap = req.InitialAttackerGapToTargetSeconds + attackerElapsed - targetElapsed;
 
-                if (lap == primaryEndLap)   gapAtN1 = gap;
-                if (lap == secondaryEndLap) gapAtN2 = gap;
-                if (lap == tertiaryEndLap)  gapAtN3 = gap;
+                if (lap == targetPitLapCompleteLap)         gapAtTargetPitLapComplete = gap;
+                if (lap == targetOutLapCompleteLap)         gapAtTargetOutLapComplete = gap;
+                if (lap == bothDriversNormalLapCompleteLap) gapAtBothDriversNormalLapComplete = gap;
             }
 
-            // Classify at the primary endpoint: end of the target pit lap (n + r).
+            // Classify at TargetPitLapComplete: end of target pit lap (n + r).
             // For r=1 this is n+1 (the standard undercut success point).
-            var classificationGap = gapAtN1;
+            var classificationGap = gapAtTargetPitLapComplete;
             var classification = Classify(classificationGap, p.MarginalThresholdSeconds);
 
             double g0 = req.InitialAttackerGapToTargetSeconds;
 
             return new PredictionResult(
-                AttackerLaps:             attackerLaps,
-                TargetLaps:               targetLaps,
-                InitialGapSeconds:        g0,
-                GapAfterTargetPitSeconds: gapAtN1,
-                GapAtN2Seconds:           gapAtN2,
-                GapAtN3Seconds:           gapAtN3,
-                DeltaGAtN1Seconds:        gapAtN1 - g0,
-                DeltaGAtN2Seconds:        gapAtN2 - g0,
-                DeltaGAtN3Seconds:        gapAtN3 - g0,
-                Classification:           classification,
-                MarginalThresholdSeconds: p.MarginalThresholdSeconds,
-                Warnings:                 warnings);
+                AttackerLaps:                               attackerLaps,
+                TargetLaps:                                 targetLaps,
+                InitialGapSeconds:                          g0,
+                GapAtTargetPitLapCompleteSeconds:           gapAtTargetPitLapComplete,
+                GapAtTargetOutLapCompleteSeconds:           gapAtTargetOutLapComplete,
+                GapAtBothDriversNormalLapCompleteSeconds:   gapAtBothDriversNormalLapComplete,
+                DeltaGAtTargetPitLapCompleteSeconds:        gapAtTargetPitLapComplete - g0,
+                DeltaGAtTargetOutLapCompleteSeconds:        gapAtTargetOutLapComplete - g0,
+                DeltaGAtBothDriversNormalLapCompleteSeconds: gapAtBothDriversNormalLapComplete - g0,
+                Classification:                             classification,
+                MarginalThresholdSeconds:                   p.MarginalThresholdSeconds,
+                Warnings:                                   warnings);
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────────────

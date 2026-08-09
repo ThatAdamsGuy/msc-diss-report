@@ -68,10 +68,10 @@ public partial class StrategyWindow : Window
         public string G0          { get; init; } = string.Empty;   // initial gap (s) formatted
 
         // Prediction outputs
-        public string GapAtN1     { get; init; } = string.Empty;
-        public string GapAtN2     { get; init; } = string.Empty;
-        public string GapAtN3     { get; init; } = string.Empty;
-        public string DeltaGN1    { get; init; } = string.Empty;
+        public string GapAtTargetPitLapComplete { get; init; } = string.Empty;
+        public string GapAtTargetOutLapComplete { get; init; } = string.Empty;
+        public string GapAtBothDriversNormalLapComplete { get; init; } = string.Empty;
+        public string DeltaGAtTargetPitLapComplete { get; init; } = string.Empty;
         public string Result      { get; init; } = string.Empty;   // Ahead / Marginal / Behind
         public bool   IsOpportunity { get; init; }                 // true = Ahead or Marginal
     }
@@ -241,8 +241,8 @@ public partial class StrategyWindow : Window
     private static List<TyreParameterRow> DefaultTyreRows() =>
     [
         new TyreParameterRow("Soft",   0.0, 0.10, isEditable: false, isDegradationEditable: true),
-        new TyreParameterRow("Medium", 0.5, 0.07, isEditable: true,  isDegradationEditable: true),
-        new TyreParameterRow("Hard",   1.0, 0.04, isEditable: true,  isDegradationEditable: true)
+        new TyreParameterRow("Medium", 0.1, 0.07, isEditable: true,  isDegradationEditable: true),
+        new TyreParameterRow("Hard",   0.2, 0.04, isEditable: true,  isDegradationEditable: true)
     ];
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -630,8 +630,8 @@ public partial class StrategyWindow : Window
         var offsets = new Dictionary<TyreCompound, double>
         {
             [TyreCompound.Soft] = 0.0,
-            [TyreCompound.Medium] = 0.5,
-            [TyreCompound.Hard] = 1.0
+            [TyreCompound.Medium] = 0.1,
+            [TyreCompound.Hard] = 0.2
         };
         var degRates = new Dictionary<TyreCompound, double>
         {
@@ -680,13 +680,13 @@ public partial class StrategyWindow : Window
         var g0Text = $"G₀ = {result.InitialGapSeconds:+0.000;-0.000;0.000} s  (gap at start of prediction window, positive = attacker behind)";
         G0Label.Text = g0Text;
 
-        // N1/N2/N3 are logical evaluation points, not literal n+1/n+2/n+3 when response delay > 1.
-        GapN1Label.Text   = FormatGap(result.GapAfterTargetPitSeconds);
-        DeltaN1Label.Text = $"ΔG = {result.DeltaGAtN1Seconds:+0.000;-0.000;0.000} s";
-        GapN2Label.Text   = FormatGap(result.GapAtN2Seconds);
-        DeltaN2Label.Text = $"ΔG = {result.DeltaGAtN2Seconds:+0.000;-0.000;0.000} s";
-        GapN3Label.Text   = FormatGap(result.GapAtN3Seconds);
-        DeltaN3Label.Text = $"ΔG = {result.DeltaGAtN3Seconds:+0.000;-0.000;0.000} s";
+        // Endpoint labels are semantic completion points in the pit-response sequence.
+        GapAtTargetPitLapCompleteLabel.Text   = FormatGap(result.GapAtTargetPitLapCompleteSeconds);
+        DeltaGAtTargetPitLapCompleteLabel.Text = $"ΔG = {result.DeltaGAtTargetPitLapCompleteSeconds:+0.000;-0.000;0.000} s";
+        GapAtTargetOutLapCompleteLabel.Text   = FormatGap(result.GapAtTargetOutLapCompleteSeconds);
+        DeltaGAtTargetOutLapCompleteLabel.Text = $"ΔG = {result.DeltaGAtTargetOutLapCompleteSeconds:+0.000;-0.000;0.000} s";
+        GapAtBothDriversNormalLapCompleteLabel.Text   = FormatGap(result.GapAtBothDriversNormalLapCompleteSeconds);
+        DeltaGAtTargetOutLapCompleteLabel.Text = $"ΔG = {result.DeltaGAtBothDriversNormalLapCompleteSeconds:+0.000;-0.000;0.000} s";
 
         // Build lap table — interleave attacking and target drivers, one row each per lap.
         // The Gap column is shown on the target row (both drivers have finished that lap).
@@ -801,12 +801,12 @@ public partial class StrategyWindow : Window
 
         // ── Summary ────────────────────────────────────────────────────────────
         writer.WriteLine($"# Classification,{result.Classification}");
-        writer.WriteLine($"# PrimaryGap_AfterTargetPitLap (s),{result.GapAfterTargetPitSeconds.ToString("F3", inv)}");
-        writer.WriteLine($"# SecondaryGap_AfterTargetOutLap (s),{result.GapAtN2Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# TertiaryGap_AfterNextNormalLap (s),{result.GapAtN3Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# PrimaryDeltaG_AfterTargetPitLap (s),{result.DeltaGAtN1Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# SecondaryDeltaG_AfterTargetOutLap (s),{result.DeltaGAtN2Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# TertiaryDeltaG_AfterNextNormalLap (s),{result.DeltaGAtN3Seconds.ToString("F3", inv)}");
+        writer.WriteLine($"# TargetPitLapCompleteGap (s),{result.GapAtTargetPitLapCompleteSeconds.ToString("F3", inv)}");
+        writer.WriteLine($"# TargetOutLapCompleteGap (s),{result.GapAtTargetOutLapCompleteSeconds.ToString("F3", inv)}");
+        writer.WriteLine($"# BothDriversNormalLapCompleteGap (s),{result.GapAtBothDriversNormalLapCompleteSeconds.ToString("F3", inv)}");
+        writer.WriteLine($"# TargetPitLapCompleteDeltaG (s),{result.DeltaGAtTargetPitLapCompleteSeconds.ToString("F3", inv)}");
+        writer.WriteLine($"# TargetOutLapCompleteDeltaG (s),{result.DeltaGAtTargetOutLapCompleteSeconds.ToString("F3", inv)}");
+        writer.WriteLine($"# BothDriversNormalLapCompleteDeltaG (s),{result.DeltaGAtBothDriversNormalLapCompleteSeconds.ToString("F3", inv)}");
         writer.WriteLine();
 
         // ── Lap breakdown ──────────────────────────────────────────────────────
@@ -864,17 +864,20 @@ public partial class StrategyWindow : Window
             .ToDictionary(g => g.Key, g => g.First());
 
         var ordered = _laps
-            .GroupBy(l => l.DriverNumber)
-            .Where(g => driversByNumber.ContainsKey(g.Key))
-            .OrderBy(g => g.Key)
-            .Select(g =>
+            .Select(l => l.DriverNumber)
+            .Distinct()
+            .Where(driversByNumber.ContainsKey)
+            .OrderBy(n => n)
+            .Select(n =>
             {
-                var d = driversByNumber[g.Key];
-                var code = string.IsNullOrWhiteSpace(d.Code) ? g.Key.ToString(CultureInfo.InvariantCulture) : d.Code;
+                var d = driversByNumber[n];
+                var code = string.IsNullOrWhiteSpace(d.Code) ? n.ToString(CultureInfo.InvariantCulture) : d.Code;
                 var display = string.IsNullOrWhiteSpace(d.BroadcastName) ? code : $"{code} – {d.BroadcastName}";
-                return new DriverItem { DriverNumber = g.Key, Code = code, DisplayName = display };
-            });
+                return new DriverItem { DriverNumber = n, Code = code, DisplayName = display };
+            })
+            .ToList();
 
+        ScanDriverCombo.Items.Clear();
         foreach (var item in ordered)
             ScanDriverCombo.Items.Add(item);
 
@@ -963,9 +966,8 @@ public partial class StrategyWindow : Window
                 g => g.Where(l => l.DateStart.HasValue && l.LapDuration.HasValue)
                       .ToDictionary(l => l.LapNumber));
 
-        // Pre-compute on-track finishing order per lap number
+        // Pre-compute on-track order at Sector Line Two for each lap.          
         var orderPerLap = BuildOnTrackOrderPerLap(lapIndex);
-
         var driversByNumber = _drivers
             .GroupBy(d => d.DriverNumber)
             .ToDictionary(g => g.Key, g => g.First());
@@ -1072,10 +1074,10 @@ public partial class StrategyWindow : Window
                         TargetCompound   = targetCompound,
                         TargetTyreAge    = targetTyreAge,
                         G0               = $"{g0:+0.000;-0.000;0.000}",
-                        GapAtN1          = "—",
-                        GapAtN2          = "—",
-                        GapAtN3          = "—",
-                        DeltaGN1         = "—",
+                        GapAtTargetPitLapComplete          = "—",
+                        GapAtTargetOutLapComplete          = "—",
+                        GapAtBothDriversNormalLapComplete  = "—",
+                        DeltaGAtTargetPitLapComplete       = "—",
                         Result           = $"Error: {ex.Message}",
                         IsOpportunity    = false
                     });
@@ -1095,11 +1097,11 @@ public partial class StrategyWindow : Window
                     AttackerTyreAge   = attackerTyreAge,
                     TargetCompound    = targetCompound,
                     TargetTyreAge     = targetTyreAge,
-                    G0                = $"{g0:+0.000;-0.000;0.000}",
-                    GapAtN1           = FormatGap(prediction.GapAfterTargetPitSeconds),
-                    GapAtN2           = FormatGap(prediction.GapAtN2Seconds),
-                    GapAtN3           = FormatGap(prediction.GapAtN3Seconds),
-                    DeltaGN1          = $"{prediction.DeltaGAtN1Seconds:+0.000;-0.000;0.000}",
+                    G0                               = $"{g0:+0.000;-0.000;0.000}",
+                    GapAtTargetPitLapComplete        = FormatGap(prediction.GapAtTargetPitLapCompleteSeconds),
+                    GapAtTargetOutLapComplete        = FormatGap(prediction.GapAtTargetOutLapCompleteSeconds),
+                    GapAtBothDriversNormalLapComplete = FormatGap(prediction.GapAtBothDriversNormalLapCompleteSeconds),
+                    DeltaGAtTargetPitLapComplete     = $"{prediction.DeltaGAtTargetPitLapCompleteSeconds:+0.000;-0.000;0.000}",
                     Result            = prediction.Classification switch
                     {
                         UndercutClassification.PredictedAhead    => "Ahead",
@@ -1262,7 +1264,7 @@ public partial class StrategyWindow : Window
             writer.WriteLine($"# Warm-up penalty (s),{_vm.WarmUpPenalty.ToString("F1", inv)}");
             writer.WriteLine($"# Target response (laps),1");
             writer.WriteLine();
-            writer.WriteLine("Lap,Attacker,Target,Att.Compound,Att.TyreAge,Tar.Compound,Tar.TyreAge,G0(s),GapN1(s),GapN2(s),GapN3(s),DeltaGN1(s),Result");
+            writer.WriteLine("Lap,Attacker,Target,Att.Compound,Att.TyreAge,Tar.Compound,Tar.TyreAge,G0(s),TargetPitLapCompleteGap(s),TargetOutLapCompleteGap(s),BothDriversNormalLapCompleteGap(s),TargetPitLapCompleteDeltaG(s),Result");
 
             foreach (var row in rows)
             {
@@ -1275,10 +1277,10 @@ public partial class StrategyWindow : Window
                     row.TargetCompound,
                     row.TargetTyreAge,
                     row.G0,
-                    row.GapAtN1,
-                    row.GapAtN2,
-                    row.GapAtN3,
-                    row.DeltaGN1,
+                    row.GapAtTargetPitLapComplete,
+                    row.GapAtTargetOutLapComplete,
+                    row.GapAtBothDriversNormalLapComplete,
+                    row.DeltaGAtTargetPitLapComplete,
                     row.Result));
             }
         }

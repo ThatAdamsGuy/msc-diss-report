@@ -13,12 +13,11 @@ namespace UndercutAnalyser.Domain.Prediction
     /// The conventional undercut case is TargetResponseLaps = 1.
     ///
     /// The prediction produces three comparison gaps:
-    ///   GapAfterTargetPitSeconds — PRIMARY: end of target pit lap (n + TargetResponseLaps)
-    ///   GapAtN2Seconds           — SECONDARY: end of target out lap (n + TargetResponseLaps + 1)
-    ///   GapAtN3Seconds           — TERTIARY: following normal lap for both drivers
+    ///   GapAtTargetPitLapCompleteSeconds         — TargetPitLapComplete: end of target pit lap (n + TargetResponseLaps)
+    ///   GapAtTargetOutLapCompleteSeconds         — TargetOutLapComplete: end of target out lap (n + TargetResponseLaps + 1)
+    ///   GapAtBothDriversNormalLapCompleteSeconds — BothDriversNormalLapComplete: following normal lap for both drivers
     ///
-    /// Note: N2/N3 are endpoint labels, not literal lap offsets from n.
-    /// For example when TargetResponseLaps = 2, GapAfterTargetPitSeconds is the gap at n+2.
+    /// For example when TargetResponseLaps = 2, GapAtTargetPitLapCompleteSeconds is the gap at n+2.
     /// </summary>
     public sealed record PredictionRequest(
         string EventName,

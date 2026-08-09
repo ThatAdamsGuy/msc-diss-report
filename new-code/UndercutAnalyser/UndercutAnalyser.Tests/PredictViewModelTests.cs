@@ -28,9 +28,9 @@ public sealed class PredictViewModelTests
         Assert.Equal(1.5, vm.InitialGap, 10);
         Assert.Equal(1, vm.TargetResponseLaps);
         Assert.Equal(22.0, vm.PitLaneLoss, 10);
-        Assert.Equal(2.0, vm.WarmUpPenalty, 10);
+        Assert.Equal(0.3, vm.WarmUpPenalty, 10);
         Assert.Equal(0.25, vm.MarginalThreshold, 10);
-        Assert.Equal(0.0, vm.TrafficPenalty, 10);
+        Assert.Equal(0.3, vm.TrafficPenalty, 10);
         Assert.False(vm.ApplyAttackerTraffic);
         Assert.False(vm.ApplyTargetTraffic);
 
@@ -137,12 +137,12 @@ public sealed class PredictViewModelTests
             AttackerLaps: [],
             TargetLaps: [],
             InitialGapSeconds: 1.0,
-            GapAfterTargetPitSeconds: 0.5,
-            GapAtN2Seconds: 0.3,
-            GapAtN3Seconds: 0.1,
-            DeltaGAtN1Seconds: -0.5,
-            DeltaGAtN2Seconds: -0.7,
-            DeltaGAtN3Seconds: -0.9,
+            GapAtTargetPitLapCompleteSeconds: 0.5,
+            GapAtTargetOutLapCompleteSeconds: 0.3,
+            GapAtBothDriversNormalLapCompleteSeconds: 0.1,
+            DeltaGAtTargetPitLapCompleteSeconds: -0.5,
+            DeltaGAtTargetOutLapCompleteSeconds: -0.7,
+            DeltaGAtBothDriversNormalLapCompleteSeconds: -0.9,
             Classification: UndercutClassification.PredictedMarginal,
             MarginalThresholdSeconds: 0.25,
             Warnings: []);

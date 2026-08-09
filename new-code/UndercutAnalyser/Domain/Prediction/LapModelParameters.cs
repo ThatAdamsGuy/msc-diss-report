@@ -33,8 +33,8 @@ namespace UndercutAnalyser.Domain.Prediction
             CompoundOffsetsSeconds: new Dictionary<TyreCompound, double>
             {
                 [TyreCompound.Soft]   = 0.0,   // reference compound
-                [TyreCompound.Medium] = 0.5,
-                [TyreCompound.Hard]   = 1.0
+                [TyreCompound.Medium] = 0.1,
+                [TyreCompound.Hard]   = 0.2
             },
             DegradationRatesSecondsPerLap: new Dictionary<TyreCompound, double>
             {
@@ -45,7 +45,10 @@ namespace UndercutAnalyser.Domain.Prediction
             WarmUp: WarmUpModelParameters.Default(),
             PitLaneLossSeconds: 22.0,
             MarginalThresholdSeconds: 0.25,
-            Traffic: TrafficModelParameters.None());
+            Traffic: new TrafficModelParameters(
+                ApplyToAttacker: false,
+                ApplyToTarget: false,
+                PenaltySeconds: 0.3));
 
         /// <summary>
         /// Returns the compound offset for the given compound.

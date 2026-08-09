@@ -3,21 +3,21 @@ using System.Collections.Generic;
 namespace UndercutAnalyser.Domain.Prediction
 {
     /// <summary>
-    /// Classification of the undercut outcome based on the primary comparison gap (GapAfterTargetPitSeconds).
+    /// Classification of the undercut outcome based on the primary comparison gap (GapAtTargetPitLapCompleteSeconds).
     /// The marginal zone threshold is configurable (default ±0.25 s) in LapModelParameters.
     /// </summary>
     public enum UndercutClassification
     {
-        /// <summary>Attacking driver is predicted to be clearly ahead (GapAfterTargetPitSeconds &lt; −threshold).</summary>
+        /// <summary>Attacking driver is predicted to be clearly ahead (GapAtTargetPitLapCompleteSeconds &lt; −threshold).</summary>
         PredictedAhead,
 
         /// <summary>
-        /// The gap is within the marginal threshold in either direction (|GapAfterTargetPitSeconds| ≤ threshold).
+        /// The gap is within the marginal threshold in either direction (|GapAtTargetPitLapCompleteSeconds| ≤ threshold).
         /// The predicted gap lies within the configured marginal threshold and is therefore classified as marginal.
         /// </summary>
         PredictedMarginal,
 
-        /// <summary>Attacking driver is predicted to remain behind (GapAfterTargetPitSeconds &gt; +threshold).</summary>
+        /// <summary>Attacking driver is predicted to remain behind (GapAtTargetPitLapCompleteSeconds &gt; +threshold).</summary>
         PredictedBehind
     }
 
@@ -29,32 +29,31 @@ namespace UndercutAnalyser.Domain.Prediction
     ///   Positive gap = attacking driver is behind the target.
     ///
     /// Absolute predicted gaps (G(n) = G0 + T_A(n) - T_T(n)):
-    ///   GapAfterTargetPitSeconds — PRIMARY: end of target pit lap (n + response delay).
+    ///   GapAtTargetPitLapCompleteSeconds         — PRIMARY: end of target pit lap (n + response delay).
     ///     This is the undercut success point used for classification.
-    ///   GapAtN2Seconds — SECONDARY: end of target out lap.
-    ///   GapAtN3Seconds — TERTIARY: following normal lap for both drivers.
-    ///
-    /// Naming note: N2/N3 are logical endpoint labels, not fixed +2/+3
-    /// offsets from decision lap n when response delay > 1.
+    ///   GapAtTargetOutLapCompleteSeconds         — SECONDARY: end of target out lap.
+    ///   GapAtBothDriversNormalLapCompleteSeconds — TERTIARY: following normal lap for both drivers.
     ///
     /// Gap change (ΔG(n) = G(n) - G0 = T_A(n) - T_T(n)):
-    ///   DeltaGAtN1Seconds / DeltaGAtN2Seconds / DeltaGAtN3Seconds
+    ///   DeltaGAtTargetPitLapCompleteSeconds
+    ///   DeltaGAtTargetOutLapCompleteSeconds
+    ///   DeltaGAtBothDriversNormalLapCompleteSeconds
     ///   Negative = attacking driver gained time on the target driver (regardless of final position).
     ///   Positive = attacking driver lost time to the target driver.
     ///   This is derived purely from the predicted elapsed times — no Stay Out scenario required.
     ///
-    /// Classification is derived from GapAfterTargetPitSeconds vs MarginalThresholdSeconds.
+    /// Classification is derived from GapAtTargetPitLapCompleteSeconds vs MarginalThresholdSeconds.
     /// </summary>
     public sealed record PredictionResult(
         IReadOnlyList<PredictedLap> AttackerLaps,
         IReadOnlyList<PredictedLap> TargetLaps,
         double InitialGapSeconds,
-        double GapAfterTargetPitSeconds,
-        double GapAtN2Seconds,
-        double GapAtN3Seconds,
-        double DeltaGAtN1Seconds,
-        double DeltaGAtN2Seconds,
-        double DeltaGAtN3Seconds,
+        double GapAtTargetPitLapCompleteSeconds,
+        double GapAtTargetOutLapCompleteSeconds,
+        double GapAtBothDriversNormalLapCompleteSeconds,
+        double DeltaGAtTargetPitLapCompleteSeconds,
+        double DeltaGAtTargetOutLapCompleteSeconds,
+        double DeltaGAtBothDriversNormalLapCompleteSeconds,
         UndercutClassification Classification,
         double MarginalThresholdSeconds,
         IReadOnlyList<string> Warnings);

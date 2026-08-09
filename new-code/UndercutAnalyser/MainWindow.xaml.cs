@@ -33,8 +33,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private List<TyreParameterRow> _tyreParameterRows =
     [
         new TyreParameterRow("Soft",   0.0, 0.10, isEditable: false, isDegradationEditable: true),
-        new TyreParameterRow("Medium", 0.5, 0.07, isEditable: true,  isDegradationEditable: true),
-        new TyreParameterRow("Hard",   1.0, 0.04, isEditable: true,  isDegradationEditable: true)
+        new TyreParameterRow("Medium", 0.1, 0.07, isEditable: true,  isDegradationEditable: true),
+        new TyreParameterRow("Hard",   0.2, 0.04, isEditable: true,  isDegradationEditable: true)
     ];
     private double _fuelSecondsPer10Kg = 0.3;
     private double _fuelKg = 110;

@@ -82,20 +82,20 @@ public sealed class TyreAndModelParameterTests
         var model = LapModelParameters.CreateDefault();
 
         Assert.Equal(0.0, model.GetCompoundOffset(TyreCompound.Soft));
-        Assert.Equal(0.5, model.GetCompoundOffset(TyreCompound.Medium));
-        Assert.Equal(1.0, model.GetCompoundOffset(TyreCompound.Hard));
+        Assert.Equal(0.1, model.GetCompoundOffset(TyreCompound.Medium));
+        Assert.Equal(0.2, model.GetCompoundOffset(TyreCompound.Hard));
 
         Assert.Equal(0.10, model.GetDegradationRate(TyreCompound.Soft), 10);
         Assert.Equal(0.07, model.GetDegradationRate(TyreCompound.Medium), 10);
         Assert.Equal(0.04, model.GetDegradationRate(TyreCompound.Hard), 10);
 
-        Assert.Equal(2.0, model.WarmUp.OutLapPenaltySeconds, 10);
+        Assert.Equal(0.3, model.WarmUp.OutLapPenaltySeconds, 10);
         Assert.Equal(22.0, model.PitLaneLossSeconds, 10);
         Assert.Equal(0.25, model.MarginalThresholdSeconds, 10);
 
         Assert.False(model.Traffic.ApplyToAttacker);
         Assert.False(model.Traffic.ApplyToTarget);
-        Assert.Equal(0.0, model.Traffic.PenaltySeconds, 10);
+        Assert.Equal(0.3, model.Traffic.PenaltySeconds, 10);
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public sealed class TyreAndModelParameterTests
         var @default = WarmUpModelParameters.Default();
         var none = WarmUpModelParameters.None();
 
-        Assert.Equal(2.0, @default.OutLapPenaltySeconds, 10);
+        Assert.Equal(0.3, @default.OutLapPenaltySeconds, 10);
         Assert.Equal(0.0, none.OutLapPenaltySeconds, 10);
     }
 

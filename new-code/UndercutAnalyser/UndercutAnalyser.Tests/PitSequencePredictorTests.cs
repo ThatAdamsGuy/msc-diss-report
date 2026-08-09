@@ -92,7 +92,7 @@ public sealed class PitSequencePredictorTests
     #endregion
 
     #region Gap, delta, and classification outcomes
-    // These tests exist to verify all reported metrics (primary/secondary/tertiary gaps and DeltaG fields)
+    // These tests exist to verify all reported endpoint metrics and DeltaG fields
     // are computed from cumulative elapsed times with the documented sign convention.
 
     [Fact]
@@ -117,20 +117,20 @@ public sealed class PitSequencePredictorTests
 
         var result = sut.Predict(request);
 
-        Assert.Equal(-65.0, result.GapAfterTargetPitSeconds, 10);
-        Assert.Equal(-85.0, result.GapAtN2Seconds, 10);
-        Assert.Equal(-115.0, result.GapAtN3Seconds, 10);
+        Assert.Equal(-65.0, result.GapAtTargetPitLapCompleteSeconds, 10);
+        Assert.Equal(-85.0, result.GapAtTargetOutLapCompleteSeconds, 10);
+        Assert.Equal(-115.0, result.GapAtBothDriversNormalLapCompleteSeconds, 10);
 
-        Assert.Equal(-70.0, result.DeltaGAtN1Seconds, 10);
-        Assert.Equal(-90.0, result.DeltaGAtN2Seconds, 10);
-        Assert.Equal(-120.0, result.DeltaGAtN3Seconds, 10);
+        Assert.Equal(-70.0, result.DeltaGAtTargetPitLapCompleteSeconds, 10);
+        Assert.Equal(-90.0, result.DeltaGAtTargetOutLapCompleteSeconds, 10);
+        Assert.Equal(-120.0, result.DeltaGAtBothDriversNormalLapCompleteSeconds, 10);
     }
 
     [Theory]
     [InlineData(-0.30, UndercutClassification.PredictedAhead)]
     [InlineData(0.10, UndercutClassification.PredictedMarginal)]
     [InlineData(0.30, UndercutClassification.PredictedBehind)]
-    public void Predict_ClassifiesUsingPrimaryGapAgainstSymmetricThreshold(double initialGapSeconds, UndercutClassification expected)
+    public void Predict_ClassifiesUsingTargetPitLapCompleteGapAgainstSymmetricThreshold(double initialGapSeconds, UndercutClassification expected)
     {
         var lapPredictor = new RecordingLapPredictor(_ => Breakdown(total: 10.0));
         var sut = new PitSequencePredictor(lapPredictor);
@@ -141,7 +141,7 @@ public sealed class PitSequencePredictorTests
 
         var result = sut.Predict(request);
 
-        Assert.Equal(initialGapSeconds, result.GapAfterTargetPitSeconds, 10);
+        Assert.Equal(initialGapSeconds, result.GapAtTargetPitLapCompleteSeconds, 10);
         Assert.Equal(expected, result.Classification);
     }
 
@@ -158,7 +158,7 @@ public sealed class PitSequencePredictorTests
     }
 
     [Fact]
-    public void Predict_ClassificationUsesPrimaryGapEvenWhenLaterGapsChangeDirection()
+    public void Predict_ClassificationUsesTargetPitLapCompleteGapEvenWhenLaterGapsChangeDirection()
     {
         var lapPredictor = new RecordingLapPredictor(input =>
         {
@@ -179,8 +179,8 @@ public sealed class PitSequencePredictorTests
 
         var result = sut.Predict(request);
 
-        Assert.True(result.GapAfterTargetPitSeconds > 0.25);   // behind at primary endpoint
-        Assert.True(result.GapAtN2Seconds < -0.25);  // but ahead later
+        Assert.True(result.GapAtTargetPitLapCompleteSeconds > 0.25);   // behind at TargetPitLapComplete endpoint
+        Assert.True(result.GapAtTargetOutLapCompleteSeconds < -0.25);  // but ahead later
         Assert.Equal(UndercutClassification.PredictedBehind, result.Classification);
     }
 
@@ -194,9 +194,9 @@ public sealed class PitSequencePredictorTests
         var result = sut.Predict(request);
 
         Assert.Equal(2.75, result.InitialGapSeconds, 10);
-        Assert.Equal(result.GapAfterTargetPitSeconds - result.InitialGapSeconds, result.DeltaGAtN1Seconds, 10);
-        Assert.Equal(result.GapAtN2Seconds - result.InitialGapSeconds, result.DeltaGAtN2Seconds, 10);
-        Assert.Equal(result.GapAtN3Seconds - result.InitialGapSeconds, result.DeltaGAtN3Seconds, 10);
+        Assert.Equal(result.GapAtTargetPitLapCompleteSeconds - result.InitialGapSeconds, result.DeltaGAtTargetPitLapCompleteSeconds, 10);
+        Assert.Equal(result.GapAtTargetOutLapCompleteSeconds - result.InitialGapSeconds, result.DeltaGAtTargetOutLapCompleteSeconds, 10);
+        Assert.Equal(result.GapAtBothDriversNormalLapCompleteSeconds - result.InitialGapSeconds, result.DeltaGAtBothDriversNormalLapCompleteSeconds, 10);
     }
 
     #endregion

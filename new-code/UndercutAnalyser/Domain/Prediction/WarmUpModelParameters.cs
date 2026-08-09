@@ -8,10 +8,10 @@ namespace UndercutAnalyser.Domain.Prediction
     public sealed record WarmUpModelParameters(double OutLapPenaltySeconds)
     {
         /// <summary>
-        /// Returns a default warm-up model with a 2.0 s out-lap penalty.
+        /// Returns a default warm-up model with a 0.3 s out-lap penalty.
         /// This is a reasonable starting estimate; the correct value is track and compound dependent.
         /// </summary>
-        public static WarmUpModelParameters Default() => new(OutLapPenaltySeconds: 2.0);
+        public static WarmUpModelParameters Default() => new(OutLapPenaltySeconds: 0.3);
 
         /// <summary>
         /// Returns a model with no warm-up penalty (useful for testing or circuits with rapid warm-up).

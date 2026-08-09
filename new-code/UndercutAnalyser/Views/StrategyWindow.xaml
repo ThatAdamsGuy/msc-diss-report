@@ -324,28 +324,28 @@
                                     <Border BorderBrush="#C0C0C0" BorderThickness="1" CornerRadius="4"
                                             Padding="10,8" Margin="0,0,6,0">
                                         <StackPanel>
-                                            <TextBlock Text="After target pit lap" FontSize="11" Foreground="#666"/>
-                                            <TextBlock x:Name="GapN1Label" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                                            <TextBlock x:Name="DeltaN1Label" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
-                                            <TextBlock Text="(primary)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>
+                                            <TextBlock Text="TargetPitLapComplete" FontSize="11" Foreground="#666"/>
+                                            <TextBlock x:Name="GapAtTargetPitLapCompleteLabel" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                            <TextBlock x:Name="DeltaGAtTargetPitLapCompleteLabel" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
+                                            <TextBlock Text="(endpoint)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Border>
                                     <Border BorderBrush="#C0C0C0" BorderThickness="1" CornerRadius="4"
                                             Padding="10,8" Margin="0,0,6,0">
                                         <StackPanel>
-                                            <TextBlock Text="After target driver out lap" FontSize="11" Foreground="#666"/>
-                                            <TextBlock x:Name="GapN2Label" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                                            <TextBlock x:Name="DeltaN2Label" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
-                                            <TextBlock Text="(secondary)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>
+                                            <TextBlock Text="TargetOutLapComplete" FontSize="11" Foreground="#666"/>
+                                            <TextBlock x:Name="GapAtTargetOutLapCompleteLabel" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                            <TextBlock x:Name="DeltaGAtTargetOutLapCompleteLabel" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
+                                            <TextBlock Text="(endpoint)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Border>
                                     <Border BorderBrush="#C0C0C0" BorderThickness="1" CornerRadius="4"
                                             Padding="10,8">
                                         <StackPanel>
-                                            <TextBlock Text="After both on normal lap" FontSize="11" Foreground="#666"/>
-                                            <TextBlock x:Name="GapN3Label" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
-                                            <TextBlock x:Name="DeltaN3Label" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
-                                            <TextBlock Text="(tertiary)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>
+                                            <TextBlock Text="BothDriversNormalLapComplete" FontSize="11" Foreground="#666"/>
+                                            <TextBlock x:Name="GapAtBothDriversNormalLapCompleteLabel" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                            <TextBlock x:Name="DeltaGAtBothDriversNormalLapCompleteLabel" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
+                                            <TextBlock Text="(endpoint)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Border>
                                 </UniformGrid>
@@ -460,10 +460,10 @@
                         <DataGridTextColumn Header="Tar. tyre" Binding="{Binding TargetCompound}"   Width="80"/>
                         <DataGridTextColumn Header="Tar. age"  Binding="{Binding TargetTyreAge}"    Width="65"/>
                         <DataGridTextColumn Header="G₀ (s)"   Binding="{Binding G0}"               Width="90"/>
-                        <DataGridTextColumn Header="Gap N+1"  Binding="{Binding GapAtN1}"           Width="90"/>
-                        <DataGridTextColumn Header="Gap N+2"  Binding="{Binding GapAtN2}"           Width="90"/>
-                        <DataGridTextColumn Header="Gap N+3"  Binding="{Binding GapAtN3}"           Width="90"/>
-                        <DataGridTextColumn Header="ΔG N+1"   Binding="{Binding DeltaGN1}"          Width="90"/>
+                        <DataGridTextColumn Header="Gap TargetPitLapComplete"  Binding="{Binding GapAtTargetPitLapComplete}"          Width="175"/>
+                        <DataGridTextColumn Header="Gap TargetOutLapComplete"  Binding="{Binding GapAtTargetOutLapComplete}"          Width="175"/>
+                        <DataGridTextColumn Header="Gap BothDriversNormalLapComplete"  Binding="{Binding GapAtBothDriversNormalLapComplete}"  Width="235"/>
+                        <DataGridTextColumn Header="ΔG TargetPitLapComplete"   Binding="{Binding DeltaGAtTargetPitLapComplete}"      Width="175"/>
                         <DataGridTextColumn Header="Result"   Binding="{Binding Result}"             Width="90"/>
                     </DataGrid.Columns>
                 </DataGrid>
