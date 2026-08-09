@@ -89,6 +89,32 @@ public sealed class PitSequencePredictorTests
         Assert.Equal(0, firstTargetCall.TyreAgeAtStart);
     }
 
+    [Fact]
+    public void Predict_NegativeAttackerReplacementTyreAge_IsClampedToZeroOnOutLap()
+    {
+        var lapPredictor = new RecordingLapPredictor();
+        var sut = new PitSequencePredictor(lapPredictor);
+        var request = CreateRequest(attackerReplacementAge: -3, targetResponseLaps: 1);
+
+        _ = sut.Predict(request);
+
+        var attackerOutLapCall = lapPredictor.Calls.First(c => c.DriverCode == "ATT" && c.IsOutLap);
+        Assert.Equal(0, attackerOutLapCall.TyreAgeAtStart);
+    }
+
+    [Fact]
+    public void Predict_NegativeTargetReplacementTyreAge_IsClampedToZeroOnOutLap()
+    {
+        var lapPredictor = new RecordingLapPredictor();
+        var sut = new PitSequencePredictor(lapPredictor);
+        var request = CreateRequest(targetReplacementAge: -4, targetResponseLaps: 1);
+
+        _ = sut.Predict(request);
+
+        var targetOutLapCall = lapPredictor.Calls.First(c => c.DriverCode == "TGT" && c.IsOutLap);
+        Assert.Equal(0, targetOutLapCall.TyreAgeAtStart);
+    }
+
     #endregion
 
     #region Gap, delta, and classification outcomes
@@ -155,6 +181,20 @@ public sealed class PitSequencePredictorTests
         var result = sut.Predict(request);
 
         Assert.Equal(0.4, result.MarginalThresholdSeconds, 10);
+    }
+
+    [Fact]
+    public void Predict_NegativeMarginalThreshold_IsClampedToZeroInResultAndWarnings()
+    {
+        var lapPredictor = new RecordingLapPredictor(_ => Breakdown(total: 10.0));
+        var sut = new PitSequencePredictor(lapPredictor);
+        var request = CreateRequest(initialGapSeconds: 0.10, targetResponseLaps: 1, marginalThreshold: -0.25);
+
+        var result = sut.Predict(request);
+
+        Assert.Equal(0.0, result.MarginalThresholdSeconds, 10);
+        Assert.Equal(UndercutClassification.PredictedBehind, result.Classification);
+        Assert.Contains(result.Warnings, w => w.Contains("Marginal threshold is negative", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -277,7 +317,9 @@ public sealed class PitSequencePredictorTests
             attackerCurrentAge: -1,
             targetCurrentAge: -2,
             attackerReplacementCompound: TyreCompound.Wet,
-            targetReplacementCompound: TyreCompound.Intermediate);
+            targetReplacementCompound: TyreCompound.Intermediate,
+            attackerReplacementAge: -3,
+            targetReplacementAge: -4);
 
         var result = sut.Predict(request);
 
@@ -288,6 +330,8 @@ public sealed class PitSequencePredictorTests
         Assert.Contains(result.Warnings, w => w.Contains("Target replacement tyre compound", StringComparison.Ordinal));
         Assert.Contains(result.Warnings, w => w.Contains("Attacker current tyre age is negative", StringComparison.Ordinal));
         Assert.Contains(result.Warnings, w => w.Contains("Target current tyre age is negative", StringComparison.Ordinal));
+        Assert.Contains(result.Warnings, w => w.Contains("Attacker replacement tyre age is negative", StringComparison.Ordinal));
+        Assert.Contains(result.Warnings, w => w.Contains("Target replacement tyre age is negative", StringComparison.Ordinal));
     }
 
     [Fact]

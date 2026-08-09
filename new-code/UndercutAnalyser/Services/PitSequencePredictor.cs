@@ -94,7 +94,7 @@ namespace UndercutAnalyser.Services
                 if (attackerIsOutLap)
                 {
                     attackerCompound = req.AttackerReplacementTyre.Compound;
-                    attackerAge      = req.AttackerReplacementTyre.InitialAgeLaps;
+                    attackerAge      = Math.Max(0, req.AttackerReplacementTyre.InitialAgeLaps);
                 }
 
                 var attackerBreakdown = _lapPredictor.Predict(new LapPredictionInput(
@@ -130,7 +130,7 @@ namespace UndercutAnalyser.Services
                 if (targetIsOutLap)
                 {
                     targetCompound = req.TargetReplacementTyre.Compound;
-                    targetAge      = req.TargetReplacementTyre.InitialAgeLaps;
+                    targetAge      = Math.Max(0, req.TargetReplacementTyre.InitialAgeLaps);
                 }
 
                 var targetBreakdown = _lapPredictor.Predict(new LapPredictionInput(
@@ -171,7 +171,8 @@ namespace UndercutAnalyser.Services
             // Classify at TargetPitLapComplete: end of target pit lap (n + r).
             // For r=1 this is n+1 (the standard undercut success point).
             var classificationGap = gapAtTargetPitLapComplete;
-            var classification = Classify(classificationGap, p.MarginalThresholdSeconds);
+            var effectiveThreshold = Math.Max(0.0, p.MarginalThresholdSeconds);
+            var classification = Classify(classificationGap, effectiveThreshold);
 
             double g0 = req.InitialAttackerGapToTargetSeconds;
 
@@ -186,7 +187,7 @@ namespace UndercutAnalyser.Services
                 DeltaGAtTargetOutLapCompleteSeconds:        gapAtTargetOutLapComplete - g0,
                 DeltaGAtBothDriversNormalLapCompleteSeconds: gapAtBothDriversNormalLapComplete - g0,
                 Classification:                             classification,
-                MarginalThresholdSeconds:                   p.MarginalThresholdSeconds,
+                MarginalThresholdSeconds:                   effectiveThreshold,
                 Warnings:                                   warnings);
         }
 
@@ -231,6 +232,11 @@ namespace UndercutAnalyser.Services
                 warnings.Add("Pit lane loss is negative — this is unusual and likely a configuration error.");
             }
 
+            if (req.ModelParameters.MarginalThresholdSeconds < 0)
+            {
+                warnings.Add("Marginal threshold is negative — clamped to 0.");
+            }
+
             if (!req.AttackerReplacementTyre.Compound.IsDryCompound())
             {
                 warnings.Add($"Attacker replacement tyre compound ({req.AttackerReplacementTyre.Compound}) is not a dry compound. Prediction may be unreliable.");
@@ -249,6 +255,16 @@ namespace UndercutAnalyser.Services
             if (req.Target.CurrentTyreAgeLaps < 0)
             {
                 warnings.Add("Target current tyre age is negative — clamped to 0.");
+            }
+
+            if (req.AttackerReplacementTyre.InitialAgeLaps < 0)
+            {
+                warnings.Add("Attacker replacement tyre age is negative — clamped to 0.");
+            }
+
+            if (req.TargetReplacementTyre.InitialAgeLaps < 0)
+            {
+                warnings.Add("Target replacement tyre age is negative — clamped to 0.");
             }
         }
     }

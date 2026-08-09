@@ -190,7 +190,7 @@ namespace UndercutAnalyser.ViewModels
         public double MarginalThreshold
         {
             get => _marginalThreshold;
-            set => SetField(ref _marginalThreshold, value);
+            set => SetField(ref _marginalThreshold, Math.Max(0.0, value));
         }
 
         public bool ApplyAttackerTraffic

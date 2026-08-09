@@ -53,6 +53,19 @@ public sealed class PredictViewModelTests
         Assert.Equal(expected, vm.TargetResponseLaps);
     }
 
+    [Theory]
+    [InlineData(-0.25, 0.0)]
+    [InlineData(0.0, 0.0)]
+    [InlineData(0.25, 0.25)]
+    public void MarginalThreshold_ClampsToNonNegative(double input, double expected)
+    {
+        var vm = new PredictViewModel();
+
+        vm.MarginalThreshold = input;
+
+        Assert.Equal(expected, vm.MarginalThreshold, 10);
+    }
+
     [Fact]
     public void DriverItem_AndLapItem_ToString_ReturnDisplayText()
     {

@@ -113,7 +113,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _targetResponseLaps = Math.Max(1, r);
 
         if (TryParseDouble(MarginalThresholdBox.Text, out var m))
-            _marginalThreshold = m;
+            _marginalThreshold = Math.Max(0.0, m);
     }
 
     private void TrafficSettings_TextChanged(object sender, TextChangedEventArgs e)
@@ -951,9 +951,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         var safetyCarWindows = BuildSafetyCarWindows(_currentRaceControlMessages);
-        var refPace = DeriveReferencePacePerDriver(safetyCarWindows);
-        var attackerRefPace = refPace.GetValueOrDefault(attacker.DriverNumber, 0.0);
-        var targetRefPace = refPace.GetValueOrDefault(target.DriverNumber, 0.0);
+        var derivedPace = DeriveReferencePacePerDriver(safetyCarWindows);
+
+        var attackerRefPace =
+            TryParseDouble(ScanAttackerPaceBox.Text, out var attackerOverride) && attackerOverride > 0
+                ? attackerOverride
+                : derivedPace.GetValueOrDefault(attacker.DriverNumber, 0.0);
+
+        var targetRefPace =
+            TryParseDouble(ScanTargetPaceBox.Text, out var targetOverride) && targetOverride > 0
+                ? targetOverride
+                : derivedPace.GetValueOrDefault(target.DriverNumber, 0.0);
 
         if (attackerRefPace <= 0 || targetRefPace <= 0)
         {
@@ -982,7 +990,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 Target: new DriverPredictionState(target.Code, target.Code, 1, targetRefPace, ParseCompound(targetCompound), targetTyreAge),
                 AttackerReplacementTyre: new TyreSetSpecification(attackerReplCompound, attackerReplAge),
                 TargetReplacementTyre: new TyreSetSpecification(targetReplCompound, targetReplAge),
-                TargetResponseLaps: 1,
+                TargetResponseLaps: _targetResponseLaps,
                 ModelParameters: modelParams);
 
             var prediction = predictor.Predict(request);

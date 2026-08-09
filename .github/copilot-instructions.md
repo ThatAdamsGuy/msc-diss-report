@@ -11,7 +11,7 @@ Purpose
 - Support reproducibility and audit for the MSc dissertation engineering tool.
 
 Primary log file
-- agent_work_log.json (root)
+- AgentInformation/agent_work_log.json
 
 Schema (agent_work_log.json entries array)
 - id: string (unique, e.g., step-20260805-001)
@@ -38,11 +38,11 @@ Example entry
   "author": "GitHub Copilot",
   "summary": "Read Undercut_Tool_Agent_Context.md and created logging artifacts",
   "rationale": "User requested the agent to record future work in a parseable document",
-  "filesChanged": ["agent_work_log.json", "AGENT_WORK_LOG_README.md"],
+  "filesChanged": ["AgentInformation/agent_work_log.json", "AgentInformation/AGENT_WORK_LOG_README.md"],
   "commandsRun": [],
   "testsRun": [],
   "buildResult": null,
-  "references": ["new-code/UndercutAnalyser/Undercut_Tool_Agent_Context.md"],
+  "references": ["AgentInformation/Undercut_Tool_Agent_Context.md"],
   "notes": "Initial log created. Agent will append future entries."
 }
 
@@ -55,8 +55,18 @@ Addendum
 
 **Project owner:** Harry Adams  
 **Academic context:** MSc Advanced Motorsport Engineering dissertation  
-**Preferred implementation stack:** C# / .NET 8 / WPF  
+**Preferred implementation stack:** C# / .NET 10 / WPF  
 **Primary purpose:** Build a transparent, deterministic engineering tool that predicts whether an attacking Formula One driver could successfully undercut the driver ahead if they pit at the current decision point.
+
+### Current implementation baseline (keep future changes consistent unless user requests otherwise)
+- `MainWindow` is the active workspace shell; legacy popup `StrategyWindow` has been removed from runtime sources.
+- Full-scan (all-drivers) results live in the graph-area **Results** tab (`MainScanSingleGrid`).
+- Single-driver scan and single-undercut simulation results live in the Parameters panel **Scan Single Driver** tab (`ScanSingleResultsGrid`).
+- Export ownership is split to the Event Selection area buttons:
+  - `FullScanExportCsvButton` exports full-scan rows.
+  - `SingleScanExportCsvButton` exports single-scan rows.
+- Both result tables support show/hide filters for `Ahead`, `Marginal`, and `Behind`, and use row highlighting by classification.
+- Tyre-state fallback should prefer the most recent known stint before returning `UNKNOWN`.
 
 ---
 
