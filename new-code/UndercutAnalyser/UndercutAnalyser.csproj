@@ -1,15 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+	<OutputType>WinExe</OutputType>
 	  <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
 	  <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ScottPlot.WPF" Version="5.1.59" />
+	<Compile Remove="UndercutAnalyser.Tests\**\*.cs" />
+	<EmbeddedResource Remove="UndercutAnalyser.Tests\**\*" />
+	<None Remove="UndercutAnalyser.Tests\**\*" />
+	<Page Remove="UndercutAnalyser.Tests\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<PackageReference Include="ScottPlot.WPF" Version="5.1.59" />
+  </ItemGroup>
+
+  <!-- Exclude nested test project sources when the tests folder sits under this app project. -->
+  <ItemGroup>
+	<Compile Remove="UndercutAnalyser.Tests\**\*.cs" />
+	<EmbeddedResource Remove="UndercutAnalyser.Tests\**\*" />
+	<None Remove="UndercutAnalyser.Tests\**\*" />
+	<Page Remove="UndercutAnalyser.Tests\**\*" />
   </ItemGroup>
 
 </Project>

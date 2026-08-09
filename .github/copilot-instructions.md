@@ -1277,6 +1277,7 @@ Attacker elapsed: 200.0 s
 Target elapsed: 203.0 s
 Predicted gap: -1.0 s
 Result: attacker ahead
+
 ## 17.5 Data adapter tests
 
 Use stored JSON fixtures, not live internet calls, for repeatable tests.
@@ -1286,6 +1287,11 @@ Use stored JSON fixtures, not live internet calls, for repeatable tests.
 Ensure observed future data is never accessed before prediction completes.
 
 One way is to use separate interfaces and separate object graphs.
+
+## 17.7 Unit test comments
+
+- Write thorough unit tests with clear explanatory comments.
+- Group tests by region with region-level rationale.
 
 ---
 
