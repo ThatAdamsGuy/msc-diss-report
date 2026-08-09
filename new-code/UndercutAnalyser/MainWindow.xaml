@@ -5,32 +5,37 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UndercutAnalyser"
         mc:Ignorable="d"
-        Title="Undercut Prediction Tool" Height="900" Width="1600">
+        Title="Undercut Prediction Tool" Height="1080" Width="1920"
+        WindowStartupLocation="CenterScreen">
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="5*" />
+            <ColumnDefinition Width="7*" />
+        </Grid.ColumnDefinitions>
 
         <!-- Event Selection Area -->
-        <Border Grid.Row="0" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="0,0,0,8" Margin="0,0,0,8">
-            <StackPanel>
+        <Border Grid.Row="0" Grid.Column="0" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="0,0,0,8" Margin="0,0,8,8">
+            <StackPanel HorizontalAlignment="Left" Width="775">
                 <TextBlock FontSize="12" Foreground="#666666">Selected Event</TextBlock>
-                <TextBlock x:Name="SelectedEventDisplay" FontSize="14" FontWeight="Bold" Margin="0,4,0,0">No event selected</TextBlock>
-                <Button x:Name="EventButton" Content="Choose Event" Width="120" Margin="0,8,0,0" />
+                <TextBlock x:Name="SelectedEventDisplay" FontSize="14" FontWeight="Bold" Margin="0,4,0,0" ToolTip="Hover for details">No event selected</TextBlock>
+                <Button x:Name="EventButton" Content="Choose Event" Width="120" Margin="0,8,0,0" HorizontalAlignment="Left" />
             </StackPanel>
         </Border>
 
-        <!-- Navigation Buttons + Trace Controls -->
-        <DockPanel Grid.Row="1" Margin="0,0,0,8" LastChildFill="False">
-            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                <Button x:Name="ParametersButton" Content="Parameters" Width="100" Margin="0,0,8,0" />
-                <Button x:Name="PredictButton" Content="Predict" Width="100" Margin="0,0,8,0" IsEnabled="False" />
-                <Button x:Name="RawDataButton" Content="Raw Data" Width="100" Margin="0,0,12,0" IsEnabled="False" />
+        <!-- Raw Data + Trace Controls -->
+        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,8" Orientation="Vertical" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <Button x:Name="ScanAllDriversButton" Content="Scan All Drivers" Width="140" Height="40" Margin="0,0,8,0" IsEnabled="False" HorizontalAlignment="Left" />
+                <Button x:Name="RawDataButton" Content="Raw Data" Width="100" Height="20" Margin="0,0,8,0" IsEnabled="False" HorizontalAlignment="Left" />
+                <Button x:Name="PredictionScanButton" Content="Prediction / Scan" Width="130" Height="20" IsEnabled="False" HorizontalAlignment="Left" />
             </StackPanel>
 
-            <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="8,4" CornerRadius="4" DockPanel.Dock="Right">
+            <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="8,4" CornerRadius="4">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Engineering Trace" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <CheckBox x:Name="IncludePitLapsCheckBox" Content="Include pit laps" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
@@ -43,22 +48,336 @@
                     </ComboBox>
                 </StackPanel>
             </Border>
-        </DockPanel>
+        </StackPanel>
 
-        <!-- Main Race Trace Area -->
-        <Border Grid.Row="2" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+        <!-- Right panel: tabs replacing former Parameters inputs -->
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Background="#2F80ED" BorderBrush="#1F5FB4" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8" Width="1020" Height="420" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TabControl>
+                <TabItem Header="Parameters">
+                    <Grid Margin="6">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,6">
-                    <WrapPanel x:Name="TraceLegendPanel" Orientation="Horizontal" />
-                </ScrollViewer>
+                        <GroupBox Grid.Row="0" Grid.Column="0" Header="Fuel">
+                            <StackPanel Margin="6,4,6,6">
+                                <TextBlock Text="Fuel seconds per 10kg"/>
+                                <TextBox x:Name="FuelSecondsPer10KgBox" Width="110" Margin="0,3,0,8" TextChanged="FuelSettings_TextChanged"/>
+                                <TextBlock Text="Fuel kg"/>
+                                <TextBox x:Name="FuelKgBox" Width="110" Margin="0,3,0,0" TextChanged="FuelSettings_TextChanged"/>
+                            </StackPanel>
+                        </GroupBox>
 
-                <Grid Grid.Row="1" x:Name="RaceTraceHost" />
-            </Grid>
+                        <GroupBox Grid.Row="0" Grid.Column="2" Header="Scenario">
+                            <StackPanel Margin="6,4,6,6">
+                                <TextBlock Text="Target response (laps)"/>
+                                <TextBox x:Name="TargetResponseBox" Width="110" Margin="0,3,0,8" TextChanged="ScenarioSettings_TextChanged"/>
+                                <TextBlock Text="Marginal threshold (s)"/>
+                                <TextBox x:Name="MarginalThresholdBox" Width="110" Margin="0,3,0,0" TextChanged="ScenarioSettings_TextChanged"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Grid.Row="0" Grid.Column="4" Header="Traffic">
+                            <StackPanel Margin="6,4,6,6">
+                                <TextBlock Text="Traffic penalty (s)"/>
+                                <TextBox x:Name="TrafficPenaltyBox" Width="110" Margin="0,3,0,8" TextChanged="TrafficSettings_TextChanged"/>
+                                <CheckBox x:Name="ApplyAttackerTrafficCheckBox" Content="Apply to attacker" Margin="0,0,0,4" Checked="TrafficFlags_Changed" Unchecked="TrafficFlags_Changed"/>
+                                <CheckBox x:Name="ApplyTargetTrafficCheckBox" Content="Apply to target" Checked="TrafficFlags_Changed" Unchecked="TrafficFlags_Changed"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Grid.Row="0" Grid.Column="6" Header="Pit Stop">
+                            <StackPanel Margin="6,4,6,6">
+                                <TextBlock Text="Warm-up penalty (s)"/>
+                                <TextBox x:Name="WarmUpPenaltyBox" Width="110" Margin="0,3,0,8" TextChanged="PitStopSettings_TextChanged"/>
+                                <TextBlock Text="Pit lane loss (s)"/>
+                                <TextBox x:Name="PitLaneLossBox" Width="110" Margin="0,3,0,0" TextChanged="PitStopSettings_TextChanged"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="7" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,8,0,0">
+                            <Button x:Name="ResetParamsButton" Content="Reset to defaults" Width="140"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Tyres">
+                    <DataGrid x:Name="TyreGrid" Margin="8" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" CellEditEnding="TyreGrid_CellEditEnding">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Compound" Binding="{Binding Compound}" IsReadOnly="True" Width="120"/>
+                            <DataGridTextColumn Header="Pace" Binding="{Binding PaceOffset, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridTextColumn Header="Deg" Binding="{Binding DegradationRate, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridTextColumn Header="Life Min" Binding="{Binding MinLaps, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridTextColumn Header="Life Max" Binding="{Binding MaxLaps, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+
+                <TabItem Header="Scan Single Driver">
+                    <Grid Margin="8" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="620"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="340"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Grid.Column="0" BorderBrush="#D0D0D0" BorderThickness="1" Padding="8,6" Margin="0,0,0,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Minimum tyre age (laps):" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox x:Name="ScanMinTyreAgeBox" Width="50" Text="5" Margin="0,0,14,0" HorizontalContentAlignment="Right"/>
+                                <Button x:Name="ScanSingleDriverButton" Content="Scan Single Driver" Width="140" IsEnabled="False" Margin="0,0,10,0"/>
+                                <TextBlock Text="Scan selected attacking driver against all eligible targets." VerticalAlignment="Center" Foreground="#666666" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Vertical" Margin="0,0,0,0">
+                            <GroupBox Header="Attacking Driver Scenario" Margin="0,0,0,8">
+                                <Grid Margin="6,4,6,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Driver"/>
+                                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="ScanSingleAttackerCombo" Width="180" Margin="0,0,0,6" DisplayMemberPath="DisplayName"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Reference pace (s)"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="ScanAttackerPaceBox" Width="90" Margin="0,0,0,6"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Current compound"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="ScanAttackerCurrentCompoundBox" Width="90" Margin="0,0,0,6" IsReadOnly="True" Background="#F8F8F8"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Current tyre age"/>
+                                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="ScanAttackerTyreAgeBox" Width="90" Margin="0,0,0,6" IsReadOnly="True" Background="#F8F8F8"/>
+
+                                    <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Replacement tyre"/>
+                                    <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
+                                        <ComboBox x:Name="ScanAttackerReplCompoundCombo" Width="95" Margin="0,0,8,0">
+                                            <ComboBoxItem Content="SOFT" IsSelected="True"/>
+                                            <ComboBoxItem Content="MEDIUM"/>
+                                            <ComboBoxItem Content="HARD"/>
+                                        </ComboBox>
+                                        <TextBlock VerticalAlignment="Center" Margin="0,0,4,0" Text="Age"/>
+                                        <TextBox x:Name="ScanAttackerReplAgeBox" Width="45"/>
+                                    </StackPanel>
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="Target Driver Scenario" Margin="0,0,0,8">
+                                <Grid Margin="6,4,6,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Driver"/>
+                                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="ScanSingleTargetCombo" Width="180" Margin="0,0,0,6" DisplayMemberPath="DisplayName"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Reference pace (s)"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="ScanTargetPaceBox" Width="90" Margin="0,0,0,6"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Current compound"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="ScanTargetCurrentCompoundBox" Width="90" Margin="0,0,0,6" IsReadOnly="True" Background="#F8F8F8"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Current tyre age"/>
+                                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="ScanTargetTyreAgeBox" Width="90" Margin="0,0,0,6" IsReadOnly="True" Background="#F8F8F8"/>
+
+                                    <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Replacement tyre"/>
+                                    <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
+                                        <ComboBox x:Name="ScanTargetReplCompoundCombo" Width="95" Margin="0,0,8,0">
+                                            <ComboBoxItem Content="SOFT" IsSelected="True"/>
+                                            <ComboBoxItem Content="MEDIUM"/>
+                                            <ComboBoxItem Content="HARD"/>
+                                        </ComboBox>
+                                        <TextBlock VerticalAlignment="Center" Margin="0,0,4,0" Text="Age"/>
+                                        <TextBox x:Name="ScanTargetReplAgeBox" Width="45"/>
+                                    </StackPanel>
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="Scenario">
+                                <Grid Margin="6,4,6,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Target lap"/>
+                                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="ScanTargetLapCombo" Width="90" Margin="0,0,0,6"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Starting gap (s)"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="ScanStartingGapBox" Width="90" IsReadOnly="True" Background="#F8F8F8"/>
+                                </Grid>
+                            </GroupBox>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+                
+            </TabControl>
+        </Border>
+
+        <!-- Main workspace tabs at graph area -->
+        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8">
+            <TabControl>
+                <TabItem Header="Race Trace">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,6">
+                            <WrapPanel x:Name="TraceLegendPanel" Orientation="Horizontal" />
+                        </ScrollViewer>
+
+                        <Grid Grid.Row="1" x:Name="RaceTraceHost" />
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Predict">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <GroupBox Header="Scenario" Grid.Row="0" Margin="0,0,0,8">
+                            <Grid Margin="8,4,8,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Attacking driver:"/>
+                                <ComboBox Grid.Column="1" x:Name="PredictAttackerCombo" DisplayMemberPath="DisplayName"/>
+
+                                <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="Target driver:"/>
+                                <ComboBox Grid.Column="4" x:Name="PredictTargetCombo" DisplayMemberPath="DisplayName"/>
+
+                                <TextBlock Grid.Column="6" VerticalAlignment="Center" Text="Decision lap:"/>
+                                <ComboBox Grid.Column="7" x:Name="PredictDecisionLapCombo"/>
+
+                                <TextBlock Grid.Column="9" VerticalAlignment="Center" Text="Initial gap (s):"/>
+                                <TextBox Grid.Column="10" x:Name="PredictInitialGapBox"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <TextBlock x:Name="PredictValidationText" Grid.Row="1" Foreground="#CC0000" Margin="0,0,0,8" Visibility="Collapsed"/>
+
+                        <GroupBox Grid.Row="2" x:Name="PredictResultGroup" Header="Prediction result" Visibility="Collapsed">
+                            <StackPanel Margin="8,4,8,8">
+                                <Border x:Name="PredictClassificationBadge" CornerRadius="4" Padding="12,6" Margin="0,0,0,10" HorizontalAlignment="Left">
+                                    <TextBlock x:Name="PredictClassificationText" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                                </Border>
+                                <TextBlock x:Name="PredictG0Label" Foreground="#444444" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                                <DataGrid x:Name="PredictLapGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Driver" Binding="{Binding DriverLabel}" Width="70"/>
+                                        <DataGridTextColumn Header="Lap" Binding="{Binding LapNumber}" Width="45"/>
+                                        <DataGridTextColumn Header="Type" Binding="{Binding LapType}" Width="70"/>
+                                        <DataGridTextColumn Header="Compound" Binding="{Binding Compound}" Width="80"/>
+                                        <DataGridTextColumn Header="Tyre age" Binding="{Binding TyreAge}" Width="70"/>
+                                        <DataGridTextColumn Header="Base (s)" Binding="{Binding Base}" Width="70"/>
+                                        <DataGridTextColumn Header="Compound Δ" Binding="{Binding CompoundOffset}" Width="90"/>
+                                        <DataGridTextColumn Header="Degradation" Binding="{Binding Degradation}" Width="90"/>
+                                        <DataGridTextColumn Header="Warm up" Binding="{Binding WarmUp}" Width="75"/>
+                                        <DataGridTextColumn Header="Traffic" Binding="{Binding Traffic}" Width="65"/>
+                                        <DataGridTextColumn Header="Pit loss" Binding="{Binding PitLoss}" Width="65"/>
+                                        <DataGridTextColumn Header="Total (s)" Binding="{Binding Total}" Width="75"/>
+                                        <DataGridTextColumn Header="Cumul. (s)" Binding="{Binding Cumulative}" Width="80"/>
+                                        <DataGridTextColumn Header="Gap (s)" Binding="{Binding Gap}" Width="90"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button x:Name="RunPredictionButton" Content="Run Prediction" Width="130" Margin="0,0,8,0"/>
+                            <Button x:Name="PredictExportCsvButton" Content="Export CSV" Width="110" IsEnabled="False"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Results">
+                    <Grid Margin="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <DataGrid x:Name="MainScanSingleGrid"
+                                  Grid.Row="0"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserSortColumns="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderBrush="#D0D0D0" BorderThickness="1">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Lap" Binding="{Binding DecisionLap}" Width="45"/>
+                                <DataGridTextColumn Header="Attacking" Binding="{Binding Attacker}" Width="70"/>
+                                <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="70"/>
+                                <DataGridTextColumn Header="Att. tyre" Binding="{Binding AttackerCompound}" Width="70"/>
+                                <DataGridTextColumn Header="Att. age" Binding="{Binding AttackerTyreAge}" Width="55"/>
+                                <DataGridTextColumn Header="Tar. tyre" Binding="{Binding TargetCompound}" Width="70"/>
+                                <DataGridTextColumn Header="Tar. age" Binding="{Binding TargetTyreAge}" Width="55"/>
+                                <DataGridTextColumn Header="G₀" Binding="{Binding G0}" Width="70"/>
+                                <DataGridTextColumn Header="Gap@PitLap" Binding="{Binding GapAtTargetPitLapComplete}" Width="95"/>
+                                <DataGridTextColumn Header="ΔG@PitLap" Binding="{Binding DeltaGAtTargetPitLapComplete}" Width="95"/>
+                                <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="90"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button x:Name="MainScanExportCsvButton" Content="Export Results CSV" Width="140" IsEnabled="False" Margin="0,0,12,0"/>
+                            <TextBlock x:Name="MainScanSingleStatusText" Foreground="#666666" FontSize="11" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+            </TabControl>
         </Border>
     </Grid>
 </Window>
