@@ -380,11 +380,14 @@ public partial class StrategyWindow : Window
     private List<EventLap> GetCleanLapsForDriver(int driverNumber)
     {
         var windows = BuildSafetyCarWindows();
+        var pitInLaps = GetDerivedPitInLapNumbers(driverNumber);
+
         return _laps
             .Where(l => l.DriverNumber == driverNumber
                      && l.LapDuration.HasValue
                      && l.DateStart.HasValue
                      && !l.IsPitOutLap
+                     && !pitInLaps.Contains(l.LapNumber)
                      && !IsInAnySafetyCarWindow(l, windows))
             .ToList();
     }
@@ -396,52 +399,28 @@ public partial class StrategyWindow : Window
         var decisionLap = _vm.DecisionLap?.LapNumber;
         if (attacker is null || target is null || decisionLap is null) return;
 
-        // Walk backwards from n-1 to find the most recent lap where neither driver
-        // was on a pit-in or pit-out lap. A pit-in lap is the lap immediately before
-        // a pit-out lap — its LapDuration includes pit lane time and would corrupt G0.
-        var attackerPitOutLaps = _laps
-            .Where(l => l.DriverNumber == attacker.DriverNumber && l.IsPitOutLap)
-            .Select(l => l.LapNumber)
-            .ToHashSet();
-        var targetPitOutLaps = _laps
-            .Where(l => l.DriverNumber == target.DriverNumber && l.IsPitOutLap)
-            .Select(l => l.LapNumber)
-            .ToHashSet();
+        // G0 is the gap at Sector Line Two on the decision lap.
+        var attackerLap = _laps.FirstOrDefault(l =>
+            l.DriverNumber == attacker.DriverNumber
+            && l.LapNumber == decisionLap.Value
+            && l.DateStart.HasValue
+            && l.LapTimeAtSectorTwoLine.HasValue);
 
-        // Pit-in lap is the lap before the corresponding pit-out lap
-        var attackerPitInLaps  = attackerPitOutLaps.Select(n => n - 1).ToHashSet();
-        var targetPitInLaps    = targetPitOutLaps.Select(n => n - 1).ToHashSet();
-
-        EventLap? attackerLap = null;
-        EventLap? targetLap   = null;
-
-        for (int gapSourceLap = decisionLap.Value - 1; gapSourceLap >= 1; gapSourceLap--)
-        {
-            // Skip if either driver was pitting in or out on this lap
-            if (attackerPitOutLaps.Contains(gapSourceLap) || attackerPitInLaps.Contains(gapSourceLap)) continue;
-            if (targetPitOutLaps.Contains(gapSourceLap)   || targetPitInLaps.Contains(gapSourceLap))   continue;
-
-            var aLap = _laps.FirstOrDefault(l =>
-                l.DriverNumber == attacker.DriverNumber && l.LapNumber == gapSourceLap
-                && l.DateStart.HasValue && l.LapDuration.HasValue);
-            var tLap = _laps.FirstOrDefault(l =>
-                l.DriverNumber == target.DriverNumber && l.LapNumber == gapSourceLap
-                && l.DateStart.HasValue && l.LapDuration.HasValue);
-
-            if (aLap is null || tLap is null) continue;
-
-            attackerLap = aLap;
-            targetLap   = tLap;
-            break;
-        }
+        var targetLap = _laps.FirstOrDefault(l =>
+            l.DriverNumber == target.DriverNumber
+            && l.LapNumber == decisionLap.Value
+            && l.DateStart.HasValue
+            && l.LapTimeAtSectorTwoLine.HasValue);
 
         if (attackerLap is null || targetLap is null) return;
 
-        var attackerFinish = ToUtc(attackerLap.DateStart!.Value).AddSeconds(attackerLap.LapDuration!.Value);
-        var targetFinish   = ToUtc(targetLap.DateStart!.Value).AddSeconds(targetLap.LapDuration!.Value);
+        var attackerSectorTwoLine = ToUtc(attackerLap.DateStart!.Value)
+            .AddSeconds(attackerLap.LapTimeAtSectorTwoLine!.Value);
+        var targetSectorTwoLine = ToUtc(targetLap.DateStart!.Value)
+            .AddSeconds(targetLap.LapTimeAtSectorTwoLine!.Value);
 
         // Positive = attacker is behind (standard sign convention)
-        _vm.InitialGap = Math.Round((attackerFinish - targetFinish).TotalSeconds, 3);
+        _vm.InitialGap = Math.Round((attackerSectorTwoLine - targetSectorTwoLine).TotalSeconds, 3);
         InitialGapBox.Text = _vm.InitialGap.ToString("F3", CultureInfo.InvariantCulture);
     }
 
@@ -889,9 +868,9 @@ public partial class StrategyWindow : Window
 
     /// <summary>
     /// Core scan logic. For each driver number and each eligible lap, derives the
-    /// driver directly ahead on track, computes G0 from lap n-1 finish times, then
-    /// runs the prediction engine with r=1 using the current model parameters.
-    /// Safe to call from a background thread — no UI access.
+    /// driver directly ahead on track, computes G0 from Sector Line Two timing on
+    /// the decision lap, then runs the prediction engine with r=1 using the current
+    /// model parameters. Safe to call from a background thread — no UI access.
     /// </summary>
     private List<ScanResultRow> RunScan(
         IReadOnlyList<int> driverNumbers,
@@ -955,35 +934,17 @@ public partial class StrategyWindow : Window
                 var targetRefPace = referencePaceByDriver.GetValueOrDefault(targetNumber, 0.0);
                 if (targetRefPace <= 0) continue;
 
-                // G0: walk backwards from n-1 to find the most recent clean lap for both
-                // drivers — skipping any pit-in or pit-out lap, which would embed pit-lane
-                // time in the finish timestamp and produce a wildly wrong baseline.
-                var attPitOutLaps = new HashSet<int>(
-                    attackerLapMap.Values.Where(l => l.IsPitOutLap).Select(l => l.LapNumber));
-                var tarPitOutLaps = new HashSet<int>(
-                    targetLapMap.Values.Where(l => l.IsPitOutLap).Select(l => l.LapNumber));
-                var attPitInLaps = new HashSet<int>(attPitOutLaps.Select(n => n - 1));
-                var tarPitInLaps = new HashSet<int>(tarPitOutLaps.Select(n => n - 1));
+                // G0 is the gap at Sector Line Two on the decision lap.
+                if (!attackerLapMap.TryGetValue(lapNumber, out var attackerDecisionLap)) continue;
+                if (!targetLapMap.TryGetValue(lapNumber, out var targetDecisionLap)) continue;
+                if (!attackerDecisionLap.DateStart.HasValue || !attackerDecisionLap.LapTimeAtSectorTwoLine.HasValue) continue;
+                if (!targetDecisionLap.DateStart.HasValue || !targetDecisionLap.LapTimeAtSectorTwoLine.HasValue) continue;
 
-                DateTime attFinish = default, tarFinish = default;
-                double g0 = double.NaN;
-
-                for (int src = lapNumber - 1; src >= 1; src--)
-                {
-                    if (attPitOutLaps.Contains(src) || attPitInLaps.Contains(src)) continue;
-                    if (tarPitOutLaps.Contains(src) || tarPitInLaps.Contains(src)) continue;
-                    if (!attackerLapMap.TryGetValue(src, out var aLap)) continue;
-                    if (!targetLapMap.TryGetValue(src, out var tLap)) continue;
-                    if (!aLap.DateStart.HasValue || !aLap.LapDuration.HasValue) continue;
-                    if (!tLap.DateStart.HasValue || !tLap.LapDuration.HasValue) continue;
-
-                    attFinish = ToUtc(aLap.DateStart.Value).AddSeconds(aLap.LapDuration!.Value);
-                    tarFinish = ToUtc(tLap.DateStart.Value).AddSeconds(tLap.LapDuration!.Value);
-                    g0 = (attFinish - tarFinish).TotalSeconds;
-                    break;
-                }
-
-                if (double.IsNaN(g0)) continue;
+                var attackerSectorTwoLine = ToUtc(attackerDecisionLap.DateStart.Value)
+                    .AddSeconds(attackerDecisionLap.LapTimeAtSectorTwoLine.Value);
+                var targetSectorTwoLine = ToUtc(targetDecisionLap.DateStart.Value)
+                    .AddSeconds(targetDecisionLap.LapTimeAtSectorTwoLine.Value);
+                var g0 = (attackerSectorTwoLine - targetSectorTwoLine).TotalSeconds;
 
                 // Must be behind to have an undercut opportunity
                 if (g0 <= 0) continue;
@@ -1142,8 +1103,22 @@ public partial class StrategyWindow : Window
         return ("UNKNOWN", lapNumber - lastPitOutLap);
     }
 
+    private HashSet<int> GetDerivedPitInLapNumbers(int driverNumber)
+    {
+        var pitOutLaps = _laps
+            .Where(l => l.DriverNumber == driverNumber && l.IsPitOutLap)
+            .Select(l => l.LapNumber)
+            .ToHashSet();
+
+        return pitOutLaps
+            .Select(lap => lap - 1)
+            .Where(lap => lap >= 1 && !pitOutLaps.Contains(lap))
+            .ToHashSet();
+    }
+
     /// <summary>
-    /// Computes the average clean-lap time for every driver, excluding pit-out laps and SC/VSC laps.
+    /// Computes the average clean-lap time for every driver, excluding pit-out laps,
+    /// derived pit-in laps (lap immediately before pit-out), and SC/VSC laps.
     /// </summary>
     private Dictionary<int, double> DeriveReferencePacePerDriver(List<TimeWindow> safetyCarWindows)
     {
@@ -1151,9 +1126,19 @@ public partial class StrategyWindow : Window
             .GroupBy(l => l.DriverNumber)
             .Select(g =>
             {
+                var pitOutLaps = g.Where(l => l.IsPitOutLap)
+                                  .Select(l => l.LapNumber)
+                                  .ToHashSet();
+
+                var pitInLaps = g.Where(l => l.IsPitOutLap)
+                                 .Select(l => l.LapNumber - 1)
+                                 .Where(lap => lap >= 1 && !pitOutLaps.Contains(lap))
+                                 .ToHashSet();
+
                 var cleanLaps = g
                     .Where(l => l.LapDuration.HasValue && l.DateStart.HasValue
                              && !l.IsPitOutLap
+                             && !pitInLaps.Contains(l.LapNumber)
                              && !IsInAnySafetyCarWindow(l, safetyCarWindows))
                     .ToList();
 

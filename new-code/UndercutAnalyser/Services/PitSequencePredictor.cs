@@ -157,7 +157,10 @@ namespace UndercutAnalyser.Services
                 if (lap == tertiaryEndLap)  gapAtN3 = gap;
             }
 
-            var classification = Classify(gapAtN1, p.MarginalThresholdSeconds);
+            // Classify at the core pit-sequence endpoint: when the target out lap is complete.
+            // This is always GapAtN2 in this predictor (works for r=1 and r>1).
+            var classificationGap = gapAtN2;
+            var classification = Classify(classificationGap, p.MarginalThresholdSeconds);
 
             double g0 = req.InitialAttackerGapToTargetSeconds;
 
@@ -178,12 +181,12 @@ namespace UndercutAnalyser.Services
 
         // ── Helpers ──────────────────────────────────────────────────────────────────
 
-        private static UndercutClassification Classify(double gapAtN1, double threshold)
+        private static UndercutClassification Classify(double gap, double threshold)
         {
-            if (double.IsNaN(gapAtN1)) return UndercutClassification.PredictedBehind;
+            if (double.IsNaN(gap)) return UndercutClassification.PredictedBehind;
 
-            if (gapAtN1 < -threshold)  return UndercutClassification.PredictedAhead;
-            if (gapAtN1 >  threshold)  return UndercutClassification.PredictedBehind;
+            if (gap < -threshold)  return UndercutClassification.PredictedAhead;
+            if (gap >  threshold)  return UndercutClassification.PredictedBehind;
             return UndercutClassification.PredictedMarginal;
         }
 

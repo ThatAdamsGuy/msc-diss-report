@@ -29,6 +29,8 @@ namespace UndercutAnalyser.Domain.Models
         [JsonPropertyName("duration_sector_3")]
         public float? DurationSector3 { get; init; }
 
+        public float? LapTimeAtSectorTwoLine { get => DurationSector1 + DurationSector2; }
+
         [JsonPropertyName("i1_speed")]
         public int? I1Speed { get; init; }
 
