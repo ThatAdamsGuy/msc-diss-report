@@ -6,7 +6,7 @@ using UndercutAnalyser.Domain.Prediction;
 namespace UndercutAnalyser.ViewModels
 {
     /// <summary>
-    /// A driver entry in the attacker/target selector ComboBoxes.
+    /// A driver entry in the attacking-driver/target-driver selector ComboBoxes.
     /// </summary>
     public sealed class DriverItem
     {
@@ -69,7 +69,7 @@ namespace UndercutAnalyser.ViewModels
             set => SetField(ref _decisionLap, value);
         }
 
-        // ── Attacker state at decision point ─────────────────────────────────
+        // ── Attacking driver state at decision lap (Sector Line Two) ─────────
 
         private double _attackerReferencePace = 90.0;
         private string _attackerCurrentCompound = "SOFT";
@@ -107,7 +107,7 @@ namespace UndercutAnalyser.ViewModels
             set => SetField(ref _attackerReplAge, value);
         }
 
-        // ── Target state at decision point ───────────────────────────────────
+        // ── Target driver state at decision lap (Sector Line Two) ───────────
 
         private double _targetReferencePace = 90.0;
         private string _targetCurrentCompound = "SOFT";
@@ -150,7 +150,8 @@ namespace UndercutAnalyser.ViewModels
         private double _initialGap = 1.5;
 
         /// <summary>
-        /// Attacker gap to target at the decision point (positive = attacker is behind).
+        /// Gap from attacking driver to target driver at the decision lap (Sector Line Two)
+        /// (positive = attacking driver is behind).
         /// </summary>
         public double InitialGap
         {

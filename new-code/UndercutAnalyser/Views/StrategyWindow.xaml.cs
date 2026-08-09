@@ -261,7 +261,7 @@ public partial class StrategyWindow : Window
     }
 
     /// <summary>
-    /// Loads selectable attacker and target drivers into predict controls.
+    /// Loads selectable attacking and target drivers into predict controls.
     /// </summary>
     private void PopulateDrivers()
     {
@@ -436,7 +436,7 @@ public partial class StrategyWindow : Window
     }
 
     /// <summary>
-    /// Derives the starting attacker-target gap at Sector Line Two on the decision lap.
+    /// Derives the starting attacking-driver to target-driver gap at Sector Line Two on the decision lap.
     /// </summary>
     private void TryDeriveInitialGap()
     {
@@ -465,7 +465,7 @@ public partial class StrategyWindow : Window
         var targetSectorTwoLine = ToUtc(targetLap.DateStart!.Value)
             .AddSeconds(targetLap.LapTimeAtSectorTwoLine!.Value);
 
-        // Positive = attacker is behind (standard sign convention)
+        // Positive = attacking driver is behind (standard sign convention)
         _vm.InitialGap = Math.Round((attackerSectorTwoLine - targetSectorTwoLine).TotalSeconds, 3);
         InitialGapBox.Text = _vm.InitialGap.ToString("F3", CultureInfo.InvariantCulture);
     }
@@ -577,9 +577,9 @@ public partial class StrategyWindow : Window
     /// </summary>
     private string? ValidatePredictInputs()
     {
-        if (_vm.Attacker is null) return "Select an attacker driver.";
+        if (_vm.Attacker is null) return "Select an attacking driver.";
         if (_vm.Target is null) return "Select a target driver.";
-        if (_vm.Attacker.DriverNumber == _vm.Target.DriverNumber) return "Attacker and target must be different drivers.";
+        if (_vm.Attacker.DriverNumber == _vm.Target.DriverNumber) return "Attacking and target drivers must be different.";
         if (_vm.DecisionLap is null) return "Select a decision lap.";
         if (_vm.AttackerReferencePace <= 0) return "Attacker reference pace must be positive.";
         if (_vm.TargetReferencePace <= 0) return "Target reference pace must be positive.";
@@ -688,7 +688,7 @@ public partial class StrategyWindow : Window
         GapN3Label.Text   = FormatGap(result.GapAtN3Seconds);
         DeltaN3Label.Text = $"ΔG = {result.DeltaGAtN3Seconds:+0.000;-0.000;0.000} s";
 
-        // Build lap table — interleave attacker and target, one row each per lap number.
+        // Build lap table — interleave attacking and target drivers, one row each per lap.
         // The Gap column is shown on the target row (both drivers have finished that lap).
         var targetByLap = result.TargetLaps.ToDictionary(l => l.LapNumber, l => l.CumulativePredictionTimeSeconds);
         var attackerByLap = result.AttackerLaps.ToDictionary(l => l.LapNumber, l => l.CumulativePredictionTimeSeconds);

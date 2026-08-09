@@ -3,9 +3,10 @@ namespace UndercutAnalyser.Domain.Prediction
     /// <summary>
     /// A fully specified request to run the undercut prediction engine.
     ///
-    /// InitialAttackerGapToTargetSeconds is the observed gap at the decision point, signed:
-    ///   Negative = attacker is currently ahead (unusual for an undercut attempt).
-    ///   Positive = attacker is currently behind the target (normal case).
+    /// InitialAttackerGapToTargetSeconds is the observed gap at the decision lap
+    /// (measured at Sector Line Two), signed:
+    ///   Negative = attacking driver is currently ahead (unusual for an undercut attempt).
+    ///   Positive = attacking driver is currently behind the target driver (normal case).
     ///
     /// TargetResponseLaps is the number of laps between the attacker's pit stop (lap n)
     /// and the target's pit stop (lap n + TargetResponseLaps). Must be >= 1.

@@ -21,11 +21,11 @@ namespace UndercutAnalyser.Services
     /// The three comparison gaps are calculated using:
     ///   G(n) = G0 + attackerElapsed − targetElapsed
     ///
-    ///   GapAtN1 — end of lap n+r   (primary: target pit lap complete)
-    ///   GapAtN2 — end of lap n+r+1 (target out lap done)
-    ///   GapAtN3 — end of lap n+r+2 (both on first normal lap)
+    ///   GapAtN1 — end of lap n+r   (primary: target driver pit lap complete)
+    ///   GapAtN2 — end of lap n+r+1 (target driver out lap complete)
+    ///   GapAtN3 — end of lap n+r+2 (both drivers on first normal lap)
     ///
-    /// Sign convention: negative = attacker ahead.
+    /// Sign convention: negative = attacking driver ahead.
     /// </summary>
     public sealed class PitSequencePredictor : IPitSequencePredictor
     {
@@ -40,7 +40,7 @@ namespace UndercutAnalyser.Services
         }
 
         /// <summary>
-        /// Runs the full attacker/target pit sequence from lap n through the tertiary
+        /// Runs the full attacking-driver/target-driver pit sequence from lap n through the tertiary
         /// endpoint and returns gaps, gain/loss deltas, classification, and warnings.
         /// </summary>
         public PredictionResult Predict(PredictionRequest req)

@@ -1,7 +1,7 @@
 namespace UndercutAnalyser.Domain.Prediction
 {
     /// <summary>
-    /// The observed state of a single driver at the decision point.
+    /// The observed state of a single driver at the decision lap (Sector Line Two).
     /// This is the starting condition from which the lap-by-lap prediction is built.
     ///
     /// ReferencePaceSeconds is driver-specific. It represents the driver's clean lap time

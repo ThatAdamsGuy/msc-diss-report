@@ -8,7 +8,7 @@ namespace UndercutAnalyser.Domain.Prediction
     /// </summary>
     public enum UndercutClassification
     {
-        /// <summary>Attacker is predicted to be clearly ahead (GapAtN1 &lt; −threshold).</summary>
+        /// <summary>Attacking driver is predicted to be clearly ahead (GapAtN1 &lt; −threshold).</summary>
         PredictedAhead,
 
         /// <summary>
@@ -17,7 +17,7 @@ namespace UndercutAnalyser.Domain.Prediction
         /// </summary>
         PredictedMarginal,
 
-        /// <summary>Attacker is predicted to remain behind (GapAtN1 &gt; +threshold).</summary>
+        /// <summary>Attacking driver is predicted to remain behind (GapAtN1 &gt; +threshold).</summary>
         PredictedBehind
     }
 
@@ -36,8 +36,8 @@ namespace UndercutAnalyser.Domain.Prediction
     ///
     /// Gap change (ΔG(n) = G(n) - G0 = T_A(n) - T_T(n)):
     ///   DeltaGAtN1Seconds / DeltaGAtN2Seconds / DeltaGAtN3Seconds
-    ///   Negative = attacker gained time on target (regardless of whether they ended up ahead).
-    ///   Positive = attacker lost time to target.
+    ///   Negative = attacking driver gained time on the target driver (regardless of final position).
+    ///   Positive = attacking driver lost time to the target driver.
     ///   This is derived purely from the predicted elapsed times — no Stay Out scenario required.
     ///
     /// Classification is derived from GapAtN1Seconds vs MarginalThresholdSeconds.

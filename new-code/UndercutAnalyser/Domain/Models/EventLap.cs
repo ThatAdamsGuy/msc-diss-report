@@ -35,7 +35,7 @@ namespace UndercutAnalyser.Domain.Models
 
         /// <summary>
         /// Elapsed time from lap start to Sector Line Two crossing (S1 + S2).
-        /// Used as the decision-point timestamp when deriving initial attacker-target gap.
+        /// Used as the decision-lap timestamp when deriving the attacking-driver to target-driver gap.
         /// </summary>
         public float? LapTimeAtSectorTwoLine { get => DurationSector1 + DurationSector2; }
 
