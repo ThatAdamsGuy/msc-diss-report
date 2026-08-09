@@ -292,6 +292,7 @@ public sealed class RawDataView : Window
         _extraInfoText.Text =
             $"Extra info  |  Rows: {_reference?.TotalLapRows ?? _laps.Count}  |  Session laps: {_reference?.MaxSessionLapNumber ?? _lapNumbers.Length}  |  " +
             $"Reference avg: {referenceAvgText}s  |  Fuel: {_fuelKg:F1} kg  |  Seconds per 10kg: {_fuelSecondsPer10Kg:F3}  |  " +
-            $"Fuel/lap: {_reference?.FuelEffectPerLapSeconds.ToString("F3") ?? "N/A"}s  |  Stints: {_stints.Count}";
+            $"Fuel/lap: {_reference?.FuelEffectPerLapSeconds.ToString("F3") ?? "N/A"}s  |  Clean laps: {_reference?.IncludedLaps.ToString() ?? "N/A"}  |  " +
+            $"Excluded (pit-out/pit-in/SC): {_reference?.ExcludedPitOutLaps.ToString() ?? "N/A"}/{_reference?.ExcludedPitInLaps.ToString() ?? "N/A"}/{_reference?.ExcludedSafetyCarLaps.ToString() ?? "N/A"}  |  Stints: {_stints.Count}";
     }
 }

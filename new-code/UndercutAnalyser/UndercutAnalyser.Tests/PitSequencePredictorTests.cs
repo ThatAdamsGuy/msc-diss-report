@@ -92,7 +92,7 @@ public sealed class PitSequencePredictorTests
     #endregion
 
     #region Gap, delta, and classification outcomes
-    // These tests exist to verify all reported metrics (GapAtN1/N2/N3 and DeltaG fields)
+    // These tests exist to verify all reported metrics (primary/secondary/tertiary gaps and DeltaG fields)
     // are computed from cumulative elapsed times with the documented sign convention.
 
     [Fact]
@@ -117,7 +117,7 @@ public sealed class PitSequencePredictorTests
 
         var result = sut.Predict(request);
 
-        Assert.Equal(-65.0, result.GapAtN1Seconds, 10);
+        Assert.Equal(-65.0, result.GapAfterTargetPitSeconds, 10);
         Assert.Equal(-85.0, result.GapAtN2Seconds, 10);
         Assert.Equal(-115.0, result.GapAtN3Seconds, 10);
 
@@ -141,7 +141,7 @@ public sealed class PitSequencePredictorTests
 
         var result = sut.Predict(request);
 
-        Assert.Equal(initialGapSeconds, result.GapAtN1Seconds, 10);
+        Assert.Equal(initialGapSeconds, result.GapAfterTargetPitSeconds, 10);
         Assert.Equal(expected, result.Classification);
     }
 
@@ -179,7 +179,7 @@ public sealed class PitSequencePredictorTests
 
         var result = sut.Predict(request);
 
-        Assert.True(result.GapAtN1Seconds > 0.25);   // behind at primary endpoint
+        Assert.True(result.GapAfterTargetPitSeconds > 0.25);   // behind at primary endpoint
         Assert.True(result.GapAtN2Seconds < -0.25);  // but ahead later
         Assert.Equal(UndercutClassification.PredictedBehind, result.Classification);
     }
@@ -194,7 +194,7 @@ public sealed class PitSequencePredictorTests
         var result = sut.Predict(request);
 
         Assert.Equal(2.75, result.InitialGapSeconds, 10);
-        Assert.Equal(result.GapAtN1Seconds - result.InitialGapSeconds, result.DeltaGAtN1Seconds, 10);
+        Assert.Equal(result.GapAfterTargetPitSeconds - result.InitialGapSeconds, result.DeltaGAtN1Seconds, 10);
         Assert.Equal(result.GapAtN2Seconds - result.InitialGapSeconds, result.DeltaGAtN2Seconds, 10);
         Assert.Equal(result.GapAtN3Seconds - result.InitialGapSeconds, result.DeltaGAtN3Seconds, 10);
     }

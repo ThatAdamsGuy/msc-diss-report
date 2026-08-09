@@ -163,11 +163,11 @@ namespace UndercutAnalyser.ViewModels
 
         private int _targetResponseLaps = 1;
         private double _pitLaneLoss = 22.0;
-        private double _warmUpPenalty = 0.3;
+        private double _warmUpPenalty = 2.0;
         private double _marginalThreshold = 0.25;
         private bool _applyAttackerTraffic;
         private bool _applyTargetTraffic;
-        private double _trafficPenalty = 0.2;
+        private double _trafficPenalty = 0.0;
 
         public int TargetResponseLaps
         {

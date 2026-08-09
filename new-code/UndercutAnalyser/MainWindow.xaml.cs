@@ -32,9 +32,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<int, bool> _traceVisibilityByDriver = new();
     private List<TyreParameterRow> _tyreParameterRows =
     [
-        new TyreParameterRow("Soft",   0, 0, isEditable: false, isDegradationEditable: true),
-        new TyreParameterRow("Medium", 0, 0, isEditable: true,  isDegradationEditable: true),
-        new TyreParameterRow("Hard",   0, 0, isEditable: true,  isDegradationEditable: true)
+        new TyreParameterRow("Soft",   0.0, 0.10, isEditable: false, isDegradationEditable: true),
+        new TyreParameterRow("Medium", 0.5, 0.07, isEditable: true,  isDegradationEditable: true),
+        new TyreParameterRow("Hard",   1.0, 0.04, isEditable: true,  isDegradationEditable: true)
     ];
     private double _fuelSecondsPer10Kg = 0.3;
     private double _fuelKg = 110;
@@ -155,7 +155,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                         SelectedEventDisplay.Text =
                             $"{vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year}) - Rows: {reference.TotalLapRows}, Session laps: {reference.MaxSessionLapNumber}, Drivers: {drivers.Count}, " +
                             $"Reference sum (fuel-adjusted): {reference.SumLapTimeSeconds:F3}s, avg: {(reference.AverageLapTimeSeconds.HasValue ? reference.AverageLapTimeSeconds.Value.ToString("F3") : "N/A")}s, " +
-                            $"Fuel/lap: {reference.FuelEffectPerLapSeconds:F3}s, Clean laps: {reference.IncludedLaps}";
+                            $"Fuel/lap: {reference.FuelEffectPerLapSeconds:F3}s, Clean laps: {reference.IncludedLaps} (pit-out: {reference.ExcludedPitOutLaps}, pit-in: {reference.ExcludedPitInLaps}, SC/VSC: {reference.ExcludedSafetyCarLaps})";
                         RenderRaceTrace();
                     });
                 }
@@ -278,7 +278,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         var pitInLaps = BuildPitInLapLookup(_currentLaps);
 
-        var eligibleLaps = _currentLaps
+        var displayEligibleLaps = _currentLaps
             .Where(l => l.LapDuration.HasValue && l.DateStart.HasValue)
             .Where(l => IsLapEligible(l, includePitLaps, includeScVscLaps, safetyCarWindows, pitInLaps))
             .Select(l => new
@@ -288,26 +288,33 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             })
             .ToList();
 
-        if (eligibleLaps.Count == 0)
+        if (displayEligibleLaps.Count == 0)
         {
             _raceTracePlot.Refresh();
             return;
         }
 
-        // Keep the reference basis consistent with the fuel-correction toggle and
-        // current lap-eligibility filters by deriving it from the same adjusted laps.
-        var constantReference = eligibleLaps.Average(x => x.AdjustedLapSeconds);
-        if (constantReference <= 0)
+        // Build the constant reference from the shared clean-lap calculator so
+        // diagnostics and plotted baseline always use the same derivation path.
+        var referenceForTrace = ReferenceLapTimeCalculator.Calculate(
+            _currentLaps,
+            _currentRaceControlMessages,
+            applyFuelCorrection ? FuelSecondsPer10Kg : 0.0,
+            applyFuelCorrection ? FuelKg : 0.0);
+
+        if (!referenceForTrace.AverageLapTimeSeconds.HasValue || referenceForTrace.AverageLapTimeSeconds.Value <= 0)
         {
             _raceTracePlot.Refresh();
             return;
         }
+
+        var constantReference = referenceForTrace.AverageLapTimeSeconds.Value;
 
         var driverByNumber = _currentDrivers
             .GroupBy(d => d.DriverNumber)
             .ToDictionary(g => g.Key, g => g.First());
 
-        var lapsByDriver = eligibleLaps
+        var lapsByDriver = displayEligibleLaps
             .GroupBy(x => x.Lap.DriverNumber)
             .ToDictionary(g => g.Key, g => g.OrderBy(x => x.Lap.LapNumber).ToList());
 

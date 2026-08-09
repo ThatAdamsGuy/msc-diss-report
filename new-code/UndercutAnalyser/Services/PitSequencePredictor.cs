@@ -21,9 +21,9 @@ namespace UndercutAnalyser.Services
     /// The three comparison gaps are calculated using:
     ///   G(n) = G0 + attackerElapsed − targetElapsed
     ///
-    ///   GapAtN1 — end of lap n+r   (primary: target driver pit lap complete)
-    ///   GapAtN2 — end of lap n+r+1 (target driver out lap complete)
-    ///   GapAtN3 — end of lap n+r+2 (both drivers on first normal lap)
+    ///   GapAfterTargetPitSeconds — PRIMARY: end of lap n+r (target driver pit lap complete)
+    ///   GapAtN2Seconds          — SECONDARY: end of lap n+r+1 (target driver out lap complete)
+    ///   GapAtN3Seconds          — TERTIARY: end of lap n+r+2 (both drivers on first normal lap)
     ///
     /// Sign convention: negative = attacking driver ahead.
     /// </summary>
@@ -62,9 +62,9 @@ namespace UndercutAnalyser.Services
             // Primary:   end of target pit lap   (n + r)
             // Secondary: end of target out lap   (n + r + 1)
             // Tertiary:  following normal lap    (n + r + 2)
-            int primaryEndLap   = targetPitLap;        // GapAtN1
-            int secondaryEndLap = targetOutLap;        // GapAtN2
-            int tertiaryEndLap  = targetOutLap + 1;    // GapAtN3
+            int primaryEndLap   = targetPitLap;        // GapAfterTargetPitSeconds
+            int secondaryEndLap = targetOutLap;        // GapAtN2Seconds
+            int tertiaryEndLap  = targetOutLap + 1;    // GapAtN3Seconds
 
             // Running tyre state for each driver
             var attackerCompound = req.Attacker.CurrentCompound;
@@ -178,7 +178,7 @@ namespace UndercutAnalyser.Services
                 AttackerLaps:             attackerLaps,
                 TargetLaps:               targetLaps,
                 InitialGapSeconds:        g0,
-                GapAtN1Seconds:           gapAtN1,
+                GapAfterTargetPitSeconds: gapAtN1,
                 GapAtN2Seconds:           gapAtN2,
                 GapAtN3Seconds:           gapAtN3,
                 DeltaGAtN1Seconds:        gapAtN1 - g0,

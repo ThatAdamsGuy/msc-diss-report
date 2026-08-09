@@ -18,6 +18,7 @@ namespace UndercutAnalyser.Services
         int MaxSessionLapNumber,
         int IncludedLaps,
         int ExcludedPitOutLaps,
+        int ExcludedPitInLaps,
         int ExcludedSafetyCarLaps,
         double FuelEffectPerLapSeconds,
         double SumLapTimeSeconds,
@@ -26,7 +27,7 @@ namespace UndercutAnalyser.Services
 
     /// <summary>
     /// Computes a constant reference lap from historical session laps after excluding
-    /// pit-out and SC/VSC-affected laps, with optional fuel correction.
+    /// pit-out, pit-in, and SC/VSC-affected laps, with optional fuel correction.
     /// </summary>
     public static class ReferenceLapTimeCalculator
     {
@@ -49,14 +50,23 @@ namespace UndercutAnalyser.Services
 
             var includedLaps = 0;
             var excludedPitOutLaps = 0;
+            var excludedPitInLaps = 0;
             var excludedSafetyCarLaps = 0;
             var sumLapTimeSeconds = 0.0;
+
+            var pitInLaps = BuildPitInLapLookup(laps);
 
             foreach (var lap in laps)
             {
                 if (lap.IsPitOutLap)
                 {
                     excludedPitOutLaps++;
+                    continue;
+                }
+
+                if (pitInLaps.Contains((lap.DriverNumber, lap.LapNumber)))
+                {
+                    excludedPitInLaps++;
                     continue;
                 }
 
@@ -86,6 +96,7 @@ namespace UndercutAnalyser.Services
                 MaxSessionLapNumber: maxSessionLapNumber,
                 IncludedLaps: includedLaps,
                 ExcludedPitOutLaps: excludedPitOutLaps,
+                ExcludedPitInLaps: excludedPitInLaps,
                 ExcludedSafetyCarLaps: excludedSafetyCarLaps,
                 FuelEffectPerLapSeconds: fuelEffectPerLapSeconds,
                 SumLapTimeSeconds: sumLapTimeSeconds,
@@ -165,6 +176,22 @@ namespace UndercutAnalyser.Services
             }
 
             return windows;
+        }
+
+        /// <summary>
+        /// Builds a lookup of inferred pit-in laps (the lap immediately before a pit-out lap)
+        /// for each driver.
+        /// </summary>
+        private static HashSet<(int DriverNumber, int LapNumber)> BuildPitInLapLookup(IReadOnlyList<EventLap> laps)
+        {
+            var lookup = new HashSet<(int DriverNumber, int LapNumber)>();
+
+            foreach (var pitOutLap in laps.Where(l => l.IsPitOutLap && l.LapNumber > 1))
+            {
+                lookup.Add((pitOutLap.DriverNumber, pitOutLap.LapNumber - 1));
+            }
+
+            return lookup;
         }
 
         /// <summary>

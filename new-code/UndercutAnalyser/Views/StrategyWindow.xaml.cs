@@ -229,7 +229,6 @@ public partial class StrategyWindow : Window
         ParametersChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Returns a fresh snapshot of the tyre rows for external use (e.g. MainWindow).</summary>
     /// <summary>
     /// Returns an immutable snapshot of tyre parameters for cross-window propagation.
     /// </summary>
@@ -241,9 +240,9 @@ public partial class StrategyWindow : Window
     /// </summary>
     private static List<TyreParameterRow> DefaultTyreRows() =>
     [
-        new TyreParameterRow("Soft",   0, 0, isEditable: false, isDegradationEditable: true),
-        new TyreParameterRow("Medium", 0, 0, isEditable: true,  isDegradationEditable: true),
-        new TyreParameterRow("Hard",   0, 0, isEditable: true,  isDegradationEditable: true)
+        new TyreParameterRow("Soft",   0.0, 0.10, isEditable: false, isDegradationEditable: true),
+        new TyreParameterRow("Medium", 0.5, 0.07, isEditable: true,  isDegradationEditable: true),
+        new TyreParameterRow("Hard",   1.0, 0.04, isEditable: true,  isDegradationEditable: true)
     ];
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -631,14 +630,14 @@ public partial class StrategyWindow : Window
         var offsets = new Dictionary<TyreCompound, double>
         {
             [TyreCompound.Soft] = 0.0,
-            [TyreCompound.Medium] = 0.0,
-            [TyreCompound.Hard] = 0.0
+            [TyreCompound.Medium] = 0.5,
+            [TyreCompound.Hard] = 1.0
         };
         var degRates = new Dictionary<TyreCompound, double>
         {
-            [TyreCompound.Soft] = 0.08,
-            [TyreCompound.Medium] = 0.05,
-            [TyreCompound.Hard] = 0.03
+            [TyreCompound.Soft] = 0.10,
+            [TyreCompound.Medium] = 0.07,
+            [TyreCompound.Hard] = 0.04
         };
 
         // Override from the Parameters tab (live values in TyreRows)
@@ -681,7 +680,8 @@ public partial class StrategyWindow : Window
         var g0Text = $"G₀ = {result.InitialGapSeconds:+0.000;-0.000;0.000} s  (gap at start of prediction window, positive = attacker behind)";
         G0Label.Text = g0Text;
 
-        GapN1Label.Text   = FormatGap(result.GapAtN1Seconds);
+        // N1/N2/N3 are logical evaluation points, not literal n+1/n+2/n+3 when response delay > 1.
+        GapN1Label.Text   = FormatGap(result.GapAfterTargetPitSeconds);
         DeltaN1Label.Text = $"ΔG = {result.DeltaGAtN1Seconds:+0.000;-0.000;0.000} s";
         GapN2Label.Text   = FormatGap(result.GapAtN2Seconds);
         DeltaN2Label.Text = $"ΔG = {result.DeltaGAtN2Seconds:+0.000;-0.000;0.000} s";
@@ -801,12 +801,12 @@ public partial class StrategyWindow : Window
 
         // ── Summary ────────────────────────────────────────────────────────────
         writer.WriteLine($"# Classification,{result.Classification}");
-        writer.WriteLine($"# GapAtN1 (s),{result.GapAtN1Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# GapAtN2 (s),{result.GapAtN2Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# GapAtN3 (s),{result.GapAtN3Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# DeltaGAtN1 (s),{result.DeltaGAtN1Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# DeltaGAtN2 (s),{result.DeltaGAtN2Seconds.ToString("F3", inv)}");
-        writer.WriteLine($"# DeltaGAtN3 (s),{result.DeltaGAtN3Seconds.ToString("F3", inv)}");
+        writer.WriteLine($"# PrimaryGap_AfterTargetPitLap (s),{result.GapAfterTargetPitSeconds.ToString("F3", inv)}");
+        writer.WriteLine($"# SecondaryGap_AfterTargetOutLap (s),{result.GapAtN2Seconds.ToString("F3", inv)}");
+        writer.WriteLine($"# TertiaryGap_AfterNextNormalLap (s),{result.GapAtN3Seconds.ToString("F3", inv)}");
+        writer.WriteLine($"# PrimaryDeltaG_AfterTargetPitLap (s),{result.DeltaGAtN1Seconds.ToString("F3", inv)}");
+        writer.WriteLine($"# SecondaryDeltaG_AfterTargetOutLap (s),{result.DeltaGAtN2Seconds.ToString("F3", inv)}");
+        writer.WriteLine($"# TertiaryDeltaG_AfterNextNormalLap (s),{result.DeltaGAtN3Seconds.ToString("F3", inv)}");
         writer.WriteLine();
 
         // ── Lap breakdown ──────────────────────────────────────────────────────
@@ -987,9 +987,10 @@ public partial class StrategyWindow : Window
             {
                 var attackerLap = attackerLapMap[lapNumber];
 
-                // Eligibility: must have complete timing and not a pit-out lap
+                // Eligibility: must have complete timing, not a pit-out lap, and not overlap SC/VSC.
                 if (!attackerLap.DateStart.HasValue || !attackerLap.LapDuration.HasValue) continue;
                 if (attackerLap.IsPitOutLap) continue;
+                if (IsInAnySafetyCarWindow(attackerLap, safetyCarWindows)) continue;
 
                 // Tyre age eligibility
                 var (attackerCompound, attackerTyreAge) = GetTyreStateAtLap(attackerNumber, lapNumber);
@@ -1015,6 +1016,7 @@ public partial class StrategyWindow : Window
                 if (!targetLapMap.TryGetValue(lapNumber, out var targetDecisionLap)) continue;
                 if (!attackerDecisionLap.DateStart.HasValue || !attackerDecisionLap.LapTimeAtSectorTwoLine.HasValue) continue;
                 if (!targetDecisionLap.DateStart.HasValue || !targetDecisionLap.LapTimeAtSectorTwoLine.HasValue) continue;
+                if (IsInAnySafetyCarWindow(targetDecisionLap, safetyCarWindows)) continue;
 
                 var attackerSectorTwoLine = ToUtc(attackerDecisionLap.DateStart.Value)
                     .AddSeconds(attackerDecisionLap.LapTimeAtSectorTwoLine.Value);
@@ -1094,7 +1096,7 @@ public partial class StrategyWindow : Window
                     TargetCompound    = targetCompound,
                     TargetTyreAge     = targetTyreAge,
                     G0                = $"{g0:+0.000;-0.000;0.000}",
-                    GapAtN1           = FormatGap(prediction.GapAtN1Seconds),
+                    GapAtN1           = FormatGap(prediction.GapAfterTargetPitSeconds),
                     GapAtN2           = FormatGap(prediction.GapAtN2Seconds),
                     GapAtN3           = FormatGap(prediction.GapAtN3Seconds),
                     DeltaGN1          = $"{prediction.DeltaGAtN1Seconds:+0.000;-0.000;0.000}",
@@ -1153,9 +1155,6 @@ public partial class StrategyWindow : Window
     /// Returns the compound and tyre age (laps on this tyre at the start of <paramref name="lapNumber"/>)
     /// from stint data. Falls back to "UNKNOWN" / 0 if no stint found.
     /// </summary>
-    /// <summary>
-    /// Returns compound and tyre age at lap start from stint data, with lap-based fallback.
-    /// </summary>
     private (string compound, int age) GetTyreStateAtLap(int driverNumber, int lapNumber)
     {
         var stint = _stints
@@ -1204,9 +1203,6 @@ public partial class StrategyWindow : Window
     /// <summary>
     /// Computes the average clean-lap time for every driver, excluding pit-out laps,
     /// derived pit-in laps (lap immediately before pit-out), and SC/VSC laps.
-    /// </summary>
-    /// <summary>
-    /// Derives baseline pace per driver from clean laps used by scan simulations.
     /// </summary>
     private Dictionary<int, double> DeriveReferencePacePerDriver(List<TimeWindow> safetyCarWindows)
     {

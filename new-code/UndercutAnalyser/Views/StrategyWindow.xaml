@@ -324,7 +324,7 @@
                                     <Border BorderBrush="#C0C0C0" BorderThickness="1" CornerRadius="4"
                                             Padding="10,8" Margin="0,0,6,0">
                                         <StackPanel>
-                                            <TextBlock Text="After attacking driver out lap" FontSize="11" Foreground="#666"/>
+                                            <TextBlock Text="After target pit lap" FontSize="11" Foreground="#666"/>
                                             <TextBlock x:Name="GapN1Label" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0"/>
                                             <TextBlock x:Name="DeltaN1Label" FontSize="11" Foreground="#666" Margin="0,2,0,0"/>
                                             <TextBlock Text="(primary)" FontSize="10" Foreground="#999" Margin="0,4,0,0"/>

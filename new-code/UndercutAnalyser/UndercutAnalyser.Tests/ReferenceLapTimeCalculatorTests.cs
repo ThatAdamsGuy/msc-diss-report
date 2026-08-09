@@ -22,6 +22,7 @@ public sealed class ReferenceLapTimeCalculatorTests
         Assert.Equal(0, result.MaxSessionLapNumber);
         Assert.Equal(0, result.IncludedLaps);
         Assert.Equal(0, result.ExcludedPitOutLaps);
+        Assert.Equal(0, result.ExcludedPitInLaps);
         Assert.Equal(0, result.ExcludedSafetyCarLaps);
         Assert.Equal(0.0, result.FuelEffectPerLapSeconds);
         Assert.Equal(0.0, result.SumLapTimeSeconds, 10);
@@ -72,6 +73,7 @@ public sealed class ReferenceLapTimeCalculatorTests
 
         Assert.Equal(3, result.TotalLapRows);
         Assert.Equal(1, result.ExcludedPitOutLaps);
+        Assert.Equal(0, result.ExcludedPitInLaps);
         Assert.Equal(2, result.IncludedLaps);
         Assert.Equal(203.0, result.SumLapTimeSeconds, 10);
         Assert.NotNull(result.AverageLapTimeSeconds);
@@ -94,8 +96,29 @@ public sealed class ReferenceLapTimeCalculatorTests
         Assert.Equal(3, result.TotalLapRows);
         Assert.Equal(1, result.IncludedLaps);
         Assert.Equal(0, result.ExcludedPitOutLaps);
+        Assert.Equal(0, result.ExcludedPitInLaps);
         Assert.Equal(0, result.ExcludedSafetyCarLaps);
         Assert.Equal(100.0, result.SumLapTimeSeconds, 10);
+    }
+
+    [Fact]
+    public void Calculate_ExcludesInferredPitInLap_WhenFollowedByPitOutLap()
+    {
+        var start = Utc(2025, 2, 1, 12, 0, 0);
+        var laps = new[]
+        {
+            new EventLap { DriverNumber = 44, LapNumber = 1, DateStart = start, LapDuration = 100f },
+            new EventLap { DriverNumber = 44, LapNumber = 2, DateStart = start.AddSeconds(100), LapDuration = 101f },
+            new EventLap { DriverNumber = 44, LapNumber = 3, DateStart = start.AddSeconds(201), LapDuration = 102f, IsPitOutLap = true },
+            new EventLap { DriverNumber = 44, LapNumber = 4, DateStart = start.AddSeconds(303), LapDuration = 99f }
+        };
+
+        var result = ReferenceLapTimeCalculator.Calculate(laps, [], secondsPer10Kg: 0.0, fuelKg: 0.0);
+
+        Assert.Equal(1, result.ExcludedPitOutLaps);
+        Assert.Equal(1, result.ExcludedPitInLaps);
+        Assert.Equal(2, result.IncludedLaps);
+        Assert.Equal(199.0, result.SumLapTimeSeconds, 10);
     }
 
     #endregion
