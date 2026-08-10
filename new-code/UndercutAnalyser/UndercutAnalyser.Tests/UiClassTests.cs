@@ -1,7 +1,9 @@
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using UndercutAnalyser.Domain.Models;
 using UndercutAnalyser.Services;
 using UndercutAnalyser.ViewModels;
@@ -55,6 +57,103 @@ public sealed class UiClassTests
             {
                 window.Close();
             }
+        });
+    }
+
+    [Fact]
+    public void EventSelectorWindow_FilterText_UpdatesVisibleItems()
+    {
+        RunInSta(() =>
+        {
+            var vm = new EventSelectorViewModel(new StubEventDataProvider());
+            vm.Events.Add(CreateMeeting("Test GP Alpha", "Alpha Circuit", "Alpha City"));
+            vm.Events.Add(CreateMeeting("Test GP Beta", "Beta Circuit", "Beta City"));
+
+            var window = new EventSelectorWindow(vm);
+            try
+            {
+                var filterBox = Assert.IsType<TextBox>(window.FindName("FilterBox"));
+
+                filterBox.Text = "Beta";
+
+                var filtered = vm.EventsView.Cast<object>().OfType<EventMeeting>().ToList();
+                var onlyItem = Assert.Single(filtered);
+                Assert.Equal("Test GP Beta", onlyItem.MeetingOfficialName);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void EventSelectorWindow_SelectionChanged_EnablesOkButton()
+    {
+        RunInSta(() =>
+        {
+            var vm = new EventSelectorViewModel(new StubEventDataProvider());
+            vm.Events.Add(CreateMeeting("Test GP", "Test Circuit", "Test City"));
+
+            var window = new EventSelectorWindow(vm);
+            try
+            {
+                var listView = Assert.IsType<ListView>(window.FindName("EventsListView"));
+                var okButton = Assert.IsType<Button>(window.FindName("OkButton"));
+
+                listView.SelectedItem = vm.Events[0];
+
+                Assert.True(okButton.IsEnabled);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void EventSelectorWindow_CancelButton_SetsDialogResultFalse()
+    {
+        RunInSta(() =>
+        {
+            var vm = new EventSelectorViewModel(new StubEventDataProvider());
+            vm.Events.Add(CreateMeeting("Test GP", "Test Circuit", "Test City"));
+
+            var window = new EventSelectorWindow(vm);
+            var cancelButton = Assert.IsType<Button>(window.FindName("CancelButton"));
+            window.Loaded += (_, _) => cancelButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var result = window.ShowDialog();
+
+            Assert.False(result);
+        });
+    }
+
+    [Fact]
+    public void EventSelectorWindow_DoubleClickSelectedItem_SetsDialogResultTrue()
+    {
+        RunInSta(() =>
+        {
+            var vm = new EventSelectorViewModel(new StubEventDataProvider());
+            vm.Events.Add(CreateMeeting("Test GP", "Test Circuit", "Test City"));
+
+            var window = new EventSelectorWindow(vm);
+            var listView = Assert.IsType<ListView>(window.FindName("EventsListView"));
+
+            window.Loaded += (_, _) =>
+            {
+                listView.SelectedItem = listView.Items[0];
+                var args = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+                {
+                    RoutedEvent = Control.MouseDoubleClickEvent
+                };
+                listView.RaiseEvent(args);
+            };
+
+            var result = window.ShowDialog();
+
+            Assert.True(result);
         });
     }
 
@@ -152,6 +251,19 @@ public sealed class UiClassTests
                 view.Close();
             }
         });
+    }
+
+    private static EventMeeting CreateMeeting(string meetingName, string circuitName, string location)
+    {
+        return new EventMeeting
+        {
+            MeetingOfficialName = meetingName,
+            CircuitShortName = circuitName,
+            Location = location,
+            Year = 2025,
+            DateStart = DateTime.UtcNow.AddDays(-1),
+            DateEnd = DateTime.UtcNow.AddDays(-1)
+        };
     }
 
     private static T GetPrivateField<T>(object instance, string fieldName)

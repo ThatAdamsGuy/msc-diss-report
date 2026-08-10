@@ -117,6 +117,47 @@ public sealed class PredictViewModelTests
     }
 
     [Fact]
+    public void SettingRemainingMutableProperties_RaisesPropertyChanged()
+    {
+        var vm = new PredictViewModel();
+        var changed = new List<string>();
+        vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName ?? string.Empty);
+
+        vm.Attacker = new DriverItem { DriverNumber = 4, Code = "NOR", DisplayName = "NOR" };
+        vm.Target = new DriverItem { DriverNumber = 81, Code = "PIA", DisplayName = "PIA" };
+        vm.DecisionLap = new LapItem { LapNumber = 12 };
+
+        vm.AttackerCurrentTyreAge = 8;
+        vm.AttackerReplCompound = "MEDIUM";
+        vm.AttackerReplAge = 2;
+
+        vm.TargetReferencePace = 92.1;
+        vm.TargetCurrentTyreAge = 10;
+        vm.TargetReplCompound = "HARD";
+        vm.TargetReplAge = 3;
+
+        vm.PitLaneLoss = 21.5;
+        vm.WarmUpPenalty = 0.45;
+        vm.ApplyTargetTraffic = true;
+        vm.TrafficPenalty = 0.55;
+
+        Assert.Contains(nameof(PredictViewModel.Attacker), changed);
+        Assert.Contains(nameof(PredictViewModel.Target), changed);
+        Assert.Contains(nameof(PredictViewModel.DecisionLap), changed);
+        Assert.Contains(nameof(PredictViewModel.AttackerCurrentTyreAge), changed);
+        Assert.Contains(nameof(PredictViewModel.AttackerReplCompound), changed);
+        Assert.Contains(nameof(PredictViewModel.AttackerReplAge), changed);
+        Assert.Contains(nameof(PredictViewModel.TargetReferencePace), changed);
+        Assert.Contains(nameof(PredictViewModel.TargetCurrentTyreAge), changed);
+        Assert.Contains(nameof(PredictViewModel.TargetReplCompound), changed);
+        Assert.Contains(nameof(PredictViewModel.TargetReplAge), changed);
+        Assert.Contains(nameof(PredictViewModel.PitLaneLoss), changed);
+        Assert.Contains(nameof(PredictViewModel.WarmUpPenalty), changed);
+        Assert.Contains(nameof(PredictViewModel.ApplyTargetTraffic), changed);
+        Assert.Contains(nameof(PredictViewModel.TrafficPenalty), changed);
+    }
+
+    [Fact]
     public void Result_SetToNonNull_SetsHasResultTrue_AndRaisesBothNotifications()
     {
         var vm = new PredictViewModel();
