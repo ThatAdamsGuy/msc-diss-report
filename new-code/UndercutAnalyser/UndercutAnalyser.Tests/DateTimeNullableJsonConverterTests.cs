@@ -71,6 +71,25 @@ public sealed class DateTimeNullableJsonConverterTests
         Assert.Null(result);
     }
 
+    [Fact]
+    public void Read_CommonDateTimeFormat_ReturnsParsedDateTime()
+    {
+        var result = DeserializeDate("{" + "\"value\":\"2025-01-02 03:04:05\"" + "}");
+
+        Assert.NotNull(result);
+        Assert.Equal(2025, result.Value.Year);
+        Assert.Equal(1, result.Value.Month);
+        Assert.Equal(2, result.Value.Day);
+    }
+
+    [Fact]
+    public void Read_OutOfRangeUnixEpoch_ReturnsNullViaFallback()
+    {
+        var result = DeserializeDate("{" + "\"value\":9223372036854775807" + "}");
+
+        Assert.Null(result);
+    }
+
     #endregion
 
     #region Write behavior

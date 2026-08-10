@@ -59,6 +59,24 @@ public sealed class FloatNullableJsonConverterTests
         Assert.Null(result);
     }
 
+    [Fact]
+    public void Read_StringWithThousandsSeparator_ReturnsFloat()
+    {
+        var result = DeserializeFloat("{" + "\"value\":\"1,234.5\"" + "}");
+
+        Assert.NotNull(result);
+        Assert.Equal(1234.5f, result.Value, 3);
+    }
+
+    [Fact]
+    public void Read_StringOutOfRange_ReturnsPositiveInfinity()
+    {
+        var result = DeserializeFloat("{" + "\"value\":\"1e1000\"" + "}");
+
+        Assert.NotNull(result);
+        Assert.True(float.IsPositiveInfinity(result.Value));
+    }
+
     #endregion
 
     #region Write behavior
