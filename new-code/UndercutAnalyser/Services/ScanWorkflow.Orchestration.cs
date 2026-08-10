@@ -6,24 +6,24 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Orchestrates full-scan execution by composing candidate selection, request building, model execution, and row mapping.
 /// </summary>
-public static class MainWindowScanOrchestrationService
+public static partial class ScanWorkflowService
 {
     /// <summary>
     /// Runs the full scan for selected drivers and returns normalized scan rows.
     /// </summary>
     public static List<ScanRowData> Run(MainWindowScanOrchestrationInput input)
     {
-        var referencePaceByDriver = MainWindowReferencePaceService.DeriveReferencePacePerDriver(
+        var referencePaceByDriver = RaceTraceWorkflowService.DeriveReferencePacePerDriver(
             input.Laps,
             input.SafetyCarWindows);
 
-        var lapIndex = MainWindowScanCandidateService.BuildLapIndex(input.Laps);
-        var orderPerLap = MainWindowScanCandidateService.BuildOnTrackOrderPerLap(lapIndex);
+        var lapIndex = ScanWorkflowService.BuildLapIndex(input.Laps);
+        var orderPerLap = ScanWorkflowService.BuildOnTrackOrderPerLap(lapIndex);
         var driversByNumber = input.Drivers
             .GroupBy(d => d.DriverNumber)
             .ToDictionary(g => g.Key, g => g.First());
 
-        var candidates = MainWindowScanCandidateService.FindCandidates(
+        var candidates = ScanWorkflowService.FindCandidates(
             driverNumbers: input.DriverNumbers,
             lapIndex: lapIndex,
             orderPerLap: orderPerLap,
@@ -33,7 +33,7 @@ public static class MainWindowScanOrchestrationService
             tyreStateResolver: input.TyreStateResolver);
 
         var contexts = candidates
-            .Select(candidate => MainWindowScanRequestBuilder.BuildExecutionContext(
+            .Select(candidate => ScanWorkflowService.BuildExecutionContext(
                 candidate: candidate,
                 driversByNumber: driversByNumber,
                 referencePaceByDriver: referencePaceByDriver,
@@ -46,7 +46,7 @@ public static class MainWindowScanOrchestrationService
             .ToList();
 
         var predictor = new PitSequencePredictor(new LapTimePredictor());
-        return MainWindowScanExecutor.Execute(contexts, predictor);
+        return ScanWorkflowService.Execute(contexts, predictor);
     }
 }
 

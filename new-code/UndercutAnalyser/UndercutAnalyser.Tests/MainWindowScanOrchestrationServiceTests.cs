@@ -38,7 +38,7 @@ public sealed class MainWindowScanOrchestrationServiceTests
             Drivers: drivers,
             TyreStateResolver: TyreResolver);
 
-        var rows = MainWindowScanOrchestrationService.Run(input);
+        var rows = ScanWorkflowService.Run(input);
 
         var row = Assert.Single(rows);
         Assert.Equal("NOR", row.Attacker);
@@ -78,7 +78,7 @@ public sealed class MainWindowScanOrchestrationServiceTests
             Drivers: drivers,
             TyreStateResolver: TyreResolver);
 
-        var rows = MainWindowScanOrchestrationService.Run(input);
+        var rows = ScanWorkflowService.Run(input);
 
         Assert.Empty(rows);
     }

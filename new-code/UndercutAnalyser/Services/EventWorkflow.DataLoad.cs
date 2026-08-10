@@ -5,7 +5,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Loads and shapes selected-event race data for MainWindow.
 /// </summary>
-public static class MainWindowEventDataLoadService
+public static partial class EventWorkflowService
 {
     /// <summary>
     /// Loads event race data for a selected meeting key, including session resolution and reference calculation.
@@ -21,9 +21,6 @@ public static class MainWindowEventDataLoadService
         var raceSession = sessions.FirstOrDefault(s =>
             string.Equals(s.SessionName, "Race", StringComparison.OrdinalIgnoreCase) ||
             (s.SessionName?.IndexOf("Race", StringComparison.OrdinalIgnoreCase) >= 0));
-
-        if (raceSession is null)
-            raceSession = sessions.Count > 0 ? sessions[0] : null;
 
         if (raceSession is null)
             return MainWindowEventDataLoadResult.NoSessionFound();

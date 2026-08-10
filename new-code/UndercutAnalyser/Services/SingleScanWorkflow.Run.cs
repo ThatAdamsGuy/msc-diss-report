@@ -6,7 +6,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Composes and runs a single-scan simulation from normalized UI inputs.
 /// </summary>
-public static class MainWindowSingleScanRunService
+public static partial class SingleScanWorkflowService
 {
     /// <summary>
     /// Builds a simulation request payload from normalized text/select inputs and executes it.
@@ -43,7 +43,7 @@ public static class MainWindowSingleScanRunService
             return predictor.Predict(request);
         });
 
-        return MainWindowSingleScanSimulationService.Simulate(simulationInput, predictionRunner);
+        return SingleScanWorkflowService.Simulate(simulationInput, predictionRunner);
     }
 
     private static double? ParseNullableDouble(string? text)
@@ -66,8 +66,8 @@ public static class MainWindowSingleScanRunService
 /// </summary>
 public sealed record MainWindowSingleScanRunInput(
     string EventName,
-    MainWindowPredictionSelection? Attacker,
-    MainWindowPredictionSelection? Target,
+    PredictionSelection? Attacker,
+    PredictionSelection? Target,
     int? DecisionLapNumber,
     string? StartingGapText,
     string? AttackerPaceOverrideText,

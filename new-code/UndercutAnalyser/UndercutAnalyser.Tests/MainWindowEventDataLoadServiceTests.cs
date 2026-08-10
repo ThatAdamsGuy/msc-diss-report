@@ -13,7 +13,7 @@ public sealed class MainWindowEventDataLoadServiceTests
             Sessions = []
         };
 
-        var result = await MainWindowEventDataLoadService.LoadAsync(client, meetingKey: 1, fuelSecondsPer10Kg: 0.3, fuelKg: 110);
+        var result = await EventWorkflowService.LoadAsync(client, meetingKey: 1, fuelSecondsPer10Kg: 0.3, fuelKg: 110);
 
         Assert.False(result.HasRaceSession);
         Assert.Empty(result.Laps);
@@ -21,7 +21,7 @@ public sealed class MainWindowEventDataLoadServiceTests
     }
 
     [Fact]
-    public async Task LoadAsync_FallsBackToFirstSession_WhenNoRaceNamedSession()
+    public async Task LoadAsync_ReturnsNoSessionFound_WhenNoRaceNamedSession()
     {
         var start = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         var client = new StubClient
@@ -42,12 +42,12 @@ public sealed class MainWindowEventDataLoadServiceTests
             Stints = []
         };
 
-        var result = await MainWindowEventDataLoadService.LoadAsync(client, meetingKey: 1, fuelSecondsPer10Kg: 0.3, fuelKg: 110);
+        var result = await EventWorkflowService.LoadAsync(client, meetingKey: 1, fuelSecondsPer10Kg: 0.3, fuelKg: 110);
 
-        Assert.True(result.HasRaceSession);
-        Assert.Single(result.Laps);
-        Assert.Single(result.Drivers);
-        Assert.NotNull(result.Reference);
+        Assert.False(result.HasRaceSession);
+        Assert.Empty(result.Laps);
+        Assert.Empty(result.Drivers);
+        Assert.Null(result.Reference);
     }
 
     private sealed class StubClient : IMainWindowEventDataClient

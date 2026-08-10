@@ -7,7 +7,7 @@ public sealed class MainWindowSingleScanScenarioPresentationServiceTests
     [Fact]
     public void Build_WhenNoScenario_ReturnsEmptyPresentation()
     {
-        var presentation = MainWindowSingleScanScenarioPresentationService.Build(
+        var presentation = SingleScanWorkflowService.Build(
             scenario: MainWindowSingleScanScenarioResult.Empty,
             selectedTargetDriverNumber: null);
 
@@ -37,7 +37,7 @@ public sealed class MainWindowSingleScanScenarioPresentationServiceTests
             TargetTyreAge: 12,
             StartingGapSeconds: 1.23456);
 
-        var presentation = MainWindowSingleScanScenarioPresentationService.Build(
+        var presentation = SingleScanWorkflowService.Build(
             scenario,
             selectedTargetDriverNumber: 4);
 
@@ -69,7 +69,7 @@ public sealed class MainWindowSingleScanScenarioPresentationServiceTests
             TargetTyreAge: 3,
             StartingGapSeconds: null);
 
-        var presentation = MainWindowSingleScanScenarioPresentationService.Build(
+        var presentation = SingleScanWorkflowService.Build(
             scenario,
             selectedTargetDriverNumber: 81);
 

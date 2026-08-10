@@ -15,7 +15,7 @@ public sealed class MainWindowScanCandidateServiceTests
             new() { DriverNumber = 2, LapNumber = 1, DateStart = null, LapDuration = 91f }
         };
 
-        var index = MainWindowScanCandidateService.BuildLapIndex(laps);
+        var index = ScanWorkflowService.BuildLapIndex(laps);
 
         Assert.True(index.ContainsKey(1));
         Assert.Single(index[1]);
@@ -40,7 +40,7 @@ public sealed class MainWindowScanCandidateServiceTests
             }
         };
 
-        var order = MainWindowScanCandidateService.BuildOnTrackOrderPerLap(lapIndex);
+        var order = ScanWorkflowService.BuildOnTrackOrderPerLap(lapIndex);
 
         Assert.Equal(new[] { 2, 1 }, order[5]);
     }
@@ -59,7 +59,7 @@ public sealed class MainWindowScanCandidateServiceTests
             new(new DateTime(2025,1,1,12,0,30,DateTimeKind.Utc), new DateTime(2025,1,1,12,1,0,DateTimeKind.Utc))
         };
 
-        Assert.True(MainWindowScanCandidateService.IsInAnySafetyCarWindow(lap, windows));
+        Assert.True(ScanWorkflowService.IsInAnySafetyCarWindow(lap, windows));
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class MainWindowScanCandidateServiceTests
 
         (string compound, int age) TyreResolver(int driver, int lap) => ("SOFT", 8);
 
-        var candidates = MainWindowScanCandidateService.FindCandidates(
+        var candidates = ScanWorkflowService.FindCandidates(
             driverNumbers: [1],
             lapIndex: lapIndex,
             orderPerLap: orderPerLap,
@@ -128,7 +128,7 @@ public sealed class MainWindowScanCandidateServiceTests
         var refPace = new Dictionary<int, double> { [1] = 91.0, [2] = 90.5 };
         (string compound, int age) TyreResolver(int driver, int lap) => ("SOFT", 2);
 
-        var candidates = MainWindowScanCandidateService.FindCandidates(
+        var candidates = ScanWorkflowService.FindCandidates(
             driverNumbers: [1],
             lapIndex: lapIndex,
             orderPerLap: orderPerLap,

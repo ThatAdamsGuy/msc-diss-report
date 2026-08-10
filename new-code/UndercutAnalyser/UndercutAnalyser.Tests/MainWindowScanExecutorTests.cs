@@ -11,7 +11,7 @@ public sealed class MainWindowScanExecutorTests
         var context = CreateContext("NOR", "ANT", decisionLap: 15, g0: 1.2);
         var predictor = new StubPredictor(_ => CreatePredictionResult(UndercutClassification.PredictedAhead));
 
-        var rows = MainWindowScanExecutor.Execute([context], predictor);
+        var rows = ScanWorkflowService.Execute([context], predictor);
 
         var row = Assert.Single(rows);
         Assert.Equal("NOR", row.Attacker);
@@ -27,7 +27,7 @@ public sealed class MainWindowScanExecutorTests
         var context = CreateContext("NOR", "ANT", decisionLap: 16, g0: 0.7);
         var predictor = new StubPredictor(_ => throw new InvalidOperationException("predict boom"));
 
-        var rows = MainWindowScanExecutor.Execute([context], predictor);
+        var rows = ScanWorkflowService.Execute([context], predictor);
 
         var row = Assert.Single(rows);
         Assert.Equal("Error: predict boom", row.Result);
@@ -49,7 +49,7 @@ public sealed class MainWindowScanExecutorTests
             return CreatePredictionResult(UndercutClassification.PredictedMarginal);
         });
 
-        var rows = MainWindowScanExecutor.Execute([c1, c2], predictor);
+        var rows = ScanWorkflowService.Execute([c1, c2], predictor);
 
         Assert.Equal(2, rows.Count);
         Assert.Equal("Error: fail one", rows[0].Result);

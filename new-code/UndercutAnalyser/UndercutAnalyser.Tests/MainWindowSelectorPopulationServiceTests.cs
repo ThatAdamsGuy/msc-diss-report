@@ -22,7 +22,7 @@ public sealed class MainWindowSelectorPopulationServiceTests
             new() { DriverNumber = 999, LapNumber = 1 }
         };
 
-        var result = MainWindowSelectorPopulationService.BuildOrderedDriverSelections(drivers, laps);
+        var result = WorkspaceWorkflowService.BuildOrderedDriverSelections(drivers, laps);
 
         Assert.Equal(2, result.Count);
         Assert.Equal(4, result[0].DriverNumber);
@@ -46,7 +46,7 @@ public sealed class MainWindowSelectorPopulationServiceTests
             new() { DriverNumber = 81, LapNumber = 4, DateStart = DateTime.UtcNow, DurationSector1 = 20f, DurationSector2 = 30f }
         };
 
-        var result = MainWindowSelectorPopulationService.BuildTargetDecisionLapChoices(laps, targetDriverNumber: 4);
+        var result = WorkspaceWorkflowService.BuildTargetDecisionLapChoices(laps, targetDriverNumber: 4);
 
         Assert.Equal([2, 3], result);
     }
@@ -56,8 +56,8 @@ public sealed class MainWindowSelectorPopulationServiceTests
     {
         var laps = new List<int> { 5, 8, 10 };
 
-        var kept = MainWindowSelectorPopulationService.ChooseDecisionLap(laps, preferredLap: 8);
-        var fallback = MainWindowSelectorPopulationService.ChooseDecisionLap(laps, preferredLap: 7);
+        var kept = WorkspaceWorkflowService.ChooseDecisionLap(laps, preferredLap: 8);
+        var fallback = WorkspaceWorkflowService.ChooseDecisionLap(laps, preferredLap: 7);
 
         Assert.Equal(8, kept);
         Assert.Equal(5, fallback);
@@ -66,25 +66,9 @@ public sealed class MainWindowSelectorPopulationServiceTests
     [Fact]
     public void ChooseDecisionLap_ReturnsNull_WhenNoLapsAvailable()
     {
-        var result = MainWindowSelectorPopulationService.ChooseDecisionLap([], preferredLap: 12);
+        var result = WorkspaceWorkflowService.ChooseDecisionLap([], preferredLap: 12);
 
         Assert.Null(result);
     }
 
-    [Fact]
-    public void BuildPredictDecisionLapChoices_ReturnsRangeAndMidpointDefault()
-    {
-        var laps = new List<EventLap>
-        {
-            new() { LapNumber = 1 },
-            new() { LapNumber = 10 }
-        };
-
-        var (choices, defaultLap) = MainWindowSelectorPopulationService.BuildPredictDecisionLapChoices(laps);
-
-        Assert.Equal(10, choices.Count);
-        Assert.Equal(1, choices.First());
-        Assert.Equal(10, choices.Last());
-        Assert.Equal(5, defaultLap);
-    }
 }

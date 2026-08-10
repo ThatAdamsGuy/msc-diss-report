@@ -10,7 +10,7 @@ public sealed class MainWindowSingleScanSimulationServiceTests
     {
         var input = CreateInput(attacker: null, target: null, decisionLap: 10, g0: 1.2);
 
-        var result = MainWindowSingleScanSimulationService.Simulate(input, _ => CreatePredictionResult());
+        var result = SingleScanWorkflowService.Simulate(input, _ => CreatePredictionResult());
 
         Assert.False(result.IsSuccess);
         Assert.Equal("Select attacking and target drivers.", result.StatusMessage);
@@ -19,8 +19,8 @@ public sealed class MainWindowSingleScanSimulationServiceTests
     [Fact]
     public void Simulate_ReturnsValidationFailure_WhenReferencePaceUnavailable()
     {
-        var attacker = new MainWindowPredictionSelection(4, "NOR", "NOR");
-        var target = new MainWindowPredictionSelection(81, "PIA", "PIA");
+        var attacker = new PredictionSelection(4, "NOR", "NOR");
+        var target = new PredictionSelection(81, "PIA", "PIA");
         var input = CreateInput(
             attacker: attacker,
             target: target,
@@ -28,7 +28,7 @@ public sealed class MainWindowSingleScanSimulationServiceTests
             g0: 1.2,
             derivedPace: new Dictionary<int, double> { [4] = 0.0, [81] = 90.5 });
 
-        var result = MainWindowSingleScanSimulationService.Simulate(input, _ => CreatePredictionResult());
+        var result = SingleScanWorkflowService.Simulate(input, _ => CreatePredictionResult());
 
         Assert.False(result.IsSuccess);
         Assert.Equal("Reference pace could not be derived.", result.StatusMessage);
@@ -37,11 +37,11 @@ public sealed class MainWindowSingleScanSimulationServiceTests
     [Fact]
     public void Simulate_ReturnsSuccessRow_WhenPredictionSucceeds()
     {
-        var attacker = new MainWindowPredictionSelection(4, "NOR", "NOR");
-        var target = new MainWindowPredictionSelection(81, "PIA", "PIA");
+        var attacker = new PredictionSelection(4, "NOR", "NOR");
+        var target = new PredictionSelection(81, "PIA", "PIA");
         var input = CreateInput(attacker: attacker, target: target, decisionLap: 10, g0: 1.2);
 
-        var result = MainWindowSingleScanSimulationService.Simulate(input, _ => CreatePredictionResult());
+        var result = SingleScanWorkflowService.Simulate(input, _ => CreatePredictionResult());
 
         Assert.True(result.IsSuccess);
         Assert.Equal("1 scenario simulated.", result.StatusMessage);
@@ -53,19 +53,19 @@ public sealed class MainWindowSingleScanSimulationServiceTests
     [Fact]
     public void Simulate_ReturnsExecutionFailure_WhenPredictorThrows()
     {
-        var attacker = new MainWindowPredictionSelection(4, "NOR", "NOR");
-        var target = new MainWindowPredictionSelection(81, "PIA", "PIA");
+        var attacker = new PredictionSelection(4, "NOR", "NOR");
+        var target = new PredictionSelection(81, "PIA", "PIA");
         var input = CreateInput(attacker: attacker, target: target, decisionLap: 10, g0: 1.2);
 
-        var result = MainWindowSingleScanSimulationService.Simulate(input, _ => throw new InvalidOperationException("boom"));
+        var result = SingleScanWorkflowService.Simulate(input, _ => throw new InvalidOperationException("boom"));
 
         Assert.False(result.IsSuccess);
         Assert.Equal("Simulation failed: boom", result.StatusMessage);
     }
 
     private static MainWindowSingleScanSimulationInput CreateInput(
-        MainWindowPredictionSelection? attacker,
-        MainWindowPredictionSelection? target,
+        PredictionSelection? attacker,
+        PredictionSelection? target,
         int? decisionLap,
         double? g0,
         IReadOnlyDictionary<int, double>? derivedPace = null)

@@ -8,7 +8,7 @@ public sealed class MainWindowRaceTraceServiceTests
     [Fact]
     public void Compute_ReturnsNoData_WhenNoLaps()
     {
-        var result = MainWindowRaceTraceService.Compute(
+        var result = RaceTraceWorkflowService.Compute(
             laps: [],
             drivers: [],
             raceControlMessages: [],
@@ -36,7 +36,7 @@ public sealed class MainWindowRaceTraceServiceTests
             new() { DriverNumber = 4, Code = "NOR", BroadcastName = "Norris", TeamName = "McLaren", TeamColour = "FF8000" }
         };
 
-        var result = MainWindowRaceTraceService.Compute(
+        var result = RaceTraceWorkflowService.Compute(
             laps,
             drivers,
             raceControlMessages: [],
@@ -65,7 +65,7 @@ public sealed class MainWindowRaceTraceServiceTests
             new() { DriverNumber = 63, Code = "RUS", TeamName = "Mercedes", TeamColour = "00D2BE" }
         };
 
-        var result = MainWindowRaceTraceService.Compute(
+        var result = RaceTraceWorkflowService.Compute(
             laps,
             drivers,
             raceControlMessages: [],
@@ -92,7 +92,7 @@ public sealed class MainWindowRaceTraceServiceTests
             new() { DriverNumber = 81, Code = "PIA", TeamName = "McLaren", TeamColour = "FF8000" }
         };
 
-        var result = MainWindowRaceTraceService.Compute(
+        var result = RaceTraceWorkflowService.Compute(
             laps,
             drivers,
             raceControlMessages: [],
@@ -126,7 +126,7 @@ public sealed class MainWindowRaceTraceServiceTests
             [99] = true
         };
 
-        var result = MainWindowRaceTraceService.Compute(
+        var result = RaceTraceWorkflowService.Compute(
             laps,
             drivers,
             raceControlMessages: [],
@@ -150,7 +150,7 @@ public sealed class MainWindowRaceTraceServiceTests
             new() { DriverNumber = 4, LapNumber = 4, DateStart = t0.AddSeconds(273), LapDuration = 93f }
         };
 
-        var result = MainWindowRaceTraceService.Compute(
+        var result = RaceTraceWorkflowService.Compute(
             laps,
             drivers: [new Driver { DriverNumber = 4, Code = "NOR" }],
             raceControlMessages: [],
@@ -164,7 +164,7 @@ public sealed class MainWindowRaceTraceServiceTests
     [Fact]
     public void ParseScottPlotColor_FallsBackForInvalidHex()
     {
-        var color = MainWindowRaceTraceService.ParseScottPlotColor("not-a-color", 3);
+        var color = RaceTraceWorkflowService.ParseScottPlotColor("not-a-color", 3);
 
         Assert.Equal(ScottPlot.Colors.Orange, color);
     }

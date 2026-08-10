@@ -6,7 +6,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Builds lap-model parameters from editable tyre rows and scalar scenario settings.
 /// </summary>
-public static class MainWindowModelParameterBuilderService
+public static partial class WorkspaceWorkflowService
 {
     /// <summary>
     /// Produces the model parameters used by scan and prediction flows.

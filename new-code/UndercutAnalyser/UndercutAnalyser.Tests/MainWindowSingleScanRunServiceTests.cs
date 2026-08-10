@@ -10,7 +10,7 @@ public sealed class MainWindowSingleScanRunServiceTests
     {
         var input = CreateInput(attacker: null, target: null);
 
-        var result = MainWindowSingleScanRunService.Run(input);
+        var result = SingleScanWorkflowService.Run(input);
 
         Assert.False(result.IsSuccess);
         Assert.Equal("Select attacking and target drivers.", result.StatusMessage);
@@ -20,8 +20,8 @@ public sealed class MainWindowSingleScanRunServiceTests
     [Fact]
     public void Run_WithValidInput_ParsesTextFieldsAndReturnsSuccessRow()
     {
-        var attacker = new MainWindowPredictionSelection(4, "NOR", "Lando Norris");
-        var target = new MainWindowPredictionSelection(81, "PIA", "Oscar Piastri");
+        var attacker = new PredictionSelection(4, "NOR", "Lando Norris");
+        var target = new PredictionSelection(81, "PIA", "Oscar Piastri");
         PredictionRequest? capturedRequest = null;
 
         var input = CreateInput(
@@ -33,7 +33,7 @@ public sealed class MainWindowSingleScanRunServiceTests
             attackerReplAgeText: "2",
             targetReplAgeText: "3");
 
-        var result = MainWindowSingleScanRunService.Run(input, request =>
+        var result = SingleScanWorkflowService.Run(input, request =>
         {
             capturedRequest = request;
             return CreatePredictionResult();
@@ -53,8 +53,8 @@ public sealed class MainWindowSingleScanRunServiceTests
     }
 
     private static MainWindowSingleScanRunInput CreateInput(
-        MainWindowPredictionSelection? attacker,
-        MainWindowPredictionSelection? target,
+        PredictionSelection? attacker,
+        PredictionSelection? target,
         string? startingGapText = "1.100",
         string? attackerOverrideText = null,
         string? targetOverrideText = null,

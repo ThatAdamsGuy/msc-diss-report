@@ -7,7 +7,7 @@ using UndercutAnalyser.Domain.Prediction;
 
 namespace UndercutAnalyser.Services;
 
-public static class MainWindowLogic
+public static partial class WorkspaceWorkflowService
 {
     /// <summary>
     /// Decides whether a scan row should be visible based on its result class and the three UI filter toggles.

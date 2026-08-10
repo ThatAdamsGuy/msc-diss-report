@@ -22,7 +22,7 @@ public sealed class MainWindowScanRowFactoryTests
             MarginalThresholdSeconds: 0.25,
             Warnings: []);
 
-        var row = MainWindowScanRowFactory.CreateSuccess(
+        var row = ScanWorkflowService.CreateSuccess(
             attacker: "NOR",
             target: "ANT",
             decisionLap: 12,
@@ -51,7 +51,7 @@ public sealed class MainWindowScanRowFactoryTests
     [Fact]
     public void CreateError_SetsPlaceholderGapFields_AndErrorResult()
     {
-        var row = MainWindowScanRowFactory.CreateError(
+        var row = ScanWorkflowService.CreateError(
             attacker: "NOR",
             target: "ANT",
             decisionLap: 15,

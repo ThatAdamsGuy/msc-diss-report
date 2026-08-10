@@ -25,7 +25,7 @@ public sealed class MainWindowScanCsvExportServiceTests
                 Result: "Ahead")
         };
 
-        var csv = MainWindowScanCsvExportService.BuildCsv(rows);
+        var csv = ScanWorkflowService.BuildCsv(rows);
 
         var lines = csv.Split(Environment.NewLine, StringSplitOptions.None);
         Assert.StartsWith("Lap,Attacking,Target,AttackerCompound,AttackerTyreAge,TargetCompound,TargetTyreAge,G0,GapTargetPitLapComplete,GapTargetOutLapComplete,GapBothDriversNormalLapComplete,DeltaGTargetPitLapComplete,Result", lines[0]);
@@ -53,7 +53,7 @@ public sealed class MainWindowScanCsvExportServiceTests
                 Result: "Line1\nLine2")
         };
 
-        var csv = MainWindowScanCsvExportService.BuildCsv(rows);
+        var csv = ScanWorkflowService.BuildCsv(rows);
 
         Assert.Contains("\"NOR,\"\"Lando\"\"\"", csv);
         Assert.Contains("\"Line1", csv);

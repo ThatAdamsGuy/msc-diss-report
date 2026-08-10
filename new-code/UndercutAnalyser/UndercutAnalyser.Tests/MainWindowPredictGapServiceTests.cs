@@ -15,7 +15,7 @@ public sealed class MainWindowPredictGapServiceTests
             new() { DriverNumber = 81, LapNumber = 12, DateStart = t0, DurationSector1 = 19f, DurationSector2 = 50f }
         };
 
-        var result = MainWindowPredictGapService.TryDeriveInitialGapSeconds(
+        var result = WorkspaceWorkflowService.TryDeriveInitialGapSeconds(
             laps,
             attackerDriverNumber: 4,
             targetDriverNumber: 81,
@@ -34,7 +34,7 @@ public sealed class MainWindowPredictGapServiceTests
             new() { DriverNumber = 4, LapNumber = 12, DateStart = t0, DurationSector1 = 20f, DurationSector2 = 50f }
         };
 
-        var result = MainWindowPredictGapService.TryDeriveInitialGapSeconds(
+        var result = WorkspaceWorkflowService.TryDeriveInitialGapSeconds(
             laps,
             attackerDriverNumber: 4,
             targetDriverNumber: 81,
@@ -53,7 +53,7 @@ public sealed class MainWindowPredictGapServiceTests
             new() { DriverNumber = 81, LapNumber = 12, DateStart = t0, DurationSector1 = 19f, DurationSector2 = null }
         };
 
-        var result = MainWindowPredictGapService.TryDeriveInitialGapSeconds(
+        var result = WorkspaceWorkflowService.TryDeriveInitialGapSeconds(
             laps,
             attackerDriverNumber: 4,
             targetDriverNumber: 81,

@@ -6,7 +6,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Builds scan CSV content from normalized scan rows using the shared export schema.
 /// </summary>
-public static class MainWindowScanCsvExportService
+public static partial class ScanWorkflowService
 {
     /// <summary>
     /// Creates CSV text for scan rows, including header and escaped fields.
@@ -20,18 +20,18 @@ public static class MainWindowScanCsvExportService
         {
             sb.AppendLine(string.Join(",",
                 row.DecisionLap.ToString(CultureInfo.InvariantCulture),
-                MainWindowLogic.EscapeCsv(row.Attacker),
-                MainWindowLogic.EscapeCsv(row.Target),
-                MainWindowLogic.EscapeCsv(row.AttackerCompound),
+                WorkspaceWorkflowService.EscapeCsv(row.Attacker),
+                WorkspaceWorkflowService.EscapeCsv(row.Target),
+                WorkspaceWorkflowService.EscapeCsv(row.AttackerCompound),
                 row.AttackerTyreAge.ToString(CultureInfo.InvariantCulture),
-                MainWindowLogic.EscapeCsv(row.TargetCompound),
+                WorkspaceWorkflowService.EscapeCsv(row.TargetCompound),
                 row.TargetTyreAge.ToString(CultureInfo.InvariantCulture),
-                MainWindowLogic.EscapeCsv(row.G0),
-                MainWindowLogic.EscapeCsv(row.GapAtTargetPitLapComplete),
-                MainWindowLogic.EscapeCsv(row.GapAtTargetOutLapComplete),
-                MainWindowLogic.EscapeCsv(row.GapAtBothDriversNormalLapComplete),
-                MainWindowLogic.EscapeCsv(row.DeltaGAtTargetPitLapComplete),
-                MainWindowLogic.EscapeCsv(row.Result)));
+                WorkspaceWorkflowService.EscapeCsv(row.G0),
+                WorkspaceWorkflowService.EscapeCsv(row.GapAtTargetPitLapComplete),
+                WorkspaceWorkflowService.EscapeCsv(row.GapAtTargetOutLapComplete),
+                WorkspaceWorkflowService.EscapeCsv(row.GapAtBothDriversNormalLapComplete),
+                WorkspaceWorkflowService.EscapeCsv(row.DeltaGAtTargetPitLapComplete),
+                WorkspaceWorkflowService.EscapeCsv(row.Result)));
         }
 
         return sb.ToString();

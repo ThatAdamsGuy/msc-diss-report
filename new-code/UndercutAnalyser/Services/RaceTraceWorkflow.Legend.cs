@@ -3,7 +3,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Encapsulates race-trace legend label formatting and visibility-state transitions.
 /// </summary>
-public static class MainWindowRaceTraceLegendService
+public static partial class RaceTraceWorkflowService
 {
     /// <summary>
     /// Builds the style-prefixed legend label text for a driver.

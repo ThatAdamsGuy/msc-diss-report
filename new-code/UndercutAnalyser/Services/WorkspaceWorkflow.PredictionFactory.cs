@@ -13,7 +13,7 @@ public sealed record DriverScenarioInput(
     string CurrentCompoundText,
     int CurrentTyreAgeLaps);
 
-public static class MainWindowPredictionFactory
+public static partial class WorkspaceWorkflowService
 {
     /// <summary>
     /// Builds a full prediction request from UI scan/predict inputs, including compound parsing and driver-state mapping.

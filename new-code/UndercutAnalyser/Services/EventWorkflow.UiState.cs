@@ -5,7 +5,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Produces render-ready event-selection UI state for MainWindow controls and status text.
 /// </summary>
-public static class MainWindowEventUiStatePresenter
+public static partial class EventWorkflowService
 {
     /// <summary>
     /// State shown immediately after event selection, before data loading begins.

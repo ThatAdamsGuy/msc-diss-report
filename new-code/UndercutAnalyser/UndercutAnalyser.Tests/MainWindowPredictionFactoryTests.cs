@@ -10,7 +10,7 @@ public sealed class MainWindowPredictionFactoryTests
     {
         var model = LapModelParameters.CreateDefault();
 
-        var request = MainWindowPredictionFactory.CreatePredictionRequest(
+        var request = WorkspaceWorkflowService.CreatePredictionRequest(
             eventName: "Test Event",
             decisionLap: 12,
             initialGapSeconds: 1.234,
@@ -49,7 +49,7 @@ public sealed class MainWindowPredictionFactoryTests
     [InlineData(UndercutClassification.PredictedBehind, "Behind")]
     public void ToResultLabel_MapsClassificationToUiLabel(UndercutClassification input, string expected)
     {
-        var actual = MainWindowPredictionFactory.ToResultLabel(input);
+        var actual = WorkspaceWorkflowService.ToResultLabel(input);
         Assert.Equal(expected, actual);
     }
 }

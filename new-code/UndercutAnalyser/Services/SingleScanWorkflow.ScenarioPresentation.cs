@@ -5,7 +5,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Projects derived single-scan scenario data into UI-ready field text and selection intent.
 /// </summary>
-public static class MainWindowSingleScanScenarioPresentationService
+public static partial class SingleScanWorkflowService
 {
     /// <summary>
     /// Builds presentation values for single-scan scenario controls.

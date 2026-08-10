@@ -3,7 +3,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Computes render-ready scan result views (filtered rows, status text, export availability) for main and single scan panels.
 /// </summary>
-public static class MainWindowScanResultsPresenter
+public static partial class ScanWorkflowService
 {
     /// <summary>
     /// Builds the main-scan view state from all rows and current result-filter toggles.
@@ -15,11 +15,11 @@ public static class MainWindowScanResultsPresenter
         bool? showBehind)
     {
         var filteredRows = allRows
-            .Where(row => MainWindowLogic.ShouldShowResult(row.Result, showAhead, showMarginal, showBehind))
+            .Where(row => WorkspaceWorkflowService.ShouldShowResult(row.Result, showAhead, showMarginal, showBehind))
             .ToList();
 
-        var opportunityCount = MainWindowLogic.CountOpportunities(filteredRows.Select(r => r.Result));
-        var statusText = MainWindowLogic.BuildMainScanStatusText(filteredRows.Count, allRows.Count, opportunityCount);
+        var opportunityCount = WorkspaceWorkflowService.CountOpportunities(filteredRows.Select(r => r.Result));
+        var statusText = WorkspaceWorkflowService.BuildMainScanStatusText(filteredRows.Count, allRows.Count, opportunityCount);
 
         return new MainScanViewState(
             FilteredRows: filteredRows,
@@ -38,7 +38,7 @@ public static class MainWindowScanResultsPresenter
         bool? showBehind)
     {
         var filteredRows = allRows
-            .Where(row => MainWindowLogic.ShouldShowResult(row.Result, showAhead, showMarginal, showBehind))
+            .Where(row => WorkspaceWorkflowService.ShouldShowResult(row.Result, showAhead, showMarginal, showBehind))
             .ToList();
 
         if (allRows.Count == 0)
@@ -49,9 +49,9 @@ public static class MainWindowScanResultsPresenter
                 EnableExport: false);
         }
 
-        var opportunityCount = MainWindowLogic.CountOpportunities(filteredRows.Select(r => r.Result));
+        var opportunityCount = WorkspaceWorkflowService.CountOpportunities(filteredRows.Select(r => r.Result));
         var summaryPrefix = baseStatus ?? $"{allRows.Count} single-driver scenario{(allRows.Count == 1 ? string.Empty : "s")} scanned.";
-        var statusText = MainWindowLogic.BuildSingleScanStatusText(summaryPrefix, filteredRows.Count, opportunityCount);
+        var statusText = WorkspaceWorkflowService.BuildSingleScanStatusText(summaryPrefix, filteredRows.Count, opportunityCount);
 
         return new SingleScanViewState(
             FilteredRows: filteredRows,

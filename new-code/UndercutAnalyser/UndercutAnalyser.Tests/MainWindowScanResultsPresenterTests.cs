@@ -15,7 +15,7 @@ public sealed class MainWindowScanResultsPresenterTests
             CreateRow("Error: boom")
         };
 
-        var state = MainWindowScanResultsPresenter.BuildMainScanViewState(
+        var state = ScanWorkflowService.BuildMainScanViewState(
             allRows: rows,
             showAhead: true,
             showMarginal: false,
@@ -33,7 +33,7 @@ public sealed class MainWindowScanResultsPresenterTests
     [Fact]
     public void BuildSingleScanViewState_WhenEmpty_UsesBaseStatusAndDisablesExport()
     {
-        var state = MainWindowScanResultsPresenter.BuildSingleScanViewState(
+        var state = ScanWorkflowService.BuildSingleScanViewState(
             allRows: [],
             baseStatus: "Select attacking and target drivers.",
             showAhead: true,
@@ -54,7 +54,7 @@ public sealed class MainWindowScanResultsPresenterTests
             CreateRow("Behind")
         };
 
-        var state = MainWindowScanResultsPresenter.BuildSingleScanViewState(
+        var state = ScanWorkflowService.BuildSingleScanViewState(
             allRows: rows,
             baseStatus: null,
             showAhead: true,

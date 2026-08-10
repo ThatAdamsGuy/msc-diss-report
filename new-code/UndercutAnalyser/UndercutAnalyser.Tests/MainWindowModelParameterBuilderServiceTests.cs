@@ -9,7 +9,7 @@ public sealed class MainWindowModelParameterBuilderServiceTests
     [Fact]
     public void Build_WithNoRows_UsesBaselineCompoundMappingsAndScalarSettings()
     {
-        var result = MainWindowModelParameterBuilderService.Build(
+        var result = WorkspaceWorkflowService.Build(
             tyreParameterRows: [],
             warmUpPenalty: 0.42,
             pitLaneLoss: 21.3,
@@ -45,7 +45,7 @@ public sealed class MainWindowModelParameterBuilderServiceTests
             new("C5", 0.77, 0.66, isEditable: true)
         };
 
-        var result = MainWindowModelParameterBuilderService.Build(
+        var result = WorkspaceWorkflowService.Build(
             tyreParameterRows: rows,
             warmUpPenalty: 0.3,
             pitLaneLoss: 22.0,

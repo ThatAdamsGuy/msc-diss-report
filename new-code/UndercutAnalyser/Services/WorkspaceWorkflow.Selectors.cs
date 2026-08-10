@@ -6,12 +6,12 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Builds selector options and default choices used by MainWindow scan and prediction panels.
 /// </summary>
-public static class MainWindowSelectorPopulationService
+public static partial class WorkspaceWorkflowService
 {
     /// <summary>
     /// Builds ordered driver selector items from currently loaded participants and laps.
     /// </summary>
-    public static List<MainWindowPredictionSelection> BuildOrderedDriverSelections(
+    public static List<PredictionSelection> BuildOrderedDriverSelections(
         IReadOnlyList<Driver> drivers,
         IReadOnlyList<EventLap> laps)
     {
@@ -29,7 +29,7 @@ public static class MainWindowSelectorPopulationService
                 var d = driversByNumber[n];
                 var code = string.IsNullOrWhiteSpace(d.Code) ? n.ToString(CultureInfo.InvariantCulture) : d.Code;
                 var display = string.IsNullOrWhiteSpace(d.BroadcastName) ? code : $"{code} – {d.BroadcastName}";
-                return new MainWindowPredictionSelection(n, code, display);
+                return new PredictionSelection(n, code, display);
             })
             .ToList();
     }
@@ -66,18 +66,4 @@ public static class MainWindowSelectorPopulationService
         return availableLaps[0];
     }
 
-    /// <summary>
-    /// Builds prediction decision-lap choices and a default selected lap.
-    /// </summary>
-    public static (List<int> Laps, int? DefaultLap) BuildPredictDecisionLapChoices(IReadOnlyList<EventLap> laps)
-    {
-        var maxLap = laps.Count > 0 ? laps.Max(l => l.LapNumber) : 0;
-
-        if (maxLap <= 0)
-            return ([], null);
-
-        var lapChoices = Enumerable.Range(1, maxLap).ToList();
-        var defaultIndex = Math.Min(Math.Max(0, maxLap / 2 - 1), lapChoices.Count - 1);
-        return (lapChoices, lapChoices[defaultIndex]);
-    }
 }

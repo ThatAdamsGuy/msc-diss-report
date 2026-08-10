@@ -8,7 +8,7 @@ public sealed class MainWindowSingleScanScenarioServiceTests
     [Fact]
     public void Derive_ReturnsEmpty_WhenAttackerMissing()
     {
-        var result = MainWindowSingleScanScenarioService.Derive(new MainWindowSingleScanScenarioInput(
+        var result = SingleScanWorkflowService.Derive(new MainWindowSingleScanScenarioInput(
             Attacker: null,
             SelectedTarget: null,
             DecisionLapNumber: 5,
@@ -30,9 +30,9 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             new() { DriverNumber = 4, LapNumber = 10, DateStart = t0, DurationSector1 = 20f, DurationSector2 = 31f, LapDuration = 91f }
         };
 
-        var result = MainWindowSingleScanScenarioService.Derive(new MainWindowSingleScanScenarioInput(
-            Attacker: new MainWindowPredictionSelection(4, "NOR", "NOR"),
-            SelectedTarget: new MainWindowPredictionSelection(63, "RUS", "RUS"),
+        var result = SingleScanWorkflowService.Derive(new MainWindowSingleScanScenarioInput(
+            Attacker: new PredictionSelection(4, "NOR", "NOR"),
+            SelectedTarget: new PredictionSelection(63, "RUS", "RUS"),
             DecisionLapNumber: 10,
             AvailableTargetDriverNumbers: [81, 63],
             Laps: laps,

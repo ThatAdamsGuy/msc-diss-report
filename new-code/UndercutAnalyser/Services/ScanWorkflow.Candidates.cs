@@ -12,7 +12,7 @@ public sealed record ScanCandidate(
     int AttackerPosition,
     double InitialGapSeconds);
 
-public static class MainWindowScanCandidateService
+public static partial class ScanWorkflowService
 {
     /// <summary>
     /// Builds a driver/lap lookup table containing only laps with timing data needed for scan candidate evaluation.

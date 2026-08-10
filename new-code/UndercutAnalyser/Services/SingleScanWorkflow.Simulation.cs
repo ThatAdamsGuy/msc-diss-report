@@ -5,7 +5,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Validates and executes one single-scan undercut simulation scenario.
 /// </summary>
-public static class MainWindowSingleScanSimulationService
+public static partial class SingleScanWorkflowService
 {
     /// <summary>
     /// Runs one single-scan simulation from normalized panel inputs and returns either a user-facing
@@ -38,7 +38,7 @@ public static class MainWindowSingleScanSimulationService
         if (attackerRefPace <= 0 || targetRefPace <= 0)
             return MainWindowSingleScanSimulationResult.Failure("Reference pace could not be derived.");
 
-        var request = MainWindowPredictionFactory.CreatePredictionRequest(
+        var request = WorkspaceWorkflowService.CreatePredictionRequest(
             eventName: input.EventName,
             decisionLap: input.DecisionLapNumber.Value,
             initialGapSeconds: input.StartingGapSeconds.Value,
@@ -64,7 +64,7 @@ public static class MainWindowSingleScanSimulationService
         try
         {
             var prediction = predict(request);
-            var row = MainWindowScanRowFactory.CreateSuccess(
+            var row = ScanWorkflowService.CreateSuccess(
                 attacker: input.Attacker.Code,
                 target: input.Target.Code,
                 decisionLap: input.DecisionLapNumber.Value,
@@ -89,8 +89,8 @@ public static class MainWindowSingleScanSimulationService
 /// </summary>
 public sealed record MainWindowSingleScanSimulationInput(
     string EventName,
-    MainWindowPredictionSelection? Attacker,
-    MainWindowPredictionSelection? Target,
+    PredictionSelection? Attacker,
+    PredictionSelection? Target,
     int? DecisionLapNumber,
     double? StartingGapSeconds,
     double? AttackerPaceOverrideSeconds,

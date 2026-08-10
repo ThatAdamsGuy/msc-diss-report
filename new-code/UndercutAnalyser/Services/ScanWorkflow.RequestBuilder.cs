@@ -22,7 +22,7 @@ public sealed record ScanExecutionContext(
     int TargetTyreAge,
     PredictionRequest Request);
 
-public static class MainWindowScanRequestBuilder
+public static partial class ScanWorkflowService
 {
     /// <summary>
     /// Builds one complete scan execution context from a candidate, including code lookup,
@@ -48,7 +48,7 @@ public static class MainWindowScanRequestBuilder
         var (attackerCompound, attackerTyreAge) = tyreStateResolver(candidate.AttackerNumber, candidate.DecisionLap);
         var (targetCompound, targetTyreAge) = tyreStateResolver(candidate.TargetNumber, candidate.DecisionLap);
 
-        var request = MainWindowPredictionFactory.CreatePredictionRequest(
+        var request = WorkspaceWorkflowService.CreatePredictionRequest(
             eventName: eventName,
             decisionLap: candidate.DecisionLap,
             initialGapSeconds: candidate.InitialGapSeconds,

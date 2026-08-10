@@ -5,7 +5,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Derives per-driver reference pace from clean laps, excluding pit transitions and SC/VSC-affected laps.
 /// </summary>
-public static class MainWindowReferencePaceService
+public static partial class RaceTraceWorkflowService
 {
     /// <summary>
     /// Computes average clean-lap pace per driver and returns only drivers with positive derived pace.
@@ -14,23 +14,16 @@ public static class MainWindowReferencePaceService
         IReadOnlyList<EventLap> laps,
         IReadOnlyList<TimeWindow> safetyCarWindows)
     {
+        var pitInLaps = RaceTimingDomainLogic.BuildPitInLapLookup(laps);
+
         return laps
             .GroupBy(l => l.DriverNumber)
             .Select(g =>
             {
-                var pitOutLaps = g.Where(l => l.IsPitOutLap)
-                                  .Select(l => l.LapNumber)
-                                  .ToHashSet();
-
-                var pitInLaps = g.Where(l => l.IsPitOutLap)
-                                 .Select(l => l.LapNumber - 1)
-                                 .Where(lap => lap >= 1 && !pitOutLaps.Contains(lap))
-                                 .ToHashSet();
-
                 var cleanLaps = g
                     .Where(l => l.LapDuration.HasValue && l.DateStart.HasValue
                              && !l.IsPitOutLap
-                             && !pitInLaps.Contains(l.LapNumber)
+                             && !pitInLaps.Contains((l.DriverNumber, l.LapNumber))
                              && !RaceTimingDomainLogic.IsInAnyWindow(l, safetyCarWindows))
                     .ToList();
 

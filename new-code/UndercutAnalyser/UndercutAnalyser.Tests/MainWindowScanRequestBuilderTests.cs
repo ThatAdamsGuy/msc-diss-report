@@ -15,9 +15,9 @@ public sealed class MainWindowScanRequestBuilderTests
             [7] = new() { DriverNumber = 7, Code = "" }
         };
 
-        Assert.Equal("NOR", MainWindowScanRequestBuilder.ResolveDriverCode(drivers, 4));
-        Assert.Equal("7", MainWindowScanRequestBuilder.ResolveDriverCode(drivers, 7));
-        Assert.Equal("99", MainWindowScanRequestBuilder.ResolveDriverCode(drivers, 99));
+        Assert.Equal("NOR", ScanWorkflowService.ResolveDriverCode(drivers, 4));
+        Assert.Equal("7", ScanWorkflowService.ResolveDriverCode(drivers, 7));
+        Assert.Equal("99", ScanWorkflowService.ResolveDriverCode(drivers, 99));
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class MainWindowScanRequestBuilderTests
         (string compound, int age) TyreResolver(int driver, int lap) =>
             driver == 4 ? ("soft", 8) : ("medium", 10);
 
-        var context = MainWindowScanRequestBuilder.BuildExecutionContext(
+        var context = ScanWorkflowService.BuildExecutionContext(
             candidate: candidate,
             driversByNumber: drivers,
             referencePaceByDriver: paces,

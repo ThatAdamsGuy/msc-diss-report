@@ -8,7 +8,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Shared CSV save-dialog and file-write helper for MainWindow export flows.
 /// </summary>
-public static class MainWindowCsvFileSaveService
+public static partial class WorkspaceWorkflowService
 {
     /// <summary>
     /// Prompts for a destination file and writes CSV content using the specified encoding.

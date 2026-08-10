@@ -21,7 +21,7 @@ public sealed record ScanRowData(
     string DeltaGAtTargetPitLapComplete,
     string Result);
 
-public static class MainWindowScanRowFactory
+public static partial class ScanWorkflowService
 {
     /// <summary>
     /// Creates a scan result row for a successful prediction, including formatted gaps and classification label.
@@ -50,7 +50,7 @@ public static class MainWindowScanRowFactory
             GapAtTargetOutLapComplete: FormatGap(prediction.GapAtTargetOutLapCompleteSeconds),
             GapAtBothDriversNormalLapComplete: FormatGap(prediction.GapAtBothDriversNormalLapCompleteSeconds),
             DeltaGAtTargetPitLapComplete: FormatSigned(prediction.DeltaGAtTargetPitLapCompleteSeconds),
-            Result: MainWindowPredictionFactory.ToResultLabel(prediction.Classification));
+            Result: WorkspaceWorkflowService.ToResultLabel(prediction.Classification));
     }
 
     /// <summary>

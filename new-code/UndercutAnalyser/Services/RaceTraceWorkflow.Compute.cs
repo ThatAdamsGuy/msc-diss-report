@@ -6,7 +6,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Computes render-ready race-trace series and metadata from session data and trace options.
 /// </summary>
-public static class MainWindowRaceTraceService
+public static partial class RaceTraceWorkflowService
 {
     /// <summary>
     /// Builds race-trace render data including filtered/adjusted laps, per-driver cumulative deltas,

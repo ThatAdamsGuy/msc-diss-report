@@ -5,7 +5,7 @@ namespace UndercutAnalyser.Services;
 /// <summary>
 /// Derives attacker-target initial gap at a decision lap using Sector-2 crossing timestamps.
 /// </summary>
-public static class MainWindowPredictGapService
+public static partial class WorkspaceWorkflowService
 {
     /// <summary>
     /// Returns the signed initial gap in seconds at the decision lap, or null when required lap timing data is unavailable.

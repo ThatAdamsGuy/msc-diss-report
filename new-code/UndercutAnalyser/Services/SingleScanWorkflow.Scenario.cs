@@ -6,7 +6,7 @@ namespace UndercutAnalyser.Services;
 /// Derives single-scan scenario state (target suggestion, pace, tyre state, and starting gap)
 /// from current selections and loaded session data.
 /// </summary>
-public static class MainWindowSingleScanScenarioService
+public static partial class SingleScanWorkflowService
 {
     /// <summary>
     /// Computes single-scan scenario details for the current attacker/lap selection.
@@ -32,7 +32,7 @@ public static class MainWindowSingleScanScenarioService
         }
 
         int? suggestedAheadDriverNumber = null;
-        var orderPerLap = MainWindowScanCandidateService.BuildOnTrackOrderPerLap(lapIndex);
+        var orderPerLap = ScanWorkflowService.BuildOnTrackOrderPerLap(lapIndex);
         if (orderPerLap.TryGetValue(lapNumber, out var order))
         {
             var attackerPos = order.IndexOf(input.Attacker.DriverNumber);
@@ -51,21 +51,21 @@ public static class MainWindowSingleScanScenarioService
             return MainWindowSingleScanScenarioResult.Empty;
 
         var safetyCarWindows = RaceTimingDomainLogic.BuildSafetyCarWindows(input.RaceControlMessages);
-        var referencePace = MainWindowReferencePaceService.DeriveReferencePacePerDriver(input.Laps, safetyCarWindows);
+        var referencePace = RaceTraceWorkflowService.DeriveReferencePacePerDriver(input.Laps, safetyCarWindows);
 
-        var (attackerCompound, attackerTyreAge) = MainWindowLogic.ResolveTyreStateAtLap(
+        var (attackerCompound, attackerTyreAge) = WorkspaceWorkflowService.ResolveTyreStateAtLap(
             input.Stints,
             input.Laps,
             input.Attacker.DriverNumber,
             lapNumber);
 
-        var (targetCompound, targetTyreAge) = MainWindowLogic.ResolveTyreStateAtLap(
+        var (targetCompound, targetTyreAge) = WorkspaceWorkflowService.ResolveTyreStateAtLap(
             input.Stints,
             input.Laps,
             effectiveTargetDriverNumber.Value,
             lapNumber);
 
-        var startingGapSeconds = MainWindowPredictGapService.TryDeriveInitialGapSeconds(
+        var startingGapSeconds = WorkspaceWorkflowService.TryDeriveInitialGapSeconds(
             laps: input.Laps,
             attackerDriverNumber: input.Attacker.DriverNumber,
             targetDriverNumber: effectiveTargetDriverNumber.Value,
@@ -90,8 +90,8 @@ public static class MainWindowSingleScanScenarioService
 /// Input payload for deriving single-scan scenario values.
 /// </summary>
 public sealed record MainWindowSingleScanScenarioInput(
-    MainWindowPredictionSelection? Attacker,
-    MainWindowPredictionSelection? SelectedTarget,
+    PredictionSelection? Attacker,
+    PredictionSelection? SelectedTarget,
     int? DecisionLapNumber,
     IReadOnlyCollection<int> AvailableTargetDriverNumbers,
     IReadOnlyList<EventLap> Laps,

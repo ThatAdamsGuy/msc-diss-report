@@ -10,7 +10,7 @@ public sealed class MainWindowEventUiStatePresenterTests
     {
         var meeting = new EventMeeting { MeetingOfficialName = "Australian Grand Prix", Year = 2025 };
 
-        var state = MainWindowEventUiStatePresenter.Selected(meeting);
+        var state = EventWorkflowService.Selected(meeting);
 
         Assert.Equal("Australian Grand Prix (2025) (Hover for Details)", state.DisplayText);
         Assert.Equal("Event selected: Australian Grand Prix (2025)", state.TooltipText);
@@ -34,7 +34,7 @@ public sealed class MainWindowEventUiStatePresenterTests
             AverageLapTimeSeconds: 90.5,
             SafetyCarWindows: []);
 
-        var state = MainWindowEventUiStatePresenter.Loaded(meeting, reference, driverCount: 20);
+        var state = EventWorkflowService.Loaded(meeting, reference, driverCount: 20);
 
         Assert.True(state.EnableRawData);
         Assert.True(state.EnablePredictionScan);

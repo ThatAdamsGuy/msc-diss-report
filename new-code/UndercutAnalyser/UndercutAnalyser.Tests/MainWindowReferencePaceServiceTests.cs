@@ -25,7 +25,7 @@ public sealed class MainWindowReferencePaceServiceTests
             new(t0.AddMinutes(8), t0.AddMinutes(9))
         };
 
-        var result = MainWindowReferencePaceService.DeriveReferencePacePerDriver(laps, windows);
+        var result = RaceTraceWorkflowService.DeriveReferencePacePerDriver(laps, windows);
 
         var pace = Assert.Single(result);
         Assert.Equal(4, pace.Key);
@@ -43,7 +43,7 @@ public sealed class MainWindowReferencePaceServiceTests
             new() { DriverNumber = 81, LapNumber = 1, DateStart = t0, LapDuration = null }
         };
 
-        var result = MainWindowReferencePaceService.DeriveReferencePacePerDriver(laps, []);
+        var result = RaceTraceWorkflowService.DeriveReferencePacePerDriver(laps, []);
 
         Assert.Single(result);
         Assert.True(result.ContainsKey(4));

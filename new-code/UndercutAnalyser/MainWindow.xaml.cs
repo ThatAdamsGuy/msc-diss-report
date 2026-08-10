@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -6,8 +6,6 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Media;
-using Microsoft.Win32;
 using WpfBrush = System.Windows.Media.Brush;
 using WpfSolidColorBrush = System.Windows.Media.SolidColorBrush;
 using WpfColors = System.Windows.Media.Colors;
@@ -54,7 +52,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _suppressScanSelectionHandlers;
     private List<ScanRowData> _mainScanRows = [];
     private List<ScanRowData> _singleScanRows = [];
-    private PredictionResult? _mainPredictResult;
     private readonly IMainWindowEventDataClient _eventDataClient = new OpenF1RaceDataClient();
     private readonly EventSelectorViewModel _eventSelectorViewModel;
 
@@ -199,24 +196,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         public string Result { get; init; } = string.Empty;
     }
 
-    private sealed class MainPredictLapRow
-    {
-        public string DriverLabel { get; init; } = string.Empty;
-        public int LapNumber { get; init; }
-        public string LapType { get; init; } = string.Empty;
-        public string Compound { get; init; } = string.Empty;
-        public int TyreAge { get; init; }
-        public string Base { get; init; } = string.Empty;
-        public string CompoundOffset { get; init; } = string.Empty;
-        public string Degradation { get; init; } = string.Empty;
-        public string WarmUp { get; init; } = string.Empty;
-        public string Traffic { get; init; } = string.Empty;
-        public string PitLoss { get; init; } = string.Empty;
-        public string Total { get; init; } = string.Empty;
-        public string Cumulative { get; init; } = string.Empty;
-        public string Gap { get; init; } = string.Empty;
-    }
-
     private sealed class DecisionLapItem
     {
         public int LapNumber { get; init; }
@@ -281,10 +260,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ScanSingleTargetCombo.SelectionChanged += OnScanSingleTargetSelectionChanged;
         ScanTargetLapCombo.SelectionChanged += OnScanTargetLapSelectionChanged;
 
-        PredictAttackerCombo.SelectionChanged += OnPredictSelectionChanged;
-        PredictTargetCombo.SelectionChanged += OnPredictSelectionChanged;
-        PredictDecisionLapCombo.SelectionChanged += OnPredictSelectionChanged;
-
         GetMainScanShowAheadCheckBox()?.Checked += OnMainScanFilterChanged;
         GetMainScanShowAheadCheckBox()?.Unchecked += OnMainScanFilterChanged;
         GetMainScanShowMarginalCheckBox()?.Checked += OnMainScanFilterChanged;
@@ -301,8 +276,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         FullScanExportCsvButton.Click += (_, _) => ExportMainScanCsv();
         SingleScanExportCsvButton.Click += (_, _) => ExportSingleScanCsv();
-        RunPredictionButton.Click += (_, _) => RunPredictionFromMain();
-        PredictExportCsvButton.Click += (_, _) => ExportPredictionCsvFromMain();
         SimulateSingleUndercutButton.Click += (_, _) => SimulateSingleUndercut();
 
     }
@@ -332,7 +305,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        ApplyEventUiState(MainWindowEventUiStatePresenter.Selected(_eventSelectorViewModel.SelectedEvent));
+        ApplyEventUiState(EventWorkflowService.Selected(_eventSelectorViewModel.SelectedEvent));
 
         try
         {
@@ -344,9 +317,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             _currentMeetingKey = meetingKey;
             ResetLoadedEventDataState();
-            ApplyEventUiState(MainWindowEventUiStatePresenter.Loading(_eventSelectorViewModel.SelectedEvent));
+            ApplyEventUiState(EventWorkflowService.Loading(_eventSelectorViewModel.SelectedEvent));
 
-            var loadResult = await MainWindowEventDataLoadService.LoadAsync(
+            var loadResult = await EventWorkflowService.LoadAsync(
                 _eventDataClient,
                 meetingKey,
                 FuelSecondsPer10Kg,
@@ -356,7 +329,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 if (!loadResult.HasRaceSession || loadResult.Reference is null)
                 {
-                    ApplyEventUiState(MainWindowEventUiStatePresenter.NoRaceSession(_eventSelectorViewModel.SelectedEvent));
+                    ApplyEventUiState(EventWorkflowService.NoRaceSession(_eventSelectorViewModel.SelectedEvent));
                     RenderRaceTrace();
                     return;
                 }
@@ -370,15 +343,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 PopulateMainScanDriverSelectors();
                 ClearAllDriversResults();
                 ClearSingleScanResults();
-                _mainPredictResult = null;
-                PredictExportCsvButton.IsEnabled = false;
-                PredictResultGroup.Visibility = Visibility.Collapsed;
-                PredictValidationText.Visibility = Visibility.Collapsed;
-                PredictInitialGapBox.Text = string.Empty;
-                PredictLapGrid.ItemsSource = null;
-                PopulatePredictSelectors();
-
-                ApplyEventUiState(MainWindowEventUiStatePresenter.Loaded(_eventSelectorViewModel.SelectedEvent, loadResult.Reference, loadResult.Drivers.Count));
+                ApplyEventUiState(EventWorkflowService.Loaded(_eventSelectorViewModel.SelectedEvent, loadResult.Reference, loadResult.Drivers.Count));
                 RenderRaceTrace();
             });
         }
@@ -387,7 +352,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Application.Current.Dispatcher.Invoke(() =>
             {
                 ResetLoadedEventDataState();
-                ApplyEventUiState(MainWindowEventUiStatePresenter.LoadError(_eventSelectorViewModel.SelectedEvent, ex.Message));
+                ApplyEventUiState(EventWorkflowService.LoadError(_eventSelectorViewModel.SelectedEvent, ex.Message));
                 RenderRaceTrace();
             });
         }
@@ -493,11 +458,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshScenarioFromSelection();
     }
 
-    private void OnPredictSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        TryDerivePredictInitialGap();
-    }
-
     private void OnMainScanFilterChanged(object sender, RoutedEventArgs e)
     {
         RefreshMainScanResultsView();
@@ -534,7 +494,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Drivers: _currentDrivers,
             TyreStateResolver: GetTyreStateAtLap);
 
-        return await Task.Run(() => MainWindowScanOrchestrationService.Run(orchestrationInput));
+        return await Task.Run(() => ScanWorkflowService.Run(orchestrationInput));
     }
 
     /// <summary>
@@ -582,7 +542,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void RefreshMainScanResultsView()
     {
-        var state = MainWindowScanResultsPresenter.BuildMainScanViewState(
+        var state = ScanWorkflowService.BuildMainScanViewState(
             allRows: _mainScanRows,
             showAhead: GetMainScanShowAheadCheckBox()?.IsChecked,
             showMarginal: GetMainScanShowMarginalCheckBox()?.IsChecked,
@@ -598,7 +558,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void RefreshSingleScanResultsView(string? baseStatus = null)
     {
-        var state = MainWindowScanResultsPresenter.BuildSingleScanViewState(
+        var state = ScanWorkflowService.BuildSingleScanViewState(
             allRows: _singleScanRows,
             baseStatus: baseStatus,
             showAhead: GetSingleScanShowAheadCheckBox()?.IsChecked,
@@ -615,7 +575,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private (string compound, int age) GetTyreStateAtLap(int driverNumber, int lapNumber)
     {
-        return MainWindowLogic.ResolveTyreStateAtLap(_currentStints, _currentLaps, driverNumber, lapNumber);
+        return WorkspaceWorkflowService.ResolveTyreStateAtLap(_currentStints, _currentLaps, driverNumber, lapNumber);
     }
 
     /// <summary>
@@ -623,7 +583,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private Dictionary<int, double> DeriveReferencePacePerDriver(IReadOnlyList<TimeWindow> safetyCarWindows)
     {
-        return MainWindowReferencePaceService.DeriveReferencePacePerDriver(_currentLaps, safetyCarWindows);
+        return RaceTraceWorkflowService.DeriveReferencePacePerDriver(_currentLaps, safetyCarWindows);
     }
 
     /// <summary>
@@ -631,7 +591,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void PopulateMainScanDriverSelectors()
     {
-        var ordered = MainWindowSelectorPopulationService
+        var ordered = WorkspaceWorkflowService
             .BuildOrderedDriverSelections(_currentDrivers, _currentLaps)
             .Select(s => new MainScanDriverItem
             {
@@ -681,11 +641,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ClearSingleScanResults();
 
         var attackerSelection = ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem attacker
-            ? new MainWindowPredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName)
+            ? new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName)
             : null;
 
         var targetSelection = ScanSingleTargetCombo.SelectedItem is MainScanDriverItem target
-            ? new MainWindowPredictionSelection(target.DriverNumber, target.Code, target.DisplayName)
+            ? new PredictionSelection(target.DriverNumber, target.Code, target.DisplayName)
             : null;
 
         var decisionLap = (ScanTargetLapCombo.SelectedItem as DecisionLapItem)?.LapNumber;
@@ -714,7 +674,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             TargetResponseLaps: _targetResponseLaps,
             ModelParameters: BuildModelParametersFromMain());
 
-        var result = MainWindowSingleScanRunService.Run(runInput);
+        var result = SingleScanWorkflowService.Run(runInput);
 
         if (!result.IsSuccess || result.Row is null)
         {
@@ -733,7 +693,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var previousLap = (ScanTargetLapCombo.SelectedItem as DecisionLapItem)?.LapNumber;
         var targetNumber = (ScanSingleTargetCombo.SelectedItem as MainScanDriverItem)?.DriverNumber;
 
-        var lapNumbers = MainWindowSelectorPopulationService.BuildTargetDecisionLapChoices(_currentLaps, targetNumber);
+        var lapNumbers = WorkspaceWorkflowService.BuildTargetDecisionLapChoices(_currentLaps, targetNumber);
         var laps = lapNumbers
             .Select(n => new DecisionLapItem { LapNumber = n })
             .ToList();
@@ -744,7 +704,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ScanTargetLapCombo.ItemsSource = null;
             ScanTargetLapCombo.ItemsSource = laps;
 
-            var selectedLap = MainWindowSelectorPopulationService.ChooseDecisionLap(lapNumbers, previousLap);
+            var selectedLap = WorkspaceWorkflowService.ChooseDecisionLap(lapNumbers, previousLap);
             ScanTargetLapCombo.SelectedItem = selectedLap.HasValue
                 ? laps.FirstOrDefault(x => x.LapNumber == selectedLap.Value)
                 : null;
@@ -756,134 +716,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Populates manual prediction driver and lap selectors from currently loaded race data and chooses sensible defaults.
-    /// </summary>
-    private void PopulatePredictSelectors()
-    {
-        PredictAttackerCombo.Items.Clear();
-        PredictTargetCombo.Items.Clear();
-        PredictDecisionLapCombo.Items.Clear();
-
-        var orderedDrivers = MainWindowSelectorPopulationService
-            .BuildOrderedDriverSelections(_currentDrivers, _currentLaps)
-            .Select(s => new MainScanDriverItem { DriverNumber = s.DriverNumber, Code = s.Code, DisplayName = s.DisplayName })
-            .ToList();
-
-        foreach (var item in orderedDrivers)
-        {
-            PredictAttackerCombo.Items.Add(item);
-            PredictTargetCombo.Items.Add(item);
-        }
-
-        if (PredictAttackerCombo.Items.Count > 0) PredictAttackerCombo.SelectedIndex = 0;
-        if (PredictTargetCombo.Items.Count > 1) PredictTargetCombo.SelectedIndex = 1;
-        else if (PredictTargetCombo.Items.Count > 0) PredictTargetCombo.SelectedIndex = 0;
-
-        var (lapChoices, defaultLap) = MainWindowSelectorPopulationService.BuildPredictDecisionLapChoices(_currentLaps);
-        foreach (var lap in lapChoices)
-            PredictDecisionLapCombo.Items.Add(new DecisionLapItem { LapNumber = lap });
-
-        if (defaultLap.HasValue)
-        {
-            var selectedIndex = lapChoices.IndexOf(defaultLap.Value);
-            if (selectedIndex >= 0)
-                PredictDecisionLapCombo.SelectedIndex = selectedIndex;
-        }
-
-        TryDerivePredictInitialGap();
-    }
-
-    /// <summary>
-    /// Attempts to derive the initial attacker-target gap at the selected decision lap using sector-two crossing timestamps.
-    /// </summary>
-    private void TryDerivePredictInitialGap()
-    {
-        if (PredictAttackerCombo.SelectedItem is not MainScanDriverItem attacker ||
-            PredictTargetCombo.SelectedItem is not MainScanDriverItem target ||
-            PredictDecisionLapCombo.SelectedItem is not DecisionLapItem decisionLap)
-        {
-            return;
-        }
-
-        var g0 = MainWindowPredictGapService.TryDeriveInitialGapSeconds(
-            laps: _currentLaps,
-            attackerDriverNumber: attacker.DriverNumber,
-            targetDriverNumber: target.DriverNumber,
-            decisionLapNumber: decisionLap.LapNumber);
-
-        if (!g0.HasValue)
-            return;
-
-        PredictInitialGapBox.Text = g0.Value.ToString("F3", CultureInfo.InvariantCulture);
-    }
-
-    /// <summary>
-    /// Validates manual prediction inputs, builds a prediction request, executes the model, and renders the result panel.
-    /// </summary>
-    private void RunPredictionFromMain()
-    {
-        ClearAllDriversResults();
-        ClearSingleScanResults();
-
-        ApplyPredictionUiState(MainWindowPredictionUiStatePresenter.Initial());
-
-        var attackerSelection = PredictAttackerCombo.SelectedItem is MainScanDriverItem attackerItem
-            ? new MainWindowPredictionSelection(attackerItem.DriverNumber, attackerItem.Code, attackerItem.DisplayName)
-            : null;
-
-        var targetSelection = PredictTargetCombo.SelectedItem is MainScanDriverItem targetItem
-            ? new MainWindowPredictionSelection(targetItem.DriverNumber, targetItem.Code, targetItem.DisplayName)
-            : null;
-
-        var runInput = new MainWindowPredictionRunInput(
-            EventName: SelectedEventDisplay.Text,
-            Attacker: attackerSelection,
-            Target: targetSelection,
-            DecisionLapNumber: (PredictDecisionLapCombo.SelectedItem as DecisionLapItem)?.LapNumber,
-            InitialGapText: PredictInitialGapBox.Text,
-            ReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
-            ResolveTyreState: GetTyreStateAtLap,
-            AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
-            TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
-            AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
-            TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
-            TargetResponseLaps: _targetResponseLaps,
-            ModelParameters: BuildModelParametersFromMain());
-
-        var runResult = MainWindowPredictionRunService.Run(runInput);
-
-        if (!runResult.IsSuccess)
-        {
-            var error = runResult.ErrorMessage;
-            ApplyPredictionUiState(runResult.IsValidationFailure
-                ? MainWindowPredictionUiStatePresenter.ValidationError(error)
-                : MainWindowPredictionUiStatePresenter.ExecutionError(error));
-            return;
-        }
-
-        var result = runResult.Prediction!;
-        _mainPredictResult = result;
-        RenderPredictionResult(result, runResult.AttackerCode, runResult.TargetCode);
-        ApplyPredictionUiState(MainWindowPredictionUiStatePresenter.Success());
-    }
-
-    /// <summary>
-    /// Applies a render-ready prediction panel state to visibility, message, and export controls.
-    /// </summary>
-    private void ApplyPredictionUiState(MainWindowPredictionUiState state)
-    {
-        PredictValidationText.Text = state.ValidationMessage ?? string.Empty;
-        PredictValidationText.Visibility = state.ShowValidation ? Visibility.Visible : Visibility.Collapsed;
-        PredictResultGroup.Visibility = state.ShowResult ? Visibility.Visible : Visibility.Collapsed;
-        PredictExportCsvButton.IsEnabled = state.EnableExport;
-    }
-
-    /// <summary>
     /// Builds lap-model parameters from default values overridden by the current tyre parameter editor inputs.
     /// </summary>
     private LapModelParameters BuildModelParametersFromMain()
     {
-        return MainWindowModelParameterBuilderService.Build(
+        return WorkspaceWorkflowService.Build(
             tyreParameterRows: _tyreParameterRows,
             warmUpPenalty: _warmUpPenalty,
             pitLaneLoss: _pitLaneLoss,
@@ -891,64 +728,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             applyAttackerTraffic: _applyAttackerTraffic,
             applyTargetTraffic: _applyTargetTraffic,
             trafficPenalty: _trafficPenalty);
-    }
-
-    /// <summary>
-    /// Renders prediction classification and per-lap timing breakdown rows for both attacker and target drivers.
-    /// </summary>
-    private void RenderPredictionResult(PredictionResult result, string attackerCode, string targetCode)
-    {
-        var view = MainWindowPredictionPresentationService.Build(result, attackerCode, targetCode);
-
-        var badgeColor = result.Classification switch
-        {
-            UndercutClassification.PredictedAhead => WpfColors.Green,
-            UndercutClassification.PredictedMarginal => WpfColors.DarkGoldenrod,
-            _ => WpfColors.Crimson
-        };
-
-        PredictClassificationBadge.Background = new SolidColorBrush(badgeColor);
-        PredictClassificationText.Text = view.ClassificationText;
-        PredictG0Label.Text = view.InitialGapLabel;
-        PredictLapGrid.ItemsSource = view.Rows.Select(r => new MainPredictLapRow
-        {
-            DriverLabel = r.DriverLabel,
-            LapNumber = r.LapNumber,
-            LapType = r.LapType,
-            Compound = r.Compound,
-            TyreAge = r.TyreAge,
-            Base = r.Base,
-            CompoundOffset = r.CompoundOffset,
-            Degradation = r.Degradation,
-            WarmUp = r.WarmUp,
-            Traffic = r.Traffic,
-            PitLoss = r.PitLoss,
-            Total = r.Total,
-            Cumulative = r.Cumulative,
-            Gap = r.Gap
-        }).ToList();
-
-        PredictResultGroup.Visibility = Visibility.Visible;
-    }
-
-    /// <summary>
-    /// Exports the latest manual prediction result to a CSV file chosen by the user.
-    /// </summary>
-    private void ExportPredictionCsvFromMain()
-    {
-        if (_mainPredictResult is null)
-            return;
-
-        var csv = MainWindowPredictionCsvExportService.BuildCsv(_mainPredictResult, SelectedEventDisplay.Text);
-        MainWindowCsvFileSaveService.TrySaveCsv(
-            owner: this,
-            csvContent: csv,
-            options: new MainWindowCsvSaveOptions(
-                Title: "Export prediction to CSV",
-                Filter: "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-                FileName: $"undercut_prediction_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
-                DefaultExt: ".csv",
-                Encoding: Encoding.UTF8));
     }
 
     /// <summary>
@@ -1001,33 +780,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Formats a timing contribution with fixed precision and explicit sign for positive values.
-    /// </summary>
-    private static string FormatTerm(double seconds)
-    {
-        return seconds switch
-        {
-            > 0 => $"+{seconds:0.000}",
-            < 0 => $"{seconds:0.000}",
-            _ => "0.000"
-        };
-    }
-
-    /// <summary>
-    /// Formats a signed gap in seconds for prediction table display.
-    /// </summary>
-    private static string FormatGap(double gap)
-    {
-        return $"{gap:+0.000;-0.000;0.000} s";
-    }
-
-    /// <summary>
     /// Refreshes single-scan scenario inputs from current driver/lap selections, including auto-targeting and derived starting gap.
     /// </summary>
     private void RefreshScenarioFromSelection()
     {
         var attackerSelection = ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem attacker
-            ? new MainWindowPredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName)
+            ? new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName)
             : null;
 
         int? decisionLap = (ScanTargetLapCombo.SelectedItem as DecisionLapItem)?.LapNumber;
@@ -1038,7 +796,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         var selectedTarget = ScanSingleTargetCombo.SelectedItem is MainScanDriverItem targetItem
-            ? new MainWindowPredictionSelection(targetItem.DriverNumber, targetItem.Code, targetItem.DisplayName)
+            ? new PredictionSelection(targetItem.DriverNumber, targetItem.Code, targetItem.DisplayName)
             : null;
 
         var availableTargets = (ScanSingleTargetCombo.ItemsSource as IEnumerable<MainScanDriverItem>
@@ -1046,7 +804,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             .Select(x => x.DriverNumber)
             .ToHashSet();
 
-        var scenario = MainWindowSingleScanScenarioService.Derive(new MainWindowSingleScanScenarioInput(
+        var scenario = SingleScanWorkflowService.Derive(new MainWindowSingleScanScenarioInput(
             Attacker: attackerSelection,
             SelectedTarget: selectedTarget,
             DecisionLapNumber: decisionLap,
@@ -1055,7 +813,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Stints: _currentStints,
             RaceControlMessages: _currentRaceControlMessages));
 
-        var presentation = MainWindowSingleScanScenarioPresentationService.Build(
+        var presentation = SingleScanWorkflowService.Build(
             scenario,
             selectedTargetDriverNumber: selectedTarget?.DriverNumber);
 
@@ -1111,8 +869,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (rows.Count == 0)
             return;
 
-        var csv = MainWindowScanCsvExportService.BuildCsv(rows);
-        MainWindowCsvFileSaveService.TrySaveCsv(
+        var csv = ScanWorkflowService.BuildCsv(rows);
+        WorkspaceWorkflowService.TrySaveCsv(
             owner: this,
             csvContent: csv,
             options: new MainWindowCsvSaveOptions(
@@ -1139,7 +897,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         plot.XLabel("Lap Number");
         plot.YLabel("Cumulative Delta to Constant Reference (s)");
 
-        var computation = MainWindowRaceTraceService.Compute(
+        var computation = RaceTraceWorkflowService.Compute(
             laps: _currentLaps,
             drivers: _currentDrivers,
             raceControlMessages: _currentRaceControlMessages,
@@ -1164,11 +922,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         foreach (var series in computation.Series)
         {
-            var lineColor = MainWindowRaceTraceService.ParseScottPlotColor(series.TeamColour, series.DriverNumber);
+            var lineColor = RaceTraceWorkflowService.ParseScottPlotColor(series.TeamColour, series.DriverNumber);
             AddLegendToggle(
                 series.DriverNumber,
                 series.DriverName,
-                MainWindowRaceTraceService.ParseLegendBrush(series.TeamColour, series.DriverNumber),
+                RaceTraceWorkflowService.ParseLegendBrush(series.TeamColour, series.DriverNumber),
                 series.IsSolidLine,
                 series.IsVisible);
 
@@ -1218,14 +976,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             BorderBrush = new WpfSolidColorBrush(WpfColors.LightGray),
             Content = new TextBlock
             {
-                Text = MainWindowRaceTraceLegendService.BuildLegendLabel(driverName, isSolid),
+                Text = RaceTraceWorkflowService.BuildLegendLabel(driverName, isSolid),
                 Foreground = textBrush
             }
         };
 
         toggle.Checked += (_, _) =>
         {
-            var next = MainWindowRaceTraceLegendService.ApplyToggle(_traceVisibilityByDriver, driverNumber, isVisible: true);
+            var next = RaceTraceWorkflowService.ApplyToggle(_traceVisibilityByDriver, driverNumber, isVisible: true);
             _traceVisibilityByDriver.Clear();
             foreach (var kvp in next)
                 _traceVisibilityByDriver[kvp.Key] = kvp.Value;
@@ -1234,7 +992,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         toggle.Unchecked += (_, _) =>
         {
-            var next = MainWindowRaceTraceLegendService.ApplyToggle(_traceVisibilityByDriver, driverNumber, isVisible: false);
+            var next = RaceTraceWorkflowService.ApplyToggle(_traceVisibilityByDriver, driverNumber, isVisible: false);
             _traceVisibilityByDriver.Clear();
             foreach (var kvp in next)
                 _traceVisibilityByDriver[kvp.Key] = kvp.Value;
@@ -1243,7 +1001,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         toggle.PreviewMouseRightButtonUp += (sender, e) =>
         {
-            var next = MainWindowRaceTraceLegendService.IsolateDriver(_traceVisibilityByDriver, driverNumber);
+            var next = RaceTraceWorkflowService.IsolateDriver(_traceVisibilityByDriver, driverNumber);
             _traceVisibilityByDriver.Clear();
             foreach (var kvp in next)
                 _traceVisibilityByDriver[kvp.Key] = kvp.Value;

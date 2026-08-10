@@ -16,7 +16,7 @@ public sealed class MainWindowCsvFileSaveServiceTests
             DefaultExt: ".csv",
             Encoding: Encoding.UTF8);
 
-        var result = MainWindowCsvFileSaveService.TrySaveCsvCore(
+        var result = WorkspaceWorkflowService.TrySaveCsvCore(
             csvContent: "a,b",
             options: options,
             showDialog: () => false,
@@ -42,7 +42,7 @@ public sealed class MainWindowCsvFileSaveServiceTests
             DefaultExt: ".csv",
             Encoding: expectedEncoding);
 
-        var result = MainWindowCsvFileSaveService.TrySaveCsvCore(
+        var result = WorkspaceWorkflowService.TrySaveCsvCore(
             csvContent: "x,y",
             options: options,
             showDialog: () => true,

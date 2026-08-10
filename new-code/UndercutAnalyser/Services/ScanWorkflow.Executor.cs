@@ -2,7 +2,7 @@ using UndercutAnalyser.Domain.Prediction;
 
 namespace UndercutAnalyser.Services;
 
-public static class MainWindowScanExecutor
+public static partial class ScanWorkflowService
 {
     /// <summary>
     /// Executes prediction requests for all scan contexts and returns table rows,
@@ -19,7 +19,7 @@ public static class MainWindowScanExecutor
             try
             {
                 var prediction = predictor.Predict(context.Request);
-                rows.Add(MainWindowScanRowFactory.CreateSuccess(
+                rows.Add(ScanWorkflowService.CreateSuccess(
                     attacker: context.AttackerCode,
                     target: context.TargetCode,
                     decisionLap: context.DecisionLap,
@@ -32,7 +32,7 @@ public static class MainWindowScanExecutor
             }
             catch (Exception ex)
             {
-                rows.Add(MainWindowScanRowFactory.CreateError(
+                rows.Add(ScanWorkflowService.CreateError(
                     attacker: context.AttackerCode,
                     target: context.TargetCode,
                     decisionLap: context.DecisionLap,

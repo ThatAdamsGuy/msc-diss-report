@@ -9,7 +9,7 @@ public sealed class MainWindowRaceTraceLegendServiceTests
     [InlineData("Piastri", false, "┅ Piastri")]
     public void BuildLegendLabel_UsesExpectedStylePrefix(string driverName, bool isSolidLine, string expected)
     {
-        var result = MainWindowRaceTraceLegendService.BuildLegendLabel(driverName, isSolidLine);
+        var result = RaceTraceWorkflowService.BuildLegendLabel(driverName, isSolidLine);
 
         Assert.Equal(expected, result);
     }
@@ -23,7 +23,7 @@ public sealed class MainWindowRaceTraceLegendServiceTests
             [81] = false
         };
 
-        var next = MainWindowRaceTraceLegendService.ApplyToggle(current, driverNumber: 81, isVisible: true);
+        var next = RaceTraceWorkflowService.ApplyToggle(current, driverNumber: 81, isVisible: true);
 
         Assert.True(next[4]);
         Assert.True(next[81]);
@@ -39,7 +39,7 @@ public sealed class MainWindowRaceTraceLegendServiceTests
             [63] = false
         };
 
-        var next = MainWindowRaceTraceLegendService.IsolateDriver(current, driverNumber: 81);
+        var next = RaceTraceWorkflowService.IsolateDriver(current, driverNumber: 81);
 
         Assert.False(next[4]);
         Assert.True(next[81]);
