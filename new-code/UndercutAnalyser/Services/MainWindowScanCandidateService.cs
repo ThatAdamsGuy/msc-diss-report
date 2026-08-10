@@ -64,13 +64,7 @@ public static class MainWindowScanCandidateService
     /// </summary>
     public static bool IsInAnySafetyCarWindow(EventLap lap, IReadOnlyList<TimeWindow> windows)
     {
-        if (!lap.DateStart.HasValue || !lap.LapDuration.HasValue)
-            return false;
-
-        var lapStart = AsUtc(lap.DateStart.Value);
-        var lapEnd = lapStart.AddSeconds(lap.LapDuration.Value);
-
-        return windows.Any(w => lapStart <= w.EndUtc && lapEnd >= w.StartUtc);
+        return RaceTimingDomainLogic.IsInAnyWindow(lap, windows);
     }
 
     /// <summary>
@@ -145,11 +139,6 @@ public static class MainWindowScanCandidateService
     /// </summary>
     private static DateTime AsUtc(DateTime input)
     {
-        return input.Kind switch
-        {
-            DateTimeKind.Utc => input,
-            DateTimeKind.Local => input.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(input, DateTimeKind.Utc)
-        };
+        return RaceTimingDomainLogic.AsUtc(input);
     }
 }

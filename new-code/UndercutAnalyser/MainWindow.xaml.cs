@@ -52,9 +52,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private double _pitLaneLoss = 22.0;
     private bool _suppressMainSettingsHandlers;
     private bool _suppressScanSelectionHandlers;
-    private List<MainScanResultRow> _mainScanRows = [];
-    private List<MainScanResultRow> _singleScanRows = [];
+    private List<ScanRowData> _mainScanRows = [];
+    private List<ScanRowData> _singleScanRows = [];
     private PredictionResult? _mainPredictResult;
+    private readonly IMainWindowEventDataClient _eventDataClient = new OpenF1RaceDataClient();
+    private readonly EventSelectorViewModel _eventSelectorViewModel;
 
     public double FuelSecondsPer10Kg
     {
@@ -235,8 +237,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SetRaceTraceEnabled(false);
         RenderRaceTrace();
 
-        var vm = new EventSelectorViewModel();
-        DataContext = vm;
+        _eventSelectorViewModel = new EventSelectorViewModel();
+        DataContext = _eventSelectorViewModel;
 
         TyreGrid.ItemsSource = _tyreParameterRows;
         foreach (var row in _tyreParameterRows)
@@ -260,371 +262,297 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _suppressMainSettingsHandlers = false;
         }
 
-        IncludePitLapsCheckBox.Checked += (_, _) => RenderRaceTrace();
-        IncludePitLapsCheckBox.Unchecked += (_, _) => RenderRaceTrace();
-        IncludeScVscLapsCheckBox.Checked += (_, _) => RenderRaceTrace();
-        IncludeScVscLapsCheckBox.Unchecked += (_, _) => RenderRaceTrace();
-        ApplyFuelCorrectionCheckBox.Checked += (_, _) => RenderRaceTrace();
-        ApplyFuelCorrectionCheckBox.Unchecked += (_, _) => RenderRaceTrace();
-        LegendSortComboBox.SelectionChanged += (_, _) => RenderRaceTrace();
+        IncludePitLapsCheckBox.Checked += OnRaceTraceRefreshRequested;
+        IncludePitLapsCheckBox.Unchecked += OnRaceTraceRefreshRequested;
+        IncludeScVscLapsCheckBox.Checked += OnRaceTraceRefreshRequested;
+        IncludeScVscLapsCheckBox.Unchecked += OnRaceTraceRefreshRequested;
+        ApplyFuelCorrectionCheckBox.Checked += OnRaceTraceRefreshRequested;
+        ApplyFuelCorrectionCheckBox.Unchecked += OnRaceTraceRefreshRequested;
+        LegendSortComboBox.SelectionChanged += OnRaceTraceSortSelectionChanged;
 
-        Loaded += async (_, _) =>
-        {
-            var now = DateTime.UtcNow.Year;
-            await vm.LoadAsync(2023, now).ConfigureAwait(false);
-        };
+        Loaded += OnMainWindowLoadedAsync;
+        EventButton.Click += OnEventButtonClickAsync;
+        RawDataButton.Click += OnRawDataButtonClick;
+        PredictionScanButton.Click += OnPredictionScanButtonClick;
+        ScanAllDriversButton.Click += OnScanAllDriversButtonClickAsync;
+        ScanSingleDriverButton.Click += OnScanSingleDriverButtonClickAsync;
 
-        EventButton.Click += async (_, _) =>
-        {
-            var dlg = new EventSelectorWindow(vm);
-            var res = dlg.ShowDialog();
-            if (res != true || vm.SelectedEvent is null)
-            {
-                return;
-            }
+        ScanSingleAttackerCombo.SelectionChanged += OnScanSingleAttackerSelectionChanged;
+        ScanSingleTargetCombo.SelectionChanged += OnScanSingleTargetSelectionChanged;
+        ScanTargetLapCombo.SelectionChanged += OnScanTargetLapSelectionChanged;
 
-            SelectedEventDisplay.Text = $"{vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year}) (Hover for Details)";
-            SelectedEventDisplay.ToolTip = $"Event selected: {vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year})";
+        PredictAttackerCombo.SelectionChanged += OnPredictSelectionChanged;
+        PredictTargetCombo.SelectionChanged += OnPredictSelectionChanged;
+        PredictDecisionLapCombo.SelectionChanged += OnPredictSelectionChanged;
 
-            try
-            {
-                var meetingKey = vm.SelectedEvent.MeetingKey;
-                if (_currentMeetingKey == meetingKey)
-                {
-                    return;
-                }
+        GetMainScanShowAheadCheckBox()?.Checked += OnMainScanFilterChanged;
+        GetMainScanShowAheadCheckBox()?.Unchecked += OnMainScanFilterChanged;
+        GetMainScanShowMarginalCheckBox()?.Checked += OnMainScanFilterChanged;
+        GetMainScanShowMarginalCheckBox()?.Unchecked += OnMainScanFilterChanged;
+        GetMainScanShowBehindCheckBox()?.Checked += OnMainScanFilterChanged;
+        GetMainScanShowBehindCheckBox()?.Unchecked += OnMainScanFilterChanged;
 
-                _currentMeetingKey = meetingKey;
-                _currentLaps = Array.Empty<EventLap>();
-                _currentDrivers = Array.Empty<Driver>();
-                _currentStints = Array.Empty<EventStint>();
-                _currentRaceControlMessages = Array.Empty<RaceControlMessage>();
-                _currentReference = null;
-                _traceVisibilityByDriver.Clear();
-                RawDataButton.IsEnabled = false;
-                PredictionScanButton.IsEnabled = false;
-                ScanAllDriversButton.IsEnabled = false;
-                ScanSingleDriverButton.IsEnabled = false;
-                ScanSingleAttackerCombo.ItemsSource = null;
-                ScanSingleTargetCombo.ItemsSource = null;
-                ScanTargetLapCombo.ItemsSource = null;
-                ScanStartingGapBox.Text = string.Empty;
-                ClearAllDriversResults();
-                ClearSingleScanResults();
-                SetRaceTraceEnabled(false);
-                RenderRaceTrace();
-
-                SelectedEventDisplay.Text = $"{vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year}) (Hover for Details)";
-                SelectedEventDisplay.ToolTip = "Loading race data...";
-
-                var client = new OpenF1RaceDataClient();
-                var sessions = await client.GetSessionsByMeetingKeyAsync(meetingKey).ConfigureAwait(false);
-                var raceSession = sessions.FirstOrDefault(s =>
-                    string.Equals(s.SessionName, "Race", StringComparison.OrdinalIgnoreCase) ||
-                    (s.SessionName?.IndexOf("Race", StringComparison.OrdinalIgnoreCase) >= 0));
-
-                if (raceSession is null)
-                {
-                    raceSession = sessions.Count > 0 ? sessions[0] : null;
-                }
-
-                if (raceSession is not null)
-                {
-                    var sessionKey = raceSession.SessionKey;
-                    var laps = await client.GetLapsBySessionKeyAsync(sessionKey).ConfigureAwait(false);
-                    var drivers = await client.GetDriversByMeetingAndSessionAsync(meetingKey, sessionKey).ConfigureAwait(false);
-                    var raceControlMessages = await client.GetRaceControlMessagesBySessionKeyAsync(sessionKey).ConfigureAwait(false);
-                    var stints = await client.GetStintsBySessionKeyAsync(sessionKey).ConfigureAwait(false);
-
-                    var reference = ReferenceLapTimeCalculator.Calculate(
-                        laps,
-                        raceControlMessages,
-                        FuelSecondsPer10Kg,
-                        FuelKg);
-
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        _currentLaps = laps;
-                        _currentDrivers = drivers;
-                        _currentStints = stints;
-                        _currentRaceControlMessages = raceControlMessages;
-                        _currentReference = reference;
-                        RawDataButton.IsEnabled = true;
-                        PredictionScanButton.IsEnabled = true;
-                        ScanAllDriversButton.IsEnabled = true;
-                        SetRaceTraceEnabled(true);
-                        PopulateMainScanDriverSelectors();
-                        ClearAllDriversResults();
-                        ClearSingleScanResults();
-                        _mainPredictResult = null;
-                        PredictExportCsvButton.IsEnabled = false;
-                        PredictResultGroup.Visibility = Visibility.Collapsed;
-                        PredictValidationText.Visibility = Visibility.Collapsed;
-                        PredictInitialGapBox.Text = string.Empty;
-                        PredictLapGrid.ItemsSource = null;
-                        PopulatePredictSelectors();
-                        SelectedEventDisplay.Text = $"{vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year}) (Hover for Details)";
-                        SelectedEventDisplay.ToolTip =
-                            $"Rows: {reference.TotalLapRows}\nSession laps: {reference.MaxSessionLapNumber}\nDrivers: {drivers.Count}\n" +
-                            $"Reference sum (fuel-adjusted): {reference.SumLapTimeSeconds:F3}s\nAverage: {(reference.AverageLapTimeSeconds.HasValue ? reference.AverageLapTimeSeconds.Value.ToString("F3") : "N/A")}s\n" +
-                            $"Fuel/lap: {reference.FuelEffectPerLapSeconds:F3}s\nClean laps: {reference.IncludedLaps} (pit-out: {reference.ExcludedPitOutLaps}, pit-in: {reference.ExcludedPitInLaps}, SC/VSC: {reference.ExcludedSafetyCarLaps})";
-                        RenderRaceTrace();
-                    });
-                }
-                else
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        SetRaceTraceEnabled(false);
-                        SelectedEventDisplay.Text = $"{vm.SelectedEvent.RaceName} ({vm.SelectedEvent.Year}) (Hover for Details)";
-                        SelectedEventDisplay.ToolTip = "No race session found";
-                        RenderRaceTrace();
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    RawDataButton.IsEnabled = false;
-                    PredictionScanButton.IsEnabled = false;
-                    ScanAllDriversButton.IsEnabled = false;
-                    ScanSingleDriverButton.IsEnabled = false;
-                    ScanSingleAttackerCombo.ItemsSource = null;
-                    ScanSingleTargetCombo.ItemsSource = null;
-                    ScanTargetLapCombo.ItemsSource = null;
-                    ScanStartingGapBox.Text = string.Empty;
-                    ClearAllDriversResults();
-                    ClearSingleScanResults();
-                    SetRaceTraceEnabled(false);
-                    SelectedEventDisplay.Text = $"{vm.SelectedEvent?.RaceName} ({vm.SelectedEvent?.Year}) (Hover for Details)";
-                    SelectedEventDisplay.ToolTip = $"Error loading race data: {ex.Message}";
-                    RenderRaceTrace();
-                });
-            }
-        };
-
-        RawDataButton.Click += (_, _) =>
-        {
-            if (_currentMeetingKey is null)
-            {
-                return;
-            }
-
-            var rawDataView = new RawDataView(
-                _currentLaps,
-                _currentDrivers,
-                _currentStints,
-                _currentReference,
-                FuelSecondsPer10Kg,
-                FuelKg)
-            {
-                Owner = this
-            };
-            rawDataView.Show();
-        };
-
-        PredictionScanButton.Click += (_, _) =>
-        {
-            // Prediction now runs directly in MainWindow Predict tab.
-        };
-
-        ScanAllDriversButton.Click += async (_, _) =>
-        {
-            if (_currentLaps.Count == 0) return;
-
-            ClearAllDriversResults("Scanning all drivers…");
-            ClearSingleScanResults();
-            ScanAllDriversButton.IsEnabled = false;
-
-            try
-            {
-                var rows = await RunScanInMainAsync(_currentLaps.Select(l => l.DriverNumber).Distinct().ToList());
-                PublishScanRows(rows);
-            }
-            catch (Exception ex)
-            {
-                ClearAllDriversResults($"Scan failed: {ex.Message}");
-            }
-            finally
-            {
-                ScanAllDriversButton.IsEnabled = _currentLaps.Count > 0;
-            }
-        };
-
-        ScanSingleDriverButton.Click += async (_, _) =>
-        {
-            if (ScanSingleAttackerCombo.SelectedItem is not MainScanDriverItem attacker) return;
-
-            ClearAllDriversResults();
-            ClearSingleScanResults("Scanning single driver…");
-            ScanSingleDriverButton.IsEnabled = false;
-
-            try
-            {
-                var rows = await RunScanInMainAsync([attacker.DriverNumber]);
-                PublishSingleScanRows(rows, $"{rows.Count} single-driver scenario{(rows.Count == 1 ? string.Empty : "s")} scanned.");
-            }
-            catch (Exception ex)
-            {
-                ClearSingleScanResults($"Scan failed: {ex.Message}");
-            }
-            finally
-            {
-                ScanSingleDriverButton.IsEnabled =
-                    ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
-                    ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
-            }
-        };
-
-        ScanSingleAttackerCombo.SelectionChanged += (_, _) =>
-        {
-            if (_suppressScanSelectionHandlers) return;
-
-            RefreshScenarioFromSelection();
-            ScanSingleDriverButton.IsEnabled =
-                ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
-                ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
-        };
-
-        ScanSingleTargetCombo.SelectionChanged += (_, _) =>
-        {
-            if (_suppressScanSelectionHandlers) return;
-
-            PopulateTargetLapChoices();
-            RefreshScenarioFromSelection();
-            ScanSingleDriverButton.IsEnabled =
-                ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
-                ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
-        };
-
-        ScanTargetLapCombo.SelectionChanged += (_, _) =>
-        {
-            if (_suppressScanSelectionHandlers) return;
-            RefreshScenarioFromSelection();
-        };
-
-        PredictAttackerCombo.SelectionChanged += (_, _) => TryDerivePredictInitialGap();
-        PredictTargetCombo.SelectionChanged += (_, _) => TryDerivePredictInitialGap();
-        PredictDecisionLapCombo.SelectionChanged += (_, _) => TryDerivePredictInitialGap();
-
-        GetMainScanShowAheadCheckBox()?.Checked += (_, _) => RefreshMainScanResultsView();
-        GetMainScanShowAheadCheckBox()?.Unchecked += (_, _) => RefreshMainScanResultsView();
-        GetMainScanShowMarginalCheckBox()?.Checked += (_, _) => RefreshMainScanResultsView();
-        GetMainScanShowMarginalCheckBox()?.Unchecked += (_, _) => RefreshMainScanResultsView();
-        GetMainScanShowBehindCheckBox()?.Checked += (_, _) => RefreshMainScanResultsView();
-        GetMainScanShowBehindCheckBox()?.Unchecked += (_, _) => RefreshMainScanResultsView();
-
-        GetSingleScanShowAheadCheckBox()?.Checked += (_, _) => RefreshSingleScanResultsView();
-        GetSingleScanShowAheadCheckBox()?.Unchecked += (_, _) => RefreshSingleScanResultsView();
-        GetSingleScanShowMarginalCheckBox()?.Checked += (_, _) => RefreshSingleScanResultsView();
-        GetSingleScanShowMarginalCheckBox()?.Unchecked += (_, _) => RefreshSingleScanResultsView();
-        GetSingleScanShowBehindCheckBox()?.Checked += (_, _) => RefreshSingleScanResultsView();
-        GetSingleScanShowBehindCheckBox()?.Unchecked += (_, _) => RefreshSingleScanResultsView();
+        GetSingleScanShowAheadCheckBox()?.Checked += OnSingleScanFilterChanged;
+        GetSingleScanShowAheadCheckBox()?.Unchecked += OnSingleScanFilterChanged;
+        GetSingleScanShowMarginalCheckBox()?.Checked += OnSingleScanFilterChanged;
+        GetSingleScanShowMarginalCheckBox()?.Unchecked += OnSingleScanFilterChanged;
+        GetSingleScanShowBehindCheckBox()?.Checked += OnSingleScanFilterChanged;
+        GetSingleScanShowBehindCheckBox()?.Unchecked += OnSingleScanFilterChanged;
 
         FullScanExportCsvButton.Click += (_, _) => ExportMainScanCsv();
         SingleScanExportCsvButton.Click += (_, _) => ExportSingleScanCsv();
-
         RunPredictionButton.Click += (_, _) => RunPredictionFromMain();
         PredictExportCsvButton.Click += (_, _) => ExportPredictionCsvFromMain();
         SimulateSingleUndercutButton.Click += (_, _) => SimulateSingleUndercut();
 
+    }
 
+    private void OnRaceTraceRefreshRequested(object sender, RoutedEventArgs e)
+    {
+        RenderRaceTrace();
+    }
+
+    private void OnRaceTraceSortSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        RenderRaceTrace();
+    }
+
+    private async void OnMainWindowLoadedAsync(object sender, RoutedEventArgs e)
+    {
+        var now = DateTime.UtcNow.Year;
+        await _eventSelectorViewModel.LoadAsync(2023, now).ConfigureAwait(false);
+    }
+
+    private async void OnEventButtonClickAsync(object sender, RoutedEventArgs e)
+    {
+        var dlg = new EventSelectorWindow(_eventSelectorViewModel);
+        var res = dlg.ShowDialog();
+        if (res != true || _eventSelectorViewModel.SelectedEvent is null)
+        {
+            return;
+        }
+
+        ApplyEventUiState(MainWindowEventUiStatePresenter.Selected(_eventSelectorViewModel.SelectedEvent));
+
+        try
+        {
+            var meetingKey = _eventSelectorViewModel.SelectedEvent.MeetingKey;
+            if (_currentMeetingKey == meetingKey)
+            {
+                return;
+            }
+
+            _currentMeetingKey = meetingKey;
+            ResetLoadedEventDataState();
+            ApplyEventUiState(MainWindowEventUiStatePresenter.Loading(_eventSelectorViewModel.SelectedEvent));
+
+            var loadResult = await MainWindowEventDataLoadService.LoadAsync(
+                _eventDataClient,
+                meetingKey,
+                FuelSecondsPer10Kg,
+                FuelKg).ConfigureAwait(false);
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (!loadResult.HasRaceSession || loadResult.Reference is null)
+                {
+                    ApplyEventUiState(MainWindowEventUiStatePresenter.NoRaceSession(_eventSelectorViewModel.SelectedEvent));
+                    RenderRaceTrace();
+                    return;
+                }
+
+                _currentLaps = loadResult.Laps;
+                _currentDrivers = loadResult.Drivers;
+                _currentStints = loadResult.Stints;
+                _currentRaceControlMessages = loadResult.RaceControlMessages;
+                _currentReference = loadResult.Reference;
+
+                PopulateMainScanDriverSelectors();
+                ClearAllDriversResults();
+                ClearSingleScanResults();
+                _mainPredictResult = null;
+                PredictExportCsvButton.IsEnabled = false;
+                PredictResultGroup.Visibility = Visibility.Collapsed;
+                PredictValidationText.Visibility = Visibility.Collapsed;
+                PredictInitialGapBox.Text = string.Empty;
+                PredictLapGrid.ItemsSource = null;
+                PopulatePredictSelectors();
+
+                ApplyEventUiState(MainWindowEventUiStatePresenter.Loaded(_eventSelectorViewModel.SelectedEvent, loadResult.Reference, loadResult.Drivers.Count));
+                RenderRaceTrace();
+            });
+        }
+        catch (Exception ex)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                ResetLoadedEventDataState();
+                ApplyEventUiState(MainWindowEventUiStatePresenter.LoadError(_eventSelectorViewModel.SelectedEvent, ex.Message));
+                RenderRaceTrace();
+            });
+        }
+    }
+
+    private void OnRawDataButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (_currentMeetingKey is null)
+        {
+            return;
+        }
+
+        var rawDataView = new RawDataView(
+            _currentLaps,
+            _currentDrivers,
+            _currentStints,
+            _currentReference,
+            FuelSecondsPer10Kg,
+            FuelKg)
+        {
+            Owner = this
+        };
+        rawDataView.Show();
+    }
+
+    private void OnPredictionScanButtonClick(object sender, RoutedEventArgs e)
+    {
+        // Prediction now runs directly in MainWindow Predict tab.
+    }
+
+    private async void OnScanAllDriversButtonClickAsync(object sender, RoutedEventArgs e)
+    {
+        if (_currentLaps.Count == 0) return;
+
+        ClearAllDriversResults("Scanning all drivers…");
+        ClearSingleScanResults();
+        ScanAllDriversButton.IsEnabled = false;
+
+        try
+        {
+            var rows = await RunScanInMainAsync(_currentLaps.Select(l => l.DriverNumber).Distinct().ToList());
+            PublishScanRows(rows);
+        }
+        catch (Exception ex)
+        {
+            ClearAllDriversResults($"Scan failed: {ex.Message}");
+        }
+        finally
+        {
+            ScanAllDriversButton.IsEnabled = _currentLaps.Count > 0;
+        }
+    }
+
+    private async void OnScanSingleDriverButtonClickAsync(object sender, RoutedEventArgs e)
+    {
+        if (ScanSingleAttackerCombo.SelectedItem is not MainScanDriverItem attacker) return;
+
+        ClearAllDriversResults();
+        ClearSingleScanResults("Scanning single driver…");
+        ScanSingleDriverButton.IsEnabled = false;
+
+        try
+        {
+            var rows = await RunScanInMainAsync([attacker.DriverNumber]);
+            PublishSingleScanRows(rows, $"{rows.Count} single-driver scenario{(rows.Count == 1 ? string.Empty : "s")} scanned.");
+        }
+        catch (Exception ex)
+        {
+            ClearSingleScanResults($"Scan failed: {ex.Message}");
+        }
+        finally
+        {
+            ScanSingleDriverButton.IsEnabled =
+                ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
+                ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
+        }
+    }
+
+    private void OnScanSingleAttackerSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressScanSelectionHandlers) return;
+
+        RefreshScenarioFromSelection();
+        ScanSingleDriverButton.IsEnabled =
+            ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
+            ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
+    }
+
+    private void OnScanSingleTargetSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressScanSelectionHandlers) return;
+
+        PopulateTargetLapChoices();
+        RefreshScenarioFromSelection();
+        ScanSingleDriverButton.IsEnabled =
+            ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
+            ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
+    }
+
+    private void OnScanTargetLapSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressScanSelectionHandlers) return;
+        RefreshScenarioFromSelection();
+    }
+
+    private void OnPredictSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        TryDerivePredictInitialGap();
+    }
+
+    private void OnMainScanFilterChanged(object sender, RoutedEventArgs e)
+    {
+        RefreshMainScanResultsView();
+    }
+
+    private void OnSingleScanFilterChanged(object sender, RoutedEventArgs e)
+    {
+        RefreshSingleScanResultsView();
     }
 
     /// <summary>
     /// Collects scan inputs from UI state and runs the full-scan pipeline asynchronously.
     /// </summary>
-    private async Task<List<MainScanResultRow>> RunScanInMainAsync(IReadOnlyList<int> driverNumbers)
+    private async Task<List<ScanRowData>> RunScanInMainAsync(IReadOnlyList<int> driverNumbers)
     {
         var minAge = TryParseInt(ScanMinTyreAgeBox.Text, out var ma) && ma >= 0 ? ma : 5;
         var modelParams = BuildModelParametersFromMain();
         var safetyCarWindows = BuildSafetyCarWindows(_currentRaceControlMessages).ToList();
-        var eventName = SelectedEventDisplay.Text;
-        var attackerReplCompound = ParseCompound(GetComboText(ScanAttackerReplCompoundCombo));
-        var targetReplCompound = ParseCompound(GetComboText(ScanTargetReplCompoundCombo));
-        var attackerReplAge = TryParseInt(ScanAttackerReplAgeBox.Text, out var ara) ? ara : 0;
-        var targetReplAge = TryParseInt(ScanTargetReplAgeBox.Text, out var tra) ? tra : 0;
 
-        return await Task.Run(() => RunScanInMain(
-            driverNumbers,
-            minAge,
-            modelParams,
-            safetyCarWindows,
-            eventName,
-            attackerReplCompound,
-            targetReplCompound,
-            attackerReplAge,
-            targetReplAge));
-    }
+        var orchestrationInput = new MainWindowScanOrchestrationInput(
+            DriverNumbers: driverNumbers,
+            MinTyreAge: minAge,
+            EventName: SelectedEventDisplay.Text,
+            AttackerReplacementTyre: new TyreSetSpecification(
+                ParseCompound(GetComboText(ScanAttackerReplCompoundCombo)),
+                TryParseInt(ScanAttackerReplAgeBox.Text, out var ara) ? ara : 0),
+            TargetReplacementTyre: new TyreSetSpecification(
+                ParseCompound(GetComboText(ScanTargetReplCompoundCombo)),
+                TryParseInt(ScanTargetReplAgeBox.Text, out var tra) ? tra : 0),
+            TargetResponseLaps: 1,
+            ModelParameters: modelParams,
+            SafetyCarWindows: safetyCarWindows,
+            Laps: _currentLaps,
+            Drivers: _currentDrivers,
+            TyreStateResolver: GetTyreStateAtLap);
 
-    /// <summary>
-    /// Executes the full scan synchronously: find candidates, build prediction contexts, run model, and map rows.
-    /// </summary>
-    private List<MainScanResultRow> RunScanInMain(
-        IReadOnlyList<int> driverNumbers,
-        int minAge,
-        LapModelParameters modelParams,
-        List<TimeWindow> safetyCarWindows,
-        string eventName,
-        TyreCompound attackerReplCompound,
-        TyreCompound targetReplCompound,
-        int attackerReplAge,
-        int targetReplAge)
-    {
-        var referencePaceByDriver = DeriveReferencePacePerDriver(safetyCarWindows);
-
-        var lapIndex = MainWindowScanCandidateService.BuildLapIndex(_currentLaps);
-        var orderPerLap = MainWindowScanCandidateService.BuildOnTrackOrderPerLap(lapIndex);
-        var driversByNumber = _currentDrivers
-            .GroupBy(d => d.DriverNumber)
-            .ToDictionary(g => g.Key, g => g.First());
-
-        var candidates = MainWindowScanCandidateService.FindCandidates(
-            driverNumbers: driverNumbers,
-            lapIndex: lapIndex,
-            orderPerLap: orderPerLap,
-            referencePaceByDriver: referencePaceByDriver,
-            safetyCarWindows: safetyCarWindows,
-            minAge: minAge,
-            tyreStateResolver: GetTyreStateAtLap);
-
-        var contexts = candidates.Select(candidate => MainWindowScanRequestBuilder.BuildExecutionContext(
-                candidate: candidate,
-                driversByNumber: driversByNumber,
-                referencePaceByDriver: referencePaceByDriver,
-                tyreStateResolver: GetTyreStateAtLap,
-                eventName: eventName,
-                attackerReplacementTyre: new TyreSetSpecification(attackerReplCompound, attackerReplAge),
-                targetReplacementTyre: new TyreSetSpecification(targetReplCompound, targetReplAge),
-                targetResponseLaps: 1,
-                modelParameters: modelParams))
-            .ToList();
-
-        var predictor = new PitSequencePredictor(new LapTimePredictor());
-        var scanRows = MainWindowScanExecutor.Execute(contexts, predictor);
-
-        return scanRows.Select(MapScanRow).ToList();
+        return await Task.Run(() => MainWindowScanOrchestrationService.Run(orchestrationInput));
     }
 
     /// <summary>
     /// Publishes full-scan rows to the grid and updates export availability.
     /// </summary>
-    private void PublishScanRows(List<MainScanResultRow> rows)
+    private void PublishScanRows(List<ScanRowData> rows)
     {
         _mainScanRows = rows;
         RefreshMainScanResultsView();
-        FullScanExportCsvButton.SetCurrentValue(IsEnabledProperty, rows.Count > 0);
     }
 
     /// <summary>
     /// Publishes single-scan rows, updates status text, and toggles single-scan export availability.
     /// </summary>
-    private void PublishSingleScanRows(List<MainScanResultRow> rows, string status)
+    private void PublishSingleScanRows(List<ScanRowData> rows, string status)
     {
         _singleScanRows = rows;
         RefreshSingleScanResultsView(status);
-        SingleScanExportCsvButton.SetCurrentValue(IsEnabledProperty, rows.Count > 0);
     }
 
     /// <summary>
@@ -654,16 +582,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void RefreshMainScanResultsView()
     {
-        var filteredRows = _mainScanRows.Where(row => MainWindowLogic.ShouldShowResult(
-            row.Result,
-            GetMainScanShowAheadCheckBox()?.IsChecked,
-            GetMainScanShowMarginalCheckBox()?.IsChecked,
-            GetMainScanShowBehindCheckBox()?.IsChecked)).ToList();
-        MainScanSingleGrid.ItemsSource = filteredRows;
+        var state = MainWindowScanResultsPresenter.BuildMainScanViewState(
+            allRows: _mainScanRows,
+            showAhead: GetMainScanShowAheadCheckBox()?.IsChecked,
+            showMarginal: GetMainScanShowMarginalCheckBox()?.IsChecked,
+            showBehind: GetMainScanShowBehindCheckBox()?.IsChecked);
 
-        var opportunityCount = MainWindowLogic.CountOpportunities(filteredRows.Select(r => r.Result));
-
-        MainScanSingleStatusText.Text = MainWindowLogic.BuildMainScanStatusText(filteredRows.Count, _mainScanRows.Count, opportunityCount);
+        MainScanSingleGrid.ItemsSource = state.FilteredRows;
+        MainScanSingleStatusText.Text = state.StatusText;
+        FullScanExportCsvButton.SetCurrentValue(IsEnabledProperty, state.EnableExport);
     }
 
     /// <summary>
@@ -671,24 +598,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void RefreshSingleScanResultsView(string? baseStatus = null)
     {
-        var filteredRows = _singleScanRows.Where(row => MainWindowLogic.ShouldShowResult(
-            row.Result,
-            GetSingleScanShowAheadCheckBox()?.IsChecked,
-            GetSingleScanShowMarginalCheckBox()?.IsChecked,
-            GetSingleScanShowBehindCheckBox()?.IsChecked)).ToList();
-        ScanSingleResultsGrid.ItemsSource = filteredRows;
+        var state = MainWindowScanResultsPresenter.BuildSingleScanViewState(
+            allRows: _singleScanRows,
+            baseStatus: baseStatus,
+            showAhead: GetSingleScanShowAheadCheckBox()?.IsChecked,
+            showMarginal: GetSingleScanShowMarginalCheckBox()?.IsChecked,
+            showBehind: GetSingleScanShowBehindCheckBox()?.IsChecked);
 
-        if (_singleScanRows.Count == 0)
-        {
-            if (baseStatus is not null)
-                ScanSingleResultsStatusText.Text = baseStatus;
-            return;
-        }
-
-        var opportunityCount = MainWindowLogic.CountOpportunities(filteredRows.Select(r => r.Result));
-
-        var summaryPrefix = baseStatus ?? $"{_singleScanRows.Count} single-driver scenario{(_singleScanRows.Count == 1 ? string.Empty : "s")} scanned.";
-        ScanSingleResultsStatusText.Text = MainWindowLogic.BuildSingleScanStatusText(summaryPrefix, filteredRows.Count, opportunityCount);
+        ScanSingleResultsGrid.ItemsSource = state.FilteredRows;
+        ScanSingleResultsStatusText.Text = state.StatusText;
+        SingleScanExportCsvButton.SetCurrentValue(IsEnabledProperty, state.EnableExport);
     }
 
     /// <summary>
@@ -704,34 +623,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private Dictionary<int, double> DeriveReferencePacePerDriver(IReadOnlyList<TimeWindow> safetyCarWindows)
     {
-        return _currentLaps
-            .GroupBy(l => l.DriverNumber)
-            .Select(g =>
-            {
-                var pitOutLaps = g.Where(l => l.IsPitOutLap)
-                                  .Select(l => l.LapNumber)
-                                  .ToHashSet();
-
-                var pitInLaps = g.Where(l => l.IsPitOutLap)
-                                 .Select(l => l.LapNumber - 1)
-                                 .Where(lap => lap >= 1 && !pitOutLaps.Contains(lap))
-                                 .ToHashSet();
-
-                var cleanLaps = g
-                    .Where(l => l.LapDuration.HasValue && l.DateStart.HasValue
-                             && !l.IsPitOutLap
-                             && !pitInLaps.Contains(l.LapNumber)
-                             && !MainWindowScanCandidateService.IsInAnySafetyCarWindow(l, safetyCarWindows))
-                    .ToList();
-
-                var avg = cleanLaps.Count > 0
-                    ? cleanLaps.Average(l => (double)l.LapDuration!.Value)
-                    : 0.0;
-
-                return (DriverNumber: g.Key, Pace: avg);
-            })
-            .Where(x => x.Pace > 0)
-            .ToDictionary(x => x.DriverNumber, x => x.Pace);
+        return MainWindowReferencePaceService.DeriveReferencePacePerDriver(_currentLaps, safetyCarWindows);
     }
 
     /// <summary>
@@ -739,26 +631,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void PopulateMainScanDriverSelectors()
     {
-        var driversByNumber = _currentDrivers
-            .GroupBy(d => d.DriverNumber)
-            .ToDictionary(g => g.Key, g => g.First());
-
-        var ordered = _currentLaps
-            .Select(l => l.DriverNumber)
-            .Distinct()
-            .Where(driversByNumber.ContainsKey)
-            .OrderBy(n => n)
-            .Select(n =>
+        var ordered = MainWindowSelectorPopulationService
+            .BuildOrderedDriverSelections(_currentDrivers, _currentLaps)
+            .Select(s => new MainScanDriverItem
             {
-                var d = driversByNumber[n];
-                var code = string.IsNullOrWhiteSpace(d.Code) ? n.ToString(CultureInfo.InvariantCulture) : d.Code;
-                var display = string.IsNullOrWhiteSpace(d.BroadcastName) ? code : $"{code} – {d.BroadcastName}";
-                return new MainScanDriverItem
-                {
-                    DriverNumber = n,
-                    Code = code,
-                    DisplayName = display
-                };
+                DriverNumber = s.DriverNumber,
+                Code = s.Code,
+                DisplayName = s.DisplayName
             })
             .ToList();
 
@@ -801,92 +680,49 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ClearAllDriversResults();
         ClearSingleScanResults();
 
-        if (ScanSingleAttackerCombo.SelectedItem is not MainScanDriverItem attacker ||
-            ScanSingleTargetCombo.SelectedItem is not MainScanDriverItem target)
+        var attackerSelection = ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem attacker
+            ? new MainWindowPredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName)
+            : null;
+
+        var targetSelection = ScanSingleTargetCombo.SelectedItem is MainScanDriverItem target
+            ? new MainWindowPredictionSelection(target.DriverNumber, target.Code, target.DisplayName)
+            : null;
+
+        var decisionLap = (ScanTargetLapCombo.SelectedItem as DecisionLapItem)?.LapNumber;
+        var effectiveLap = decisionLap ?? 0;
+
+        var (attackerCompound, attackerTyreAge) = GetTyreStateAtLap(attackerSelection?.DriverNumber ?? 0, effectiveLap);
+        var (targetCompound, targetTyreAge) = GetTyreStateAtLap(targetSelection?.DriverNumber ?? 0, effectiveLap);
+
+        var runInput = new MainWindowSingleScanRunInput(
+            EventName: SelectedEventDisplay.Text,
+            Attacker: attackerSelection,
+            Target: targetSelection,
+            DecisionLapNumber: decisionLap,
+            StartingGapText: ScanStartingGapBox.Text,
+            AttackerPaceOverrideText: ScanAttackerPaceBox.Text,
+            TargetPaceOverrideText: ScanTargetPaceBox.Text,
+            DerivedReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
+            AttackerCompound: attackerCompound,
+            AttackerTyreAge: attackerTyreAge,
+            TargetCompound: targetCompound,
+            TargetTyreAge: targetTyreAge,
+            AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
+            AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
+            TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
+            TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
+            TargetResponseLaps: _targetResponseLaps,
+            ModelParameters: BuildModelParametersFromMain());
+
+        var result = MainWindowSingleScanRunService.Run(runInput);
+
+        if (!result.IsSuccess || result.Row is null)
         {
-            PublishSingleScanRows([], "Select attacking and target drivers.");
+            PublishSingleScanRows([], result.StatusMessage);
             return;
         }
 
-        if (attacker.DriverNumber == target.DriverNumber)
-        {
-            PublishSingleScanRows([], "Attacking and target drivers must be different.");
-            return;
-        }
-
-        if (ScanTargetLapCombo.SelectedItem is not DecisionLapItem decisionLap)
-        {
-            PublishSingleScanRows([], "Select a target lap.");
-            return;
-        }
-
-        if (!TryParseDouble(ScanStartingGapBox.Text, out var g0))
-        {
-            PublishSingleScanRows([], "Starting gap is not available for this scenario.");
-            return;
-        }
-
-        var safetyCarWindows = BuildSafetyCarWindows(_currentRaceControlMessages);
-        var derivedPace = DeriveReferencePacePerDriver(safetyCarWindows);
-
-        var attackerRefPace =
-            TryParseDouble(ScanAttackerPaceBox.Text, out var attackerOverride) && attackerOverride > 0
-                ? attackerOverride
-                : derivedPace.GetValueOrDefault(attacker.DriverNumber, 0.0);
-
-        var targetRefPace =
-            TryParseDouble(ScanTargetPaceBox.Text, out var targetOverride) && targetOverride > 0
-                ? targetOverride
-                : derivedPace.GetValueOrDefault(target.DriverNumber, 0.0);
-
-        if (attackerRefPace <= 0 || targetRefPace <= 0)
-        {
-            PublishSingleScanRows([], "Reference pace could not be derived.");
-            return;
-        }
-
-        var (attackerCompound, attackerTyreAge) = GetTyreStateAtLap(attacker.DriverNumber, decisionLap.LapNumber);
-        var (targetCompound, targetTyreAge) = GetTyreStateAtLap(target.DriverNumber, decisionLap.LapNumber);
-
-        var attackerReplCompound = ParseCompound(GetComboText(ScanAttackerReplCompoundCombo));
-        var targetReplCompound = ParseCompound(GetComboText(ScanTargetReplCompoundCombo));
-        var attackerReplAge = TryParseInt(ScanAttackerReplAgeBox.Text, out var ara) ? ara : 0;
-        var targetReplAge = TryParseInt(ScanTargetReplAgeBox.Text, out var tra) ? tra : 0;
-
-        var modelParams = BuildModelParametersFromMain();
-        var predictor = new PitSequencePredictor(new LapTimePredictor());
-
-        try
-        {
-            var request = MainWindowPredictionFactory.CreatePredictionRequest(
-                eventName: SelectedEventDisplay.Text,
-                decisionLap: decisionLap.LapNumber,
-                initialGapSeconds: g0,
-                attacker: new DriverScenarioInput(attacker.Code, attacker.Code, 2, attackerRefPace, attackerCompound, attackerTyreAge),
-                target: new DriverScenarioInput(target.Code, target.Code, 1, targetRefPace, targetCompound, targetTyreAge),
-                attackerReplacementTyre: new TyreSetSpecification(attackerReplCompound, attackerReplAge),
-                targetReplacementTyre: new TyreSetSpecification(targetReplCompound, targetReplAge),
-                targetResponseLaps: _targetResponseLaps,
-                modelParameters: modelParams);
-
-            var prediction = predictor.Predict(request);
-            var row = MainWindowScanRowFactory.CreateSuccess(
-                attacker: attacker.Code,
-                target: target.Code,
-                decisionLap: decisionLap.LapNumber,
-                attackerCompound: attackerCompound,
-                attackerTyreAge: attackerTyreAge,
-                targetCompound: targetCompound,
-                targetTyreAge: targetTyreAge,
-                g0: g0,
-                prediction: prediction);
-
-            PublishSingleScanRows([MapScanRow(row)], "1 scenario simulated.");
-        }
-        catch (Exception ex)
-        {
-            PublishSingleScanRows([], $"Simulation failed: {ex.Message}");
-        }
+        PublishSingleScanRows([result.Row], result.StatusMessage);
     }
 
     /// <summary>
@@ -895,27 +731,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void PopulateTargetLapChoices()
     {
         var previousLap = (ScanTargetLapCombo.SelectedItem as DecisionLapItem)?.LapNumber;
-
         var targetNumber = (ScanSingleTargetCombo.SelectedItem as MainScanDriverItem)?.DriverNumber;
-        if (targetNumber is null)
-        {
-            _suppressScanSelectionHandlers = true;
-            try
-            {
-                ScanTargetLapCombo.ItemsSource = null;
-            }
-            finally
-            {
-                _suppressScanSelectionHandlers = false;
-            }
-            return;
-        }
 
-        var laps = _currentLaps
-            .Where(l => l.DriverNumber == targetNumber.Value && l.DateStart.HasValue && l.LapTimeAtSectorTwoLine.HasValue)
-            .Select(l => l.LapNumber)
-            .Distinct()
-            .OrderBy(n => n)
+        var lapNumbers = MainWindowSelectorPopulationService.BuildTargetDecisionLapChoices(_currentLaps, targetNumber);
+        var laps = lapNumbers
             .Select(n => new DecisionLapItem { LapNumber = n })
             .ToList();
 
@@ -925,11 +744,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             ScanTargetLapCombo.ItemsSource = null;
             ScanTargetLapCombo.ItemsSource = laps;
 
-            var selected = previousLap.HasValue
-                ? laps.FirstOrDefault(x => x.LapNumber == previousLap.Value)
+            var selectedLap = MainWindowSelectorPopulationService.ChooseDecisionLap(lapNumbers, previousLap);
+            ScanTargetLapCombo.SelectedItem = selectedLap.HasValue
+                ? laps.FirstOrDefault(x => x.LapNumber == selectedLap.Value)
                 : null;
-
-            ScanTargetLapCombo.SelectedItem = selected ?? laps.FirstOrDefault();
         }
         finally
         {
@@ -946,22 +764,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PredictTargetCombo.Items.Clear();
         PredictDecisionLapCombo.Items.Clear();
 
-        var driversByNumber = _currentDrivers
-            .GroupBy(d => d.DriverNumber)
-            .ToDictionary(g => g.Key, g => g.First());
-
-        var orderedDrivers = _currentLaps
-            .Select(l => l.DriverNumber)
-            .Distinct()
-            .Where(driversByNumber.ContainsKey)
-            .OrderBy(n => n)
-            .Select(n =>
-            {
-                var d = driversByNumber[n];
-                var code = string.IsNullOrWhiteSpace(d.Code) ? n.ToString(CultureInfo.InvariantCulture) : d.Code;
-                var display = string.IsNullOrWhiteSpace(d.BroadcastName) ? code : $"{code} – {d.BroadcastName}";
-                return new MainScanDriverItem { DriverNumber = n, Code = code, DisplayName = display };
-            })
+        var orderedDrivers = MainWindowSelectorPopulationService
+            .BuildOrderedDriverSelections(_currentDrivers, _currentLaps)
+            .Select(s => new MainScanDriverItem { DriverNumber = s.DriverNumber, Code = s.Code, DisplayName = s.DisplayName })
             .ToList();
 
         foreach (var item in orderedDrivers)
@@ -974,12 +779,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (PredictTargetCombo.Items.Count > 1) PredictTargetCombo.SelectedIndex = 1;
         else if (PredictTargetCombo.Items.Count > 0) PredictTargetCombo.SelectedIndex = 0;
 
-        var maxLap = _currentLaps.Count > 0 ? _currentLaps.Max(l => l.LapNumber) : 0;
-        for (var lap = 1; lap <= maxLap; lap++)
+        var (lapChoices, defaultLap) = MainWindowSelectorPopulationService.BuildPredictDecisionLapChoices(_currentLaps);
+        foreach (var lap in lapChoices)
             PredictDecisionLapCombo.Items.Add(new DecisionLapItem { LapNumber = lap });
 
-        if (PredictDecisionLapCombo.Items.Count > 0)
-            PredictDecisionLapCombo.SelectedIndex = Math.Min(Math.Max(0, maxLap / 2 - 1), PredictDecisionLapCombo.Items.Count - 1);
+        if (defaultLap.HasValue)
+        {
+            var selectedIndex = lapChoices.IndexOf(defaultLap.Value);
+            if (selectedIndex >= 0)
+                PredictDecisionLapCombo.SelectedIndex = selectedIndex;
+        }
 
         TryDerivePredictInitialGap();
     }
@@ -996,26 +805,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var attackerLap = _currentLaps.FirstOrDefault(l =>
-            l.DriverNumber == attacker.DriverNumber &&
-            l.LapNumber == decisionLap.LapNumber &&
-            l.DateStart.HasValue &&
-            l.LapTimeAtSectorTwoLine.HasValue);
+        var g0 = MainWindowPredictGapService.TryDeriveInitialGapSeconds(
+            laps: _currentLaps,
+            attackerDriverNumber: attacker.DriverNumber,
+            targetDriverNumber: target.DriverNumber,
+            decisionLapNumber: decisionLap.LapNumber);
 
-        var targetLap = _currentLaps.FirstOrDefault(l =>
-            l.DriverNumber == target.DriverNumber &&
-            l.LapNumber == decisionLap.LapNumber &&
-            l.DateStart.HasValue &&
-            l.LapTimeAtSectorTwoLine.HasValue);
-
-        if (attackerLap is null || targetLap is null)
+        if (!g0.HasValue)
             return;
 
-        var attackerSectorTwoLine = AsUtc(attackerLap.DateStart!.Value).AddSeconds(attackerLap.LapTimeAtSectorTwoLine!.Value);
-        var targetSectorTwoLine = AsUtc(targetLap.DateStart!.Value).AddSeconds(targetLap.LapTimeAtSectorTwoLine!.Value);
-        var g0 = (attackerSectorTwoLine - targetSectorTwoLine).TotalSeconds;
-
-        PredictInitialGapBox.Text = g0.ToString("F3", CultureInfo.InvariantCulture);
+        PredictInitialGapBox.Text = g0.Value.ToString("F3", CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -1026,88 +825,57 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ClearAllDriversResults();
         ClearSingleScanResults();
 
-        PredictValidationText.Visibility = Visibility.Collapsed;
-        PredictResultGroup.Visibility = Visibility.Collapsed;
+        ApplyPredictionUiState(MainWindowPredictionUiStatePresenter.Initial());
 
-        if (PredictAttackerCombo.SelectedItem is not MainScanDriverItem attacker)
+        var attackerSelection = PredictAttackerCombo.SelectedItem is MainScanDriverItem attackerItem
+            ? new MainWindowPredictionSelection(attackerItem.DriverNumber, attackerItem.Code, attackerItem.DisplayName)
+            : null;
+
+        var targetSelection = PredictTargetCombo.SelectedItem is MainScanDriverItem targetItem
+            ? new MainWindowPredictionSelection(targetItem.DriverNumber, targetItem.Code, targetItem.DisplayName)
+            : null;
+
+        var runInput = new MainWindowPredictionRunInput(
+            EventName: SelectedEventDisplay.Text,
+            Attacker: attackerSelection,
+            Target: targetSelection,
+            DecisionLapNumber: (PredictDecisionLapCombo.SelectedItem as DecisionLapItem)?.LapNumber,
+            InitialGapText: PredictInitialGapBox.Text,
+            ReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
+            ResolveTyreState: GetTyreStateAtLap,
+            AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
+            TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
+            AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
+            TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
+            TargetResponseLaps: _targetResponseLaps,
+            ModelParameters: BuildModelParametersFromMain());
+
+        var runResult = MainWindowPredictionRunService.Run(runInput);
+
+        if (!runResult.IsSuccess)
         {
-            PredictValidationText.Text = "Select an attacking driver.";
-            PredictValidationText.Visibility = Visibility.Visible;
+            var error = runResult.ErrorMessage;
+            ApplyPredictionUiState(runResult.IsValidationFailure
+                ? MainWindowPredictionUiStatePresenter.ValidationError(error)
+                : MainWindowPredictionUiStatePresenter.ExecutionError(error));
             return;
         }
 
-        if (PredictTargetCombo.SelectedItem is not MainScanDriverItem target)
-        {
-            PredictValidationText.Text = "Select a target driver.";
-            PredictValidationText.Visibility = Visibility.Visible;
-            return;
-        }
+        var result = runResult.Prediction!;
+        _mainPredictResult = result;
+        RenderPredictionResult(result, runResult.AttackerCode, runResult.TargetCode);
+        ApplyPredictionUiState(MainWindowPredictionUiStatePresenter.Success());
+    }
 
-        if (attacker.DriverNumber == target.DriverNumber)
-        {
-            PredictValidationText.Text = "Attacking and target drivers must be different.";
-            PredictValidationText.Visibility = Visibility.Visible;
-            return;
-        }
-
-        if (PredictDecisionLapCombo.SelectedItem is not DecisionLapItem decisionLap)
-        {
-            PredictValidationText.Text = "Select a decision lap.";
-            PredictValidationText.Visibility = Visibility.Visible;
-            return;
-        }
-
-        if (!TryParseDouble(PredictInitialGapBox.Text, out var initialGap))
-        {
-            PredictValidationText.Text = "Initial gap must be numeric.";
-            PredictValidationText.Visibility = Visibility.Visible;
-            return;
-        }
-
-        var attackerRefPace = DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages))
-            .GetValueOrDefault(attacker.DriverNumber, 0.0);
-        var targetRefPace = DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages))
-            .GetValueOrDefault(target.DriverNumber, 0.0);
-
-        if (attackerRefPace <= 0 || targetRefPace <= 0)
-        {
-            PredictValidationText.Text = "Reference pace could not be derived. Adjust data filters or input state.";
-            PredictValidationText.Visibility = Visibility.Visible;
-            return;
-        }
-
-        var (attackerCompound, attackerTyreAge) = GetTyreStateAtLap(attacker.DriverNumber, decisionLap.LapNumber);
-        var (targetCompound, targetTyreAge) = GetTyreStateAtLap(target.DriverNumber, decisionLap.LapNumber);
-
-        var attackerReplCompound = ParseCompound(GetComboText(ScanAttackerReplCompoundCombo));
-        var targetReplCompound = ParseCompound(GetComboText(ScanTargetReplCompoundCombo));
-        var attackerReplAge = TryParseInt(ScanAttackerReplAgeBox.Text, out var ara) ? ara : 0;
-        var targetReplAge = TryParseInt(ScanTargetReplAgeBox.Text, out var tra) ? tra : 0;
-
-        var request = MainWindowPredictionFactory.CreatePredictionRequest(
-            eventName: SelectedEventDisplay.Text,
-            decisionLap: decisionLap.LapNumber,
-            initialGapSeconds: initialGap,
-            attacker: new DriverScenarioInput(attacker.Code, attacker.DisplayName, 2, attackerRefPace, attackerCompound, attackerTyreAge),
-            target: new DriverScenarioInput(target.Code, target.DisplayName, 1, targetRefPace, targetCompound, targetTyreAge),
-            attackerReplacementTyre: new TyreSetSpecification(attackerReplCompound, attackerReplAge),
-            targetReplacementTyre: new TyreSetSpecification(targetReplCompound, targetReplAge),
-            targetResponseLaps: _targetResponseLaps,
-            modelParameters: BuildModelParametersFromMain());
-
-        try
-        {
-            var predictor = new PitSequencePredictor(new LapTimePredictor());
-            var result = predictor.Predict(request);
-            _mainPredictResult = result;
-            RenderPredictionResult(result, attacker.Code, target.Code);
-            PredictExportCsvButton.IsEnabled = true;
-        }
-        catch (Exception ex)
-        {
-            PredictValidationText.Text = $"Prediction failed: {ex.Message}";
-            PredictValidationText.Visibility = Visibility.Visible;
-        }
+    /// <summary>
+    /// Applies a render-ready prediction panel state to visibility, message, and export controls.
+    /// </summary>
+    private void ApplyPredictionUiState(MainWindowPredictionUiState state)
+    {
+        PredictValidationText.Text = state.ValidationMessage ?? string.Empty;
+        PredictValidationText.Visibility = state.ShowValidation ? Visibility.Visible : Visibility.Collapsed;
+        PredictResultGroup.Visibility = state.ShowResult ? Visibility.Visible : Visibility.Collapsed;
+        PredictExportCsvButton.IsEnabled = state.EnableExport;
     }
 
     /// <summary>
@@ -1115,34 +883,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private LapModelParameters BuildModelParametersFromMain()
     {
-        var offsets = new Dictionary<TyreCompound, double>
-        {
-            [TyreCompound.Soft] = 0.0,
-            [TyreCompound.Medium] = 0.1,
-            [TyreCompound.Hard] = 0.2
-        };
-
-        var degRates = new Dictionary<TyreCompound, double>
-        {
-            [TyreCompound.Soft] = 0.10,
-            [TyreCompound.Medium] = 0.07,
-            [TyreCompound.Hard] = 0.04
-        };
-
-        foreach (var row in _tyreParameterRows)
-        {
-            var c = ParseCompound(row.Compound);
-            offsets[c] = row.PaceOffset;
-            degRates[c] = row.DegradationRate;
-        }
-
-        return new LapModelParameters(
-            CompoundOffsetsSeconds: offsets,
-            DegradationRatesSecondsPerLap: degRates,
-            WarmUp: new WarmUpModelParameters(_warmUpPenalty),
-            PitLaneLossSeconds: _pitLaneLoss,
-            MarginalThresholdSeconds: _marginalThreshold,
-            Traffic: new TrafficModelParameters(_applyAttackerTraffic, _applyTargetTraffic, _trafficPenalty));
+        return MainWindowModelParameterBuilderService.Build(
+            tyreParameterRows: _tyreParameterRows,
+            warmUpPenalty: _warmUpPenalty,
+            pitLaneLoss: _pitLaneLoss,
+            marginalThreshold: _marginalThreshold,
+            applyAttackerTraffic: _applyAttackerTraffic,
+            applyTargetTraffic: _applyTargetTraffic,
+            trafficPenalty: _trafficPenalty);
     }
 
     /// <summary>
@@ -1150,55 +898,36 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void RenderPredictionResult(PredictionResult result, string attackerCode, string targetCode)
     {
-        var (bg, text) = result.Classification switch
+        var view = MainWindowPredictionPresentationService.Build(result, attackerCode, targetCode);
+
+        var badgeColor = result.Classification switch
         {
-            UndercutClassification.PredictedAhead => (WpfColors.Green, "UNDERCUT PREDICTED SUCCESSFUL"),
-            UndercutClassification.PredictedMarginal => (WpfColors.DarkGoldenrod, "UNDERCUT MARGINAL"),
-            _ => (WpfColors.Crimson, "UNDERCUT NOT PREDICTED")
+            UndercutClassification.PredictedAhead => WpfColors.Green,
+            UndercutClassification.PredictedMarginal => WpfColors.DarkGoldenrod,
+            _ => WpfColors.Crimson
         };
 
-        PredictClassificationBadge.Background = new SolidColorBrush(bg);
-        PredictClassificationText.Text = text;
-        PredictG0Label.Text = $"G₀ = {result.InitialGapSeconds:+0.000;-0.000;0.000} s";
-
-        var attackerByLap = result.AttackerLaps.ToDictionary(l => l.LapNumber, l => l.CumulativePredictionTimeSeconds);
-        var rows = new List<MainPredictLapRow>();
-
-        var allLaps = result.AttackerLaps.Select(l => (Lap: l, IsAttacker: true))
-            .Concat(result.TargetLaps.Select(l => (Lap: l, IsAttacker: false)))
-            .OrderBy(x => x.Lap.LapNumber)
-            .ThenBy(x => x.IsAttacker ? 0 : 1);
-
-        foreach (var (lap, isAttacker) in allLaps)
+        PredictClassificationBadge.Background = new SolidColorBrush(badgeColor);
+        PredictClassificationText.Text = view.ClassificationText;
+        PredictG0Label.Text = view.InitialGapLabel;
+        PredictLapGrid.ItemsSource = view.Rows.Select(r => new MainPredictLapRow
         {
-            var breakdown = lap.Breakdown;
-            string gapText = string.Empty;
-            if (!isAttacker && attackerByLap.TryGetValue(lap.LapNumber, out var attackerElapsed))
-            {
-                var gap = result.InitialGapSeconds + attackerElapsed - lap.CumulativePredictionTimeSeconds;
-                gapText = FormatGap(gap);
-            }
+            DriverLabel = r.DriverLabel,
+            LapNumber = r.LapNumber,
+            LapType = r.LapType,
+            Compound = r.Compound,
+            TyreAge = r.TyreAge,
+            Base = r.Base,
+            CompoundOffset = r.CompoundOffset,
+            Degradation = r.Degradation,
+            WarmUp = r.WarmUp,
+            Traffic = r.Traffic,
+            PitLoss = r.PitLoss,
+            Total = r.Total,
+            Cumulative = r.Cumulative,
+            Gap = r.Gap
+        }).ToList();
 
-            rows.Add(new MainPredictLapRow
-            {
-                DriverLabel = isAttacker ? attackerCode : targetCode,
-                LapNumber = lap.LapNumber,
-                LapType = lap.IsPitLap ? "Pit" : lap.IsOutLap ? "Out" : "Normal",
-                Compound = lap.Compound.ToString(),
-                TyreAge = lap.TyreAgeAtStart,
-                Base = breakdown.ReferencePaceSeconds.ToString("F3", CultureInfo.InvariantCulture),
-                CompoundOffset = FormatTerm(breakdown.CompoundOffsetSeconds),
-                Degradation = FormatTerm(breakdown.DegradationSeconds),
-                WarmUp = FormatTerm(breakdown.WarmUpSeconds),
-                Traffic = FormatTerm(breakdown.TrafficSeconds),
-                PitLoss = FormatTerm(breakdown.PitLossSeconds),
-                Total = breakdown.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture),
-                Cumulative = lap.CumulativePredictionTimeSeconds.ToString("F3", CultureInfo.InvariantCulture),
-                Gap = gapText
-            });
-        }
-
-        PredictLapGrid.ItemsSource = rows;
         PredictResultGroup.Visibility = Visibility.Visible;
     }
 
@@ -1210,29 +939,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_mainPredictResult is null)
             return;
 
-        var dlg = new SaveFileDialog
-        {
-            Title = "Export prediction to CSV",
-            Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-            FileName = $"undercut_prediction_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
-        };
-
-        if (dlg.ShowDialog(this) != true)
-            return;
-
-        var result = _mainPredictResult;
-        var inv = CultureInfo.InvariantCulture;
-
-        using var writer = new StreamWriter(dlg.FileName, append: false, encoding: Encoding.UTF8);
-        writer.WriteLine("# Prediction result");
-        writer.WriteLine($"# Event,{SelectedEventDisplay.Text}");
-        writer.WriteLine($"# Classification,{result.Classification}");
-        writer.WriteLine();
-        writer.WriteLine("Metric,Value");
-        writer.WriteLine($"InitialGapSeconds,{result.InitialGapSeconds.ToString("F3", inv)}");
-        writer.WriteLine($"GapAtTargetPitLapCompleteSeconds,{result.GapAtTargetPitLapCompleteSeconds.ToString("F3", inv)}");
-        writer.WriteLine($"GapAtTargetOutLapCompleteSeconds,{result.GapAtTargetOutLapCompleteSeconds.ToString("F3", inv)}");
-        writer.WriteLine($"GapAtBothDriversNormalLapCompleteSeconds,{result.GapAtBothDriversNormalLapCompleteSeconds.ToString("F3", inv)}");
+        var csv = MainWindowPredictionCsvExportService.BuildCsv(_mainPredictResult, SelectedEventDisplay.Text);
+        MainWindowCsvFileSaveService.TrySaveCsv(
+            owner: this,
+            csvContent: csv,
+            options: new MainWindowCsvSaveOptions(
+                Title: "Export prediction to CSV",
+                Filter: "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                FileName: $"undercut_prediction_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                DefaultExt: ".csv",
+                Encoding: Encoding.UTF8));
     }
 
     /// <summary>
@@ -1306,143 +1022,69 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Maps internal scan row data into the main-grid row model used by WPF data binding.
-    /// </summary>
-    private static MainScanResultRow MapScanRow(ScanRowData row)
-    {
-        return new MainScanResultRow
-        {
-            Attacker = row.Attacker,
-            Target = row.Target,
-            DecisionLap = row.DecisionLap,
-            AttackerCompound = row.AttackerCompound,
-            AttackerTyreAge = row.AttackerTyreAge,
-            TargetCompound = row.TargetCompound,
-            TargetTyreAge = row.TargetTyreAge,
-            G0 = row.G0,
-            GapAtTargetPitLapComplete = row.GapAtTargetPitLapComplete,
-            GapAtTargetOutLapComplete = row.GapAtTargetOutLapComplete,
-            GapAtBothDriversNormalLapComplete = row.GapAtBothDriversNormalLapComplete,
-            DeltaGAtTargetPitLapComplete = row.DeltaGAtTargetPitLapComplete,
-            Result = row.Result
-        };
-    }
-
-    /// <summary>
     /// Refreshes single-scan scenario inputs from current driver/lap selections, including auto-targeting and derived starting gap.
     /// </summary>
     private void RefreshScenarioFromSelection()
     {
-        static void ClearScenarioFields(MainWindow w)
-        {
-            w.ScanAttackerPaceBox.Text = string.Empty;
-            w.ScanAttackerCurrentCompoundBox.Text = string.Empty;
-            w.ScanAttackerTyreAgeBox.Text = string.Empty;
-            w.ScanTargetPaceBox.Text = string.Empty;
-            w.ScanTargetCurrentCompoundBox.Text = string.Empty;
-            w.ScanTargetTyreAgeBox.Text = string.Empty;
-            w.ScanStartingGapBox.Text = string.Empty;
-        }
+        var attackerSelection = ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem attacker
+            ? new MainWindowPredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName)
+            : null;
 
-        if (ScanSingleAttackerCombo.SelectedItem is not MainScanDriverItem attacker)
-        {
-            ClearScenarioFields(this);
-            return;
-        }
-
-        if (ScanTargetLapCombo.SelectedItem is not DecisionLapItem lapItem)
+        int? decisionLap = (ScanTargetLapCombo.SelectedItem as DecisionLapItem)?.LapNumber;
+        if (!decisionLap.HasValue)
         {
             PopulateTargetLapChoices();
-            if (ScanTargetLapCombo.SelectedItem is not DecisionLapItem selectedLap)
-            {
-                ClearScenarioFields(this);
-                return;
-            }
-
-            lapItem = selectedLap;
+            decisionLap = (ScanTargetLapCombo.SelectedItem as DecisionLapItem)?.LapNumber;
         }
 
-        var lapIndex = _currentLaps
-            .GroupBy(l => l.DriverNumber)
-            .ToDictionary(g => g.Key,
-                g => g.Where(l => l.DateStart.HasValue && l.LapDuration.HasValue)
-                      .ToDictionary(l => l.LapNumber));
+        var selectedTarget = ScanSingleTargetCombo.SelectedItem is MainScanDriverItem targetItem
+            ? new MainWindowPredictionSelection(targetItem.DriverNumber, targetItem.Code, targetItem.DisplayName)
+            : null;
 
-        if (!lapIndex.TryGetValue(attacker.DriverNumber, out var attackerLapMap) ||
-            !attackerLapMap.TryGetValue(lapItem.LapNumber, out var attackerLap) ||
-            !attackerLap.LapTimeAtSectorTwoLine.HasValue)
-        {
-            ClearScenarioFields(this);
-            return;
-        }
+        var availableTargets = (ScanSingleTargetCombo.ItemsSource as IEnumerable<MainScanDriverItem>
+                               ?? ScanSingleTargetCombo.Items.Cast<object>().OfType<MainScanDriverItem>())
+            .Select(x => x.DriverNumber)
+            .ToHashSet();
 
-        var orderPerLap = MainWindowScanCandidateService.BuildOnTrackOrderPerLap(lapIndex);
-        if (orderPerLap.TryGetValue(lapItem.LapNumber, out var order))
+        var scenario = MainWindowSingleScanScenarioService.Derive(new MainWindowSingleScanScenarioInput(
+            Attacker: attackerSelection,
+            SelectedTarget: selectedTarget,
+            DecisionLapNumber: decisionLap,
+            AvailableTargetDriverNumbers: availableTargets,
+            Laps: _currentLaps,
+            Stints: _currentStints,
+            RaceControlMessages: _currentRaceControlMessages));
+
+        var presentation = MainWindowSingleScanScenarioPresentationService.Build(
+            scenario,
+            selectedTargetDriverNumber: selectedTarget?.DriverNumber);
+
+        if (presentation.ShouldAutoSelectTarget && presentation.TargetDriverToSelect.HasValue)
         {
-            var attackerPos = order.IndexOf(attacker.DriverNumber);
-            if (attackerPos > 0)
+            var targetItems = ScanSingleTargetCombo.ItemsSource as IEnumerable<MainScanDriverItem>
+                              ?? ScanSingleTargetCombo.Items.Cast<object>().OfType<MainScanDriverItem>();
+            var matchingTarget = targetItems.FirstOrDefault(x => x.DriverNumber == presentation.TargetDriverToSelect.Value);
+            if (matchingTarget is not null)
             {
-                var aheadDriverNumber = order[attackerPos - 1];
-                if (ScanSingleTargetCombo.SelectedItem is not MainScanDriverItem selectedTarget ||
-                    selectedTarget.DriverNumber != aheadDriverNumber)
+                _suppressScanSelectionHandlers = true;
+                try
                 {
-                    var targetItems = ScanSingleTargetCombo.ItemsSource as IEnumerable<MainScanDriverItem>
-                                      ?? ScanSingleTargetCombo.Items.Cast<object>().OfType<MainScanDriverItem>();
-                    var matchingTarget = targetItems.FirstOrDefault(x => x.DriverNumber == aheadDriverNumber);
-                    if (matchingTarget is not null)
-                    {
-                        _suppressScanSelectionHandlers = true;
-                        try
-                        {
-                            ScanSingleTargetCombo.SelectedItem = matchingTarget;
-                        }
-                        finally
-                        {
-                            _suppressScanSelectionHandlers = false;
-                        }
-                    }
+                    ScanSingleTargetCombo.SelectedItem = matchingTarget;
+                }
+                finally
+                {
+                    _suppressScanSelectionHandlers = false;
                 }
             }
         }
 
-        if (ScanSingleTargetCombo.SelectedItem is not MainScanDriverItem target)
-        {
-            ClearScenarioFields(this);
-            return;
-        }
-
-        var safetyCarWindows = BuildSafetyCarWindows(_currentRaceControlMessages);
-        var refPace = DeriveReferencePacePerDriver(safetyCarWindows);
-
-        ScanAttackerPaceBox.Text = refPace.TryGetValue(attacker.DriverNumber, out var attackerPace)
-            ? attackerPace.ToString("F3", CultureInfo.InvariantCulture)
-            : string.Empty;
-
-        ScanTargetPaceBox.Text = refPace.TryGetValue(target.DriverNumber, out var targetPace)
-            ? targetPace.ToString("F3", CultureInfo.InvariantCulture)
-            : string.Empty;
-
-        var (attackerCompound, attackerTyreAge) = GetTyreStateAtLap(attacker.DriverNumber, lapItem.LapNumber);
-        var (targetCompound, targetTyreAge) = GetTyreStateAtLap(target.DriverNumber, lapItem.LapNumber);
-
-        ScanAttackerCurrentCompoundBox.Text = attackerCompound;
-        ScanAttackerTyreAgeBox.Text = attackerTyreAge.ToString(CultureInfo.InvariantCulture);
-        ScanTargetCurrentCompoundBox.Text = targetCompound;
-        ScanTargetTyreAgeBox.Text = targetTyreAge.ToString(CultureInfo.InvariantCulture);
-
-        if (!lapIndex.TryGetValue(target.DriverNumber, out var targetLapMap) ||
-            !targetLapMap.TryGetValue(lapItem.LapNumber, out var targetLap) ||
-            !targetLap.LapTimeAtSectorTwoLine.HasValue)
-        {
-            ScanStartingGapBox.Text = string.Empty;
-            return;
-        }
-
-        var attackerSectorTwoLine = AsUtc(attackerLap.DateStart!.Value).AddSeconds(attackerLap.LapTimeAtSectorTwoLine!.Value);
-        var targetSectorTwoLine = AsUtc(targetLap.DateStart!.Value).AddSeconds(targetLap.LapTimeAtSectorTwoLine!.Value);
-        var g0 = (attackerSectorTwoLine - targetSectorTwoLine).TotalSeconds;
-
-        ScanStartingGapBox.Text = g0.ToString("+0.000;-0.000;0.000", CultureInfo.InvariantCulture);
+        ScanAttackerPaceBox.Text = presentation.AttackerPaceText;
+        ScanTargetPaceBox.Text = presentation.TargetPaceText;
+        ScanAttackerCurrentCompoundBox.Text = presentation.AttackerCompoundText;
+        ScanAttackerTyreAgeBox.Text = presentation.AttackerTyreAgeText;
+        ScanTargetCurrentCompoundBox.Text = presentation.TargetCompoundText;
+        ScanTargetTyreAgeBox.Text = presentation.TargetTyreAgeText;
+        ScanStartingGapBox.Text = presentation.StartingGapText;
     }
 
     /// <summary>
@@ -1464,43 +1106,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// <summary>
     /// Writes a set of scan rows to a user-selected CSV file using a consistent export schema.
     /// </summary>
-    private void ExportScanRowsCsv(List<MainScanResultRow> rows, string defaultFileName)
+    private void ExportScanRowsCsv(List<ScanRowData> rows, string defaultFileName)
     {
         if (rows.Count == 0)
             return;
 
-        var dlg = new SaveFileDialog
-        {
-            Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-            FileName = defaultFileName,
-            DefaultExt = ".csv"
-        };
-
-        if (dlg.ShowDialog(this) != true)
-            return;
-
-        var sb = new StringBuilder();
-        sb.AppendLine("Lap,Attacking,Target,AttackerCompound,AttackerTyreAge,TargetCompound,TargetTyreAge,G0,GapTargetPitLapComplete,GapTargetOutLapComplete,GapBothDriversNormalLapComplete,DeltaGTargetPitLapComplete,Result");
-
-        foreach (var row in rows)
-        {
-            sb.AppendLine(string.Join(",",
-                row.DecisionLap.ToString(CultureInfo.InvariantCulture),
-                MainWindowLogic.EscapeCsv(row.Attacker),
-                MainWindowLogic.EscapeCsv(row.Target),
-                MainWindowLogic.EscapeCsv(row.AttackerCompound),
-                row.AttackerTyreAge.ToString(CultureInfo.InvariantCulture),
-                MainWindowLogic.EscapeCsv(row.TargetCompound),
-                row.TargetTyreAge.ToString(CultureInfo.InvariantCulture),
-                MainWindowLogic.EscapeCsv(row.G0),
-                MainWindowLogic.EscapeCsv(row.GapAtTargetPitLapComplete),
-                MainWindowLogic.EscapeCsv(row.GapAtTargetOutLapComplete),
-                MainWindowLogic.EscapeCsv(row.GapAtBothDriversNormalLapComplete),
-                MainWindowLogic.EscapeCsv(row.DeltaGAtTargetPitLapComplete),
-                MainWindowLogic.EscapeCsv(row.Result)));
-        }
-
-        File.WriteAllText(dlg.FileName, sb.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        var csv = MainWindowScanCsvExportService.BuildCsv(rows);
+        MainWindowCsvFileSaveService.TrySaveCsv(
+            owner: this,
+            csvContent: csv,
+            options: new MainWindowCsvSaveOptions(
+                Title: null,
+                Filter: "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                FileName: defaultFileName,
+                DefaultExt: ".csv",
+                Encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)));
     }
 
 
@@ -1519,127 +1139,45 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         plot.XLabel("Lap Number");
         plot.YLabel("Cumulative Delta to Constant Reference (s)");
 
-        if (_currentLaps.Count == 0)
+        var computation = MainWindowRaceTraceService.Compute(
+            laps: _currentLaps,
+            drivers: _currentDrivers,
+            raceControlMessages: _currentRaceControlMessages,
+            options: new RaceTraceComputationOptions(
+                IncludePitLaps: IncludePitLapsCheckBox.IsChecked != false,
+                IncludeScVscLaps: IncludeScVscLapsCheckBox.IsChecked != false,
+                ApplyFuelCorrection: ApplyFuelCorrectionCheckBox.IsChecked != false,
+                FuelSecondsPer10Kg: FuelSecondsPer10Kg,
+                FuelKg: FuelKg,
+                SortLegendByTeamThenNumber: LegendSortComboBox.SelectedIndex == 1),
+            traceVisibilityByDriver: _traceVisibilityByDriver);
+
+        _traceVisibilityByDriver.Clear();
+        foreach (var kvp in computation.NormalizedVisibilityByDriver)
+            _traceVisibilityByDriver[kvp.Key] = kvp.Value;
+
+        if (!computation.HasRenderableData)
         {
             _raceTracePlot.Refresh();
             return;
         }
 
-        var includePitLaps = IncludePitLapsCheckBox.IsChecked != false;
-        var includeScVscLaps = IncludeScVscLapsCheckBox.IsChecked != false;
-        var applyFuelCorrection = ApplyFuelCorrectionCheckBox.IsChecked != false;
-
-        var safetyCarWindows = BuildSafetyCarWindows(_currentRaceControlMessages);
-        var maxSessionLapNumber = _currentLaps.Count > 0 ? _currentLaps.Max(l => l.LapNumber) : 0;
-        var fuelEffectPerLapSeconds = applyFuelCorrection && maxSessionLapNumber > 0
-            ? FuelSecondsPer10Kg * (FuelKg / 10.0) / maxSessionLapNumber
-            : 0.0;
-
-        var pitInLaps = BuildPitInLapLookup(_currentLaps);
-
-        var displayEligibleLaps = _currentLaps
-            .Where(l => l.LapDuration.HasValue && l.DateStart.HasValue)
-            .Where(l => IsLapEligible(l, includePitLaps, includeScVscLaps, safetyCarWindows, pitInLaps))
-            .Select(l => new
-            {
-                Lap = l,
-                AdjustedLapSeconds = l.LapDuration!.Value - (fuelEffectPerLapSeconds * Math.Max(0, maxSessionLapNumber - l.LapNumber))
-            })
-            .ToList();
-
-        if (displayEligibleLaps.Count == 0)
+        foreach (var series in computation.Series)
         {
-            _raceTracePlot.Refresh();
-            return;
-        }
+            var lineColor = MainWindowRaceTraceService.ParseScottPlotColor(series.TeamColour, series.DriverNumber);
+            AddLegendToggle(
+                series.DriverNumber,
+                series.DriverName,
+                MainWindowRaceTraceService.ParseLegendBrush(series.TeamColour, series.DriverNumber),
+                series.IsSolidLine,
+                series.IsVisible);
 
-        // Build the constant reference from the shared clean-lap calculator so
-        // diagnostics and plotted baseline always use the same derivation path.
-        var referenceForTrace = ReferenceLapTimeCalculator.Calculate(
-            _currentLaps,
-            _currentRaceControlMessages,
-            applyFuelCorrection ? FuelSecondsPer10Kg : 0.0,
-            applyFuelCorrection ? FuelKg : 0.0);
+            var displayColor = series.IsVisible ? lineColor : lineColor.MixedWith(ScottPlot.Colors.White, 0.85);
 
-        if (!referenceForTrace.AverageLapTimeSeconds.HasValue || referenceForTrace.AverageLapTimeSeconds.Value <= 0)
-        {
-            _raceTracePlot.Refresh();
-            return;
-        }
-
-        var constantReference = referenceForTrace.AverageLapTimeSeconds.Value;
-
-        var driverByNumber = _currentDrivers
-            .GroupBy(d => d.DriverNumber)
-            .ToDictionary(g => g.Key, g => g.First());
-
-        var lapsByDriver = displayEligibleLaps
-            .GroupBy(x => x.Lap.DriverNumber)
-            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.Lap.LapNumber).ToList());
-
-        var solidByDriver = lapsByDriver.Keys.ToDictionary(
-            driverNumber => driverNumber,
-            driverNumber => ShouldUseSolidLineForDriver(driverNumber, lapsByDriver.Keys, driverByNumber));
-
-        var sortByTeamThenNumber = LegendSortComboBox.SelectedIndex == 1;
-        var orderedDriverSeries = sortByTeamThenNumber
-            ? lapsByDriver
-                .OrderBy(x => GetTeamSortKey(x.Key, driverByNumber))
-                .ThenBy(x => x.Key)
-            : lapsByDriver
-                .OrderBy(x => x.Key);
-
-        var orderedDriverSeriesList = orderedDriverSeries.ToList();
-
-        var activeDriverNumbers = orderedDriverSeriesList.Select(x => x.Key).ToHashSet();
-        var staleKeys = _traceVisibilityByDriver.Keys.Where(k => !activeDriverNumbers.Contains(k)).ToList();
-        foreach (var staleKey in staleKeys)
-        {
-            _traceVisibilityByDriver.Remove(staleKey);
-        }
-
-        foreach (var kvp in orderedDriverSeriesList)
-        {
-            var driverNumber = kvp.Key;
-            var driverLaps = kvp.Value;
-
-            var xs = new List<double>(driverLaps.Count);
-            var ys = new List<double>(driverLaps.Count);
-
-            var cumulativeDelta = 0.0;
-            foreach (var item in driverLaps)
-            {
-                var lapNumber = item.Lap.LapNumber;
-                var lapDelta = constantReference - item.AdjustedLapSeconds;
-                cumulativeDelta += lapDelta;
-
-                xs.Add(lapNumber);
-                ys.Add(cumulativeDelta);
-            }
-
-            if (xs.Count == 0)
-            {
-                continue;
-            }
-
-            var driverName = driverByNumber.TryGetValue(driverNumber, out var driver)
-                ? BuildLegendDriverName(driver, driverNumber)
-                : driverNumber.ToString(CultureInfo.InvariantCulture);
-
-            var teamColour = driverByNumber.TryGetValue(driverNumber, out var d) ? d.TeamColour : string.Empty;
-            var lineColor = ParseScottPlotColor(teamColour, driverNumber);
-            var isSolid = solidByDriver[driverNumber];
-            var isVisible = !_traceVisibilityByDriver.TryGetValue(driverNumber, out var storedVisible) || storedVisible;
-            _traceVisibilityByDriver[driverNumber] = isVisible;
-
-            AddLegendToggle(driverNumber, driverName, ParseLegendBrush(teamColour, driverNumber), isSolid, isVisible);
-
-            var displayColor = isVisible ? lineColor : lineColor.MixedWith(ScottPlot.Colors.White, 0.85);
-
-            var scatter = plot.Add.Scatter(xs.ToArray(), ys.ToArray());
+            var scatter = plot.Add.Scatter(series.Xs.ToArray(), series.Ys.ToArray());
             scatter.LineColor = displayColor;
             scatter.LineWidth = 2;
-            scatter.LinePattern = isSolid ? LinePattern.Solid : LinePattern.Dashed;
+            scatter.LinePattern = series.IsSolidLine ? LinePattern.Solid : LinePattern.Dashed;
             scatter.MarkerSize = 8;
             scatter.MarkerFillColor = displayColor;
             scatter.MarkerLineColor = displayColor;
@@ -1658,230 +1196,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Derives pit-in laps from pit-out flags (pit-in is lapNumber - 1 for the same driver).
-    /// This allows pit-in exclusion even though OpenF1 exposes only pit-out flags.
-    /// </summary>
-    private static HashSet<(int DriverNumber, int LapNumber)> BuildPitInLapLookup(IReadOnlyList<EventLap> laps)
-    {
-        var lookup = new HashSet<(int DriverNumber, int LapNumber)>();
-
-        foreach (var pitOutLap in laps.Where(l => l.IsPitOutLap && l.LapNumber > 1))
-        {
-            lookup.Add((pitOutLap.DriverNumber, pitOutLap.LapNumber - 1));
-        }
-
-        return lookup;
-    }
-
-    /// <summary>
-    /// Returns whether a lap passes current plotting filters (pit-lap and SC/VSC inclusion).
-    /// </summary>
-    private static bool IsLapEligible(
-        EventLap lap,
-        bool includePitLaps,
-        bool includeScVscLaps,
-        IReadOnlyList<TimeWindow> safetyCarWindows,
-        HashSet<(int DriverNumber, int LapNumber)> pitInLaps)
-    {
-        if (!includePitLaps)
-        {
-            if (lap.IsPitOutLap || pitInLaps.Contains((lap.DriverNumber, lap.LapNumber)))
-            {
-                return false;
-            }
-        }
-
-        if (!includeScVscLaps && lap.DateStart.HasValue && lap.LapDuration.HasValue)
-        {
-            var lapStartUtc = AsUtc(lap.DateStart.Value);
-            var lapEndUtc = lapStartUtc.AddSeconds(lap.LapDuration.Value);
-            if (safetyCarWindows.Any(window => IntersectsWindow(lapStartUtc, lapEndUtc, window)))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /// <summary>
     /// Converts SC/VSC race-control messages into UTC activity windows for filtering laps.
     /// </summary>
     private static IReadOnlyList<TimeWindow> BuildSafetyCarWindows(IReadOnlyList<RaceControlMessage> raceControlMessages)
     {
-        var windows = new List<TimeWindow>();
-        DateTime? vscStart = null;
-        DateTime? scStart = null;
-
-        foreach (var message in raceControlMessages
-                     .Where(m => string.Equals(m.Category, "SafetyCar", StringComparison.OrdinalIgnoreCase)
-                              || string.Equals(m.Category, "Safety Car", StringComparison.OrdinalIgnoreCase))
-                     .OrderBy(m => m.Date))
-        {
-            if (!message.Date.HasValue)
-            {
-                continue;
-            }
-
-            var timestamp = AsUtc(message.Date.Value);
-            var text = (message.Message ?? string.Empty).Trim().ToUpperInvariant();
-
-            if (text.Contains("VSC DEPLOYED", StringComparison.Ordinal))
-            {
-                vscStart = timestamp;
-                continue;
-            }
-
-            if (text.Contains("VSC ENDING", StringComparison.Ordinal))
-            {
-                if (vscStart.HasValue)
-                {
-                    windows.Add(new TimeWindow(vscStart.Value, timestamp));
-                    vscStart = null;
-                }
-
-                continue;
-            }
-
-            if (text.Contains("SAFETY CAR DEPLOYED", StringComparison.Ordinal))
-            {
-                scStart = timestamp;
-                continue;
-            }
-
-            if (text.Contains("SAFETY CAR IN THIS LAP", StringComparison.Ordinal) && scStart.HasValue)
-            {
-                windows.Add(new TimeWindow(scStart.Value, timestamp));
-                scStart = null;
-            }
-        }
-
-        return windows;
-    }
-
-    /// <summary>
-    /// True when any portion of a lap interval overlaps the supplied SC/VSC window.
-    /// </summary>
-    private static bool IntersectsWindow(DateTime lapStartUtc, DateTime lapEndUtc, TimeWindow window)
-    {
-        return lapStartUtc <= window.EndUtc
-               && lapEndUtc >= window.StartUtc;
-    }
-
-    /// <summary>
-    /// Normalises DateTime values to UTC for consistent cross-lap time comparisons.
-    /// </summary>
-    private static DateTime AsUtc(DateTime input)
-    {
-        if (input.Kind == DateTimeKind.Utc)
-        {
-            return input;
-        }
-
-        if (input.Kind == DateTimeKind.Local)
-        {
-            return input.ToUniversalTime();
-        }
-
-        return DateTime.SpecifyKind(input, DateTimeKind.Utc);
-    }
-
-    /// <summary>
-    /// Returns the median of a sorted numeric array (or 0 for empty input).
-    /// </summary>
-    private static double Median(double[] orderedValues)
-    {
-        if (orderedValues.Length == 0)
-        {
-            return 0;
-        }
-
-        var mid = orderedValues.Length / 2;
-        return orderedValues.Length % 2 == 0
-            ? (orderedValues[mid - 1] + orderedValues[mid]) / 2.0
-            : orderedValues[mid];
-    }
-
-    /// <summary>
-    /// Chooses line style so teammates can be distinguished: one solid, one dashed.
-    /// </summary>
-    private static bool ShouldUseSolidLineForDriver(
-        int driverNumber,
-        IEnumerable<int> plottedDriverNumbers,
-        IReadOnlyDictionary<int, Driver> driverByNumber)
-    {
-        if (!driverByNumber.TryGetValue(driverNumber, out var currentDriver))
-        {
-            return true;
-        }
-
-        var groupKey = GetTeamGroupKey(currentDriver, driverNumber);
-
-        var teammateNumbers = plottedDriverNumbers
-            .Where(n => driverByNumber.TryGetValue(n, out var d) && GetTeamGroupKey(d, n) == groupKey)
-            .ToArray();
-
-        if (teammateNumbers.Length <= 1)
-        {
-            return true;
-        }
-
-        return driverNumber == teammateNumbers.Min();
-    }
-
-    /// <summary>
-    /// Builds a stable grouping key for teammate detection (team name, then colour fallback).
-    /// </summary>
-    private static string GetTeamGroupKey(Driver driver, int driverNumber)
-    {
-        if (!string.IsNullOrWhiteSpace(driver.TeamName))
-        {
-            return "team:" + driver.TeamName.Trim().ToUpperInvariant();
-        }
-
-        if (!string.IsNullOrWhiteSpace(driver.TeamColour))
-        {
-            return "colour:" + driver.TeamColour.Trim().ToUpperInvariant();
-        }
-
-        return "driver:" + driverNumber.ToString(CultureInfo.InvariantCulture);
-    }
-
-    /// <summary>
-    /// Provides a legend sort key that clusters drivers by team where possible.
-    /// </summary>
-    private static string GetTeamSortKey(int driverNumber, IReadOnlyDictionary<int, Driver> driverByNumber)
-    {
-        if (!driverByNumber.TryGetValue(driverNumber, out var driver))
-        {
-            return "ZZZ";
-        }
-
-        if (!string.IsNullOrWhiteSpace(driver.TeamName))
-        {
-            return driver.TeamName.Trim().ToUpperInvariant();
-        }
-
-        if (!string.IsNullOrWhiteSpace(driver.TeamColour))
-        {
-            return driver.TeamColour.Trim().ToUpperInvariant();
-        }
-
-        return "ZZZ";
-    }
-
-    /// <summary>
-    /// Builds a readable legend label combining driver code and broadcast name.
-    /// </summary>
-    private static string BuildLegendDriverName(Driver driver, int driverNumber)
-    {
-        var code = string.IsNullOrWhiteSpace(driver.Code)
-            ? driverNumber.ToString(CultureInfo.InvariantCulture)
-            : driver.Code;
-
-        return string.IsNullOrWhiteSpace(driver.BroadcastName)
-            ? code
-            : $"{code} ({driver.BroadcastName})";
+        return RaceTimingDomainLogic.BuildSafetyCarWindows(raceControlMessages);
     }
 
     /// <summary>
@@ -1890,8 +1209,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void AddLegendToggle(int driverNumber, string driverName, WpfBrush textBrush, bool isSolid, bool isVisible)
     {
-        var stylePrefix = isSolid ? "━" : "┅";
-
         var toggle = new ToggleButton
         {
             IsChecked = isVisible,
@@ -1901,29 +1218,35 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             BorderBrush = new WpfSolidColorBrush(WpfColors.LightGray),
             Content = new TextBlock
             {
-                Text = $"{stylePrefix} {driverName}",
+                Text = MainWindowRaceTraceLegendService.BuildLegendLabel(driverName, isSolid),
                 Foreground = textBrush
             }
         };
 
         toggle.Checked += (_, _) =>
         {
-            _traceVisibilityByDriver[driverNumber] = true;
+            var next = MainWindowRaceTraceLegendService.ApplyToggle(_traceVisibilityByDriver, driverNumber, isVisible: true);
+            _traceVisibilityByDriver.Clear();
+            foreach (var kvp in next)
+                _traceVisibilityByDriver[kvp.Key] = kvp.Value;
             RenderRaceTrace();
         };
 
         toggle.Unchecked += (_, _) =>
         {
-            _traceVisibilityByDriver[driverNumber] = false;
+            var next = MainWindowRaceTraceLegendService.ApplyToggle(_traceVisibilityByDriver, driverNumber, isVisible: false);
+            _traceVisibilityByDriver.Clear();
+            foreach (var kvp in next)
+                _traceVisibilityByDriver[kvp.Key] = kvp.Value;
             RenderRaceTrace();
         };
 
         toggle.PreviewMouseRightButtonUp += (sender, e) =>
         {
-            foreach (var key in _traceVisibilityByDriver.Keys.ToList())
-            {
-                _traceVisibilityByDriver[key] = key == driverNumber;
-            }
+            var next = MainWindowRaceTraceLegendService.IsolateDriver(_traceVisibilityByDriver, driverNumber);
+            _traceVisibilityByDriver.Clear();
+            foreach (var kvp in next)
+                _traceVisibilityByDriver[kvp.Key] = kvp.Value;
 
             e.Handled = true;
             RenderRaceTrace();
@@ -1934,80 +1257,36 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Parses a WPF brush from team colour hex, with deterministic fallback colours.
+    /// Applies event-selection control/display state to MainWindow controls.
     /// </summary>
-    private static WpfBrush ParseLegendBrush(string hex, int fallbackSeed)
+    private void ApplyEventUiState(MainWindowEventUiState state)
     {
-        if (!string.IsNullOrWhiteSpace(hex))
-        {
-            var clean = hex.Trim();
-            if (!clean.StartsWith("#", StringComparison.Ordinal))
-            {
-                clean = "#" + clean;
-            }
-
-            try
-            {
-                var parsed = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(clean);
-                return new WpfSolidColorBrush(parsed);
-            }
-            catch
-            {
-                // fallback below
-            }
-        }
-
-        var fallback = new[]
-        {
-            WpfColors.Blue,
-            WpfColors.Red,
-            WpfColors.Green,
-            WpfColors.Orange,
-            WpfColors.Purple,
-            WpfColors.Brown,
-            WpfColors.Teal,
-            WpfColors.Magenta
-        };
-
-        return new WpfSolidColorBrush(fallback[Math.Abs(fallbackSeed) % fallback.Length]);
+        SelectedEventDisplay.Text = state.DisplayText;
+        SelectedEventDisplay.ToolTip = state.TooltipText;
+        RawDataButton.IsEnabled = state.EnableRawData;
+        PredictionScanButton.IsEnabled = state.EnablePredictionScan;
+        ScanAllDriversButton.IsEnabled = state.EnableScanAllDrivers;
+        ScanSingleDriverButton.IsEnabled = state.EnableScanSingleDriver;
+        SetRaceTraceEnabled(state.EnableRaceTrace);
     }
 
     /// <summary>
-    /// Parses a ScottPlot colour from team colour hex, with deterministic fallback colours.
+    /// Clears loaded event data and resets dependent controls to empty state.
     /// </summary>
-    private static ScottPlot.Color ParseScottPlotColor(string hex, int fallbackSeed)
+    private void ResetLoadedEventDataState()
     {
-        if (!string.IsNullOrWhiteSpace(hex))
-        {
-            var clean = hex.Trim();
-            if (!clean.StartsWith("#", StringComparison.Ordinal))
-            {
-                clean = "#" + clean;
-            }
-
-            try
-            {
-                return ScottPlot.Color.FromHex(clean);
-            }
-            catch
-            {
-                // fallback below
-            }
-        }
-
-        var fallback = new[]
-        {
-            ScottPlot.Colors.Blue,
-            ScottPlot.Colors.Red,
-            ScottPlot.Colors.Green,
-            ScottPlot.Colors.Orange,
-            ScottPlot.Colors.Purple,
-            ScottPlot.Colors.Brown,
-            ScottPlot.Colors.Teal,
-            ScottPlot.Colors.Magenta
-        };
-
-        return fallback[Math.Abs(fallbackSeed) % fallback.Length];
+        _currentLaps = Array.Empty<EventLap>();
+        _currentDrivers = Array.Empty<Driver>();
+        _currentStints = Array.Empty<EventStint>();
+        _currentRaceControlMessages = Array.Empty<RaceControlMessage>();
+        _currentReference = null;
+        _traceVisibilityByDriver.Clear();
+        ScanSingleAttackerCombo.ItemsSource = null;
+        ScanSingleTargetCombo.ItemsSource = null;
+        ScanTargetLapCombo.ItemsSource = null;
+        ScanStartingGapBox.Text = string.Empty;
+        ClearAllDriversResults();
+        ClearSingleScanResults();
     }
 
     /// <summary>

@@ -41,7 +41,7 @@ namespace UndercutAnalyser.Services
             double secondsPer10Kg,
             double fuelKg)
         {
-            var windows = BuildSafetyCarWindows(raceControlMessages);
+            var windows = RaceTimingDomainLogic.BuildSafetyCarWindows(raceControlMessages);
 
             var totalLapRows = laps.Count;
             var maxSessionLapNumber = laps.Count > 0 ? laps.Max(l => l.LapNumber) : 0;
@@ -54,7 +54,7 @@ namespace UndercutAnalyser.Services
             var excludedSafetyCarLaps = 0;
             var sumLapTimeSeconds = 0.0;
 
-            var pitInLaps = BuildPitInLapLookup(laps);
+            var pitInLaps = RaceTimingDomainLogic.BuildPitInLapLookup(laps);
 
             foreach (var lap in laps)
             {
@@ -75,10 +75,10 @@ namespace UndercutAnalyser.Services
                     continue;
                 }
 
-                var lapStartUtc = AsUtc(lap.DateStart.Value);
+                var lapStartUtc = RaceTimingDomainLogic.AsUtc(lap.DateStart.Value);
                 var lapEndUtc = lapStartUtc.AddSeconds(lap.LapDuration.Value);
 
-                if (IsInAnyWindow(lapStartUtc, lapEndUtc, windows))
+                if (RaceTimingDomainLogic.IsInAnyWindow(lapStartUtc, lapEndUtc, windows))
                 {
                     excludedSafetyCarLaps++;
                     continue;
@@ -104,129 +104,5 @@ namespace UndercutAnalyser.Services
                 SafetyCarWindows: windows);
         }
 
-        /// <summary>
-        /// Converts race-control SC/VSC messages into UTC active windows for lap filtering.
-        /// </summary>
-        private static IReadOnlyList<TimeWindow> BuildSafetyCarWindows(IReadOnlyList<RaceControlMessage> raceControlMessages)
-        {
-            var windows = new List<TimeWindow>();
-            DateTime? vscStart = null;
-            DateTime? scStart = null;
-
-            foreach (var message in raceControlMessages
-                         .Where(m => string.Equals(m.Category, "SafetyCar", StringComparison.OrdinalIgnoreCase)
-                                  || string.Equals(m.Category, "Safety Car", StringComparison.OrdinalIgnoreCase))
-                         .OrderBy(m => m.Date))
-            {
-                if (message.Date is null)
-                {
-                    continue;
-                }
-
-                var timestamp = AsUtc(message.Date.Value);
-                var text = (message.Message ?? string.Empty).Trim().ToUpperInvariant();
-
-                if (text.Contains("VSC DEPLOYED", StringComparison.Ordinal))
-                {
-                    vscStart = timestamp;
-                    continue;
-                }
-
-                if (text.Contains("VSC ENDING", StringComparison.Ordinal))
-                {
-                    if (vscStart.HasValue)
-                    {
-                        windows.Add(new TimeWindow(vscStart.Value, timestamp));
-                        vscStart = null;
-                    }
-
-                    continue;
-                }
-
-                if (text.Contains("SAFETY CAR DEPLOYED", StringComparison.Ordinal))
-                {
-                    scStart = timestamp;
-                    continue;
-                }
-
-                if (text.Contains("SAFETY CAR IN THIS LAP", StringComparison.Ordinal))
-                {
-                    if (scStart.HasValue)
-                    {
-                        windows.Add(new TimeWindow(scStart.Value, timestamp));
-                        scStart = null;
-                    }
-                }
-            }
-
-            var maxKnownDate = raceControlMessages
-                .Where(m => m.Date.HasValue)
-                .Select(m => AsUtc(m.Date!.Value))
-                .DefaultIfEmpty(DateTime.MinValue)
-                .Max();
-
-            if (vscStart.HasValue)
-            {
-                windows.Add(new TimeWindow(vscStart.Value, maxKnownDate));
-            }
-
-            if (scStart.HasValue)
-            {
-                windows.Add(new TimeWindow(scStart.Value, maxKnownDate));
-            }
-
-            return windows;
-        }
-
-        /// <summary>
-        /// Builds a lookup of inferred pit-in laps (the lap immediately before a pit-out lap)
-        /// for each driver.
-        /// </summary>
-        private static HashSet<(int DriverNumber, int LapNumber)> BuildPitInLapLookup(IReadOnlyList<EventLap> laps)
-        {
-            var lookup = new HashSet<(int DriverNumber, int LapNumber)>();
-
-            foreach (var pitOutLap in laps.Where(l => l.IsPitOutLap && l.LapNumber > 1))
-            {
-                lookup.Add((pitOutLap.DriverNumber, pitOutLap.LapNumber - 1));
-            }
-
-            return lookup;
-        }
-
-        /// <summary>
-        /// Returns true when any part of the lap interval overlaps an SC/VSC window.
-        /// </summary>
-        private static bool IsInAnyWindow(DateTime lapStartUtc, DateTime lapEndUtc, IReadOnlyList<TimeWindow> windows)
-        {
-            foreach (var window in windows)
-            {
-                if (lapStartUtc <= window.EndUtc
-                    && lapEndUtc >= window.StartUtc)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Normalises incoming DateTime values to UTC so all overlap checks are consistent.
-        /// </summary>
-        private static DateTime AsUtc(DateTime input)
-        {
-            if (input.Kind == DateTimeKind.Utc)
-            {
-                return input;
-            }
-
-            if (input.Kind == DateTimeKind.Local)
-            {
-                return input.ToUniversalTime();
-            }
-
-            return DateTime.SpecifyKind(input, DateTimeKind.Utc);
-        }
     }
 }

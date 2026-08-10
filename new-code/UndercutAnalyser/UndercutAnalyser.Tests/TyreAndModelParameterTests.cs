@@ -163,6 +163,19 @@ public sealed class TyreAndModelParameterTests
 
     #endregion
 
+    #region TyreSet specification helpers
+
+    [Fact]
+    public void TyreSetSpecification_NewSet_UsesRequestedCompoundWithZeroInitialAge()
+    {
+        var spec = TyreSetSpecification.NewSet(TyreCompound.Medium);
+
+        Assert.Equal(TyreCompound.Medium, spec.Compound);
+        Assert.Equal(0, spec.InitialAgeLaps);
+    }
+
+    #endregion
+
     #region Warm-up and traffic helper factories
     // These tests exist to pin helper constructors used in UI defaults and tests,
     // ensuring convenience APIs map to correct internal flags/values.

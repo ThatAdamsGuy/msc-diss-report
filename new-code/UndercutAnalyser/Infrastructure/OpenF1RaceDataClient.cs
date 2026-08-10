@@ -12,7 +12,7 @@ namespace UndercutAnalyser.Infrastructure
     /// Thin HTTP client for OpenF1 endpoints used by this tool.
     /// Methods return empty collections on recoverable API/deserialisation failures and log errors.
     /// </summary>
-    public sealed class OpenF1RaceDataClient : IEventDataProvider
+    public sealed class OpenF1RaceDataClient : IEventDataProvider, IMainWindowEventDataClient
     {
         private readonly HttpClient _http;
         private static readonly JsonSerializerOptions JsonOptions = new()
