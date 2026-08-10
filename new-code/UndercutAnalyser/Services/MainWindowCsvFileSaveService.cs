@@ -24,10 +24,25 @@ public static class MainWindowCsvFileSaveService
             DefaultExt = options.DefaultExt
         };
 
-        if (dlg.ShowDialog(owner) != true)
+        return TrySaveCsvCore(
+            csvContent,
+            options,
+            showDialog: () => dlg.ShowDialog(owner),
+            selectedPath: () => dlg.FileName,
+            writeAllText: (path, content, encoding) => File.WriteAllText(path, content, encoding));
+    }
+
+    internal static bool TrySaveCsvCore(
+        string csvContent,
+        MainWindowCsvSaveOptions options,
+        Func<bool?> showDialog,
+        Func<string> selectedPath,
+        Action<string, string, Encoding> writeAllText)
+    {
+        if (showDialog() != true)
             return false;
 
-        File.WriteAllText(dlg.FileName, csvContent, options.Encoding);
+        writeAllText(selectedPath(), csvContent, options.Encoding);
         return true;
     }
 }
