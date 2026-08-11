@@ -25,6 +25,9 @@ public static partial class EventWorkflowService
         if (raceSession is null)
             return MainWindowEventDataLoadResult.NoSessionFound();
 
+        if (raceSession.IsCancelled)
+            return MainWindowEventDataLoadResult.SessionCancelled();
+
         var sessionKey = raceSession.SessionKey;
         var laps = await client.GetLapsBySessionKeyAsync(sessionKey).ConfigureAwait(false);
         var drivers = await client.GetDriversByMeetingAndSessionAsync(meetingKey, sessionKey).ConfigureAwait(false);
@@ -51,6 +54,7 @@ public static partial class EventWorkflowService
 /// </summary>
 public sealed record MainWindowEventDataLoadResult(
     bool HasRaceSession,
+    bool IsSessionCancelled,
     IReadOnlyList<EventLap> Laps,
     IReadOnlyList<Driver> Drivers,
     IReadOnlyList<EventStint> Stints,
@@ -68,6 +72,7 @@ public sealed record MainWindowEventDataLoadResult(
         ReferenceLapTimeResult reference) =>
         new(
             HasRaceSession: true,
+            IsSessionCancelled: false,
             Laps: laps,
             Drivers: drivers,
             Stints: stints,
@@ -80,6 +85,20 @@ public sealed record MainWindowEventDataLoadResult(
     public static MainWindowEventDataLoadResult NoSessionFound() =>
         new(
             HasRaceSession: false,
+            IsSessionCancelled: false,
+            Laps: Array.Empty<EventLap>(),
+            Drivers: Array.Empty<Driver>(),
+            Stints: Array.Empty<EventStint>(),
+            RaceControlMessages: Array.Empty<RaceControlMessage>(),
+            Reference: null);
+
+    /// <summary>
+    /// Creates a cancelled-session result for selected meeting.
+    /// </summary>
+    public static MainWindowEventDataLoadResult SessionCancelled() =>
+        new(
+            HasRaceSession: false,
+            IsSessionCancelled: true,
             Laps: Array.Empty<EventLap>(),
             Drivers: Array.Empty<Driver>(),
             Stints: Array.Empty<EventStint>(),

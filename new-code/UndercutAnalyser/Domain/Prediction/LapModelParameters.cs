@@ -6,7 +6,7 @@ namespace UndercutAnalyser.Domain.Prediction
     /// All configurable engineering parameters that govern the lap time prediction model.
     ///
     /// Sign convention for compound offsets:
-    ///   Soft = 0 s (reference compound — fastest in a single lap).
+    ///   Soft = 0 s (reference compound - fastest in a single lap).
     ///   Medium and Hard offsets are positive (slower than Soft).
     ///
     /// Degradation rates are per-compound, not per-driver. Both the attacking and target
@@ -26,7 +26,7 @@ namespace UndercutAnalyser.Domain.Prediction
     {
         /// <summary>
         /// Returns a sensible default parameter set.
-        /// All values are intended as starting-point estimates — the engineer should tune
+        /// All values are intended as starting-point estimates - the engineer should tune
         /// them to the specific race and circuit before running a prediction.
         /// </summary>
         public static LapModelParameters CreateDefault() => new(

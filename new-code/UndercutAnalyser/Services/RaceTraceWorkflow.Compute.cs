@@ -127,6 +127,7 @@ public static partial class RaceTraceWorkflowService
                 : driverNumber.ToString(CultureInfo.InvariantCulture);
 
             var teamColour = driverByNumber.TryGetValue(driverNumber, out var d) ? d.TeamColour : string.Empty;
+            var driverCode = driverByNumber.TryGetValue(driverNumber, out var codeDriver) ? codeDriver.Code : string.Empty;
             var isSolid = solidByDriver[driverNumber];
             var isVisible = !normalizedVisibility.TryGetValue(driverNumber, out var storedVisible) || storedVisible;
             normalizedVisibility[driverNumber] = isVisible;
@@ -134,6 +135,7 @@ public static partial class RaceTraceWorkflowService
             series.Add(new RaceTraceDriverSeries(
                 DriverNumber: driverNumber,
                 DriverName: driverName,
+                DriverCode: driverCode,
                 TeamColour: teamColour,
                 IsSolidLine: isSolid,
                 IsVisible: isVisible,
@@ -362,6 +364,7 @@ public sealed record RaceTraceComputationOptions(
 public sealed record RaceTraceDriverSeries(
     int DriverNumber,
     string DriverName,
+    string DriverCode,
     string TeamColour,
     bool IsSolidLine,
     bool IsVisible,

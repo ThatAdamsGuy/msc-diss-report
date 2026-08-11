@@ -189,7 +189,7 @@ public void Log_WithVeryLongMessage_Truncates() { }
 - ✗ Property change notification
 - ✗ Validation error paths
 
-**Challenge:** Closure class (`<>c__DisplayClass`) indicates captured variables in nested scopes—these are rarely tested in isolation
+**Challenge:** Closure class (`<>c__DisplayClass`) indicates captured variables in nested scopes-these are rarely tested in isolation
 
 **Recommended Tests:**
 ```csharp
@@ -330,7 +330,7 @@ This **11.9 percentage-point gap** vs. line coverage indicates:
 
 - **Async Methods:** The `<>d__N` classes are compiler-generated async state machines. Low coverage here usually means the async path isn't exercised. Test the `await` paths explicitly.
 - **Closures:** The `<>c__DisplayClass` indicates captured variables in lambdas/nested scopes. These are difficult to test without invoking their parent method.
-- **SkipWAML:** XAML codegen (`*.xaml.cs`) has 0% coverage by design—don't test UI glue, test business logic behind it.
+- **SkipWAML:** XAML codegen (`*.xaml.cs`) has 0% coverage by design-don't test UI glue, test business logic behind it.
 
 ---
 

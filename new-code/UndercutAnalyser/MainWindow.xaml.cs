@@ -33,6 +33,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private ReferenceLapTimeResult? _currentReference;
     private readonly WpfPlot _raceTracePlot = new();
     private readonly Dictionary<int, bool> _traceVisibilityByDriver = new();
+    private int? _hoveredDriverNumber;
     private List<TyreParameterRow> _tyreParameterRows =
     [
         new TyreParameterRow("Soft",   0.0, 0.10, 0.3, isEditable: false, isDegradationEditable: true),
@@ -322,6 +323,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             Application.Current.Dispatcher.Invoke(() =>
             {
+                if (loadResult.IsSessionCancelled)
+                {
+                    MessageBox.Show(
+                        $"The race session for {_eventSelectorViewModel.SelectedEvent?.RaceName} has been cancelled.",
+                        "Session Cancelled",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    ClearSelectedMeeting();
+                    return;
+                }
+
                 if (!loadResult.HasRaceSession || loadResult.Reference is null)
                 {
                     ApplyEventUiState(EventWorkflowService.NoRaceSession(_eventSelectorViewModel.SelectedEvent));
@@ -882,69 +894,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void RenderRaceTrace()
     {
-        var plot = _raceTracePlot.Plot;
-        plot.Clear();
-        var traceLegendPanel = FindName("TraceLegendPanel") as WrapPanel;
-        traceLegendPanel?.Children.Clear();
-
-        plot.Title("Engineering Race Trace (Constant Reference)");
-        plot.XLabel("Lap Number");
-        plot.YLabel("Cumulative Delta to Constant Reference (s)");
-
-        var computation = RaceTraceWorkflowService.Compute(
-            laps: _currentLaps,
-            drivers: _currentDrivers,
-            raceControlMessages: _currentRaceControlMessages,
-            options: new RaceTraceComputationOptions(
-                IncludePitLaps: IncludePitLapsCheckBox.IsChecked != false,
-                IncludeScVscLaps: IncludeScVscLapsCheckBox.IsChecked != false,
-                ApplyFuelCorrection: ApplyFuelCorrectionCheckBox.IsChecked != false,
-                FuelSecondsPer10Kg: FuelSecondsPer10Kg,
-                FuelKg: FuelKg,
-                SortLegendByTeamThenNumber: LegendSortComboBox.SelectedIndex == 1),
-            traceVisibilityByDriver: _traceVisibilityByDriver);
-
-        _traceVisibilityByDriver.Clear();
-        foreach (var kvp in computation.NormalizedVisibilityByDriver)
-            _traceVisibilityByDriver[kvp.Key] = kvp.Value;
-
-        if (!computation.HasRenderableData)
-        {
-            _raceTracePlot.Refresh();
-            return;
-        }
-
-        foreach (var series in computation.Series)
-        {
-            var lineColor = RaceTraceWorkflowService.ParseScottPlotColor(series.TeamColour, series.DriverNumber);
-            AddLegendToggle(
-                series.DriverNumber,
-                series.DriverName,
-                RaceTraceWorkflowService.ParseLegendBrush(series.TeamColour, series.DriverNumber),
-                series.IsSolidLine,
-                series.IsVisible);
-
-            var displayColor = series.IsVisible ? lineColor : lineColor.MixedWith(ScottPlot.Colors.White, 0.85);
-
-            var scatter = plot.Add.Scatter(series.Xs.ToArray(), series.Ys.ToArray());
-            scatter.LineColor = displayColor;
-            scatter.LineWidth = 2;
-            scatter.LinePattern = series.IsSolidLine ? LinePattern.Solid : LinePattern.Dashed;
-            scatter.MarkerSize = 8;
-            scatter.MarkerFillColor = displayColor;
-            scatter.MarkerLineColor = displayColor;
-        }
-
-        // Future extension: add an alternative trace mode that plots absolute reference pace
-        // rather than cumulative delta-to-reference.
-
-        var baseline = plot.Add.HorizontalLine(0);
-        baseline.Text = "Constant Reference";
-        baseline.LineWidth = 1.5f;
-        baseline.LinePattern = LinePattern.Dashed;
-
-        plot.Axes.AutoScale();
-        _raceTracePlot.Refresh();
+        _hoveredDriverNumber = null;
+        RenderRaceTraceWithHoverOpacity();
     }
 
     /// <summary>
@@ -959,8 +910,53 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// Adds one interactive legend toggle that controls visibility of a driver's trace line.
     /// Right-click isolates that single driver.
     /// </summary>
-    private void AddLegendToggle(int driverNumber, string driverName, WpfBrush textBrush, bool isSolid, bool isVisible)
+    private void AddLegendToggle(int driverNumber, string driverName, string driverCode, WpfBrush textBrush, bool isSolid, bool isVisible, ScottPlot.Color lineColor)
     {
+        // Create a Grid to hold the colored box and label together
+        var grid = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition { Width = GridLength.Auto },
+                new ColumnDefinition { Width = GridLength.Auto }
+            }
+        };
+
+        // Create the colored box with driver acronym
+        var scottnColor = System.Windows.Media.Color.FromArgb(
+            lineColor.A, lineColor.R, lineColor.G, lineColor.B);
+        var coloredBox = new Border
+        {
+            Background = new WpfSolidColorBrush(scottnColor),
+            BorderBrush = new WpfSolidColorBrush(WpfColors.DarkGray),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(3),
+            Padding = new Thickness(4, 2, 4, 2),
+            Margin = new Thickness(0, 0, 6, 0),
+            Child = new TextBlock
+            {
+                Text = driverCode,
+                Foreground = new WpfSolidColorBrush(WpfColors.White),
+                FontWeight = System.Windows.FontWeights.Bold,
+                FontSize = 11,
+                TextAlignment = System.Windows.TextAlignment.Center,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Width = 28
+            }
+        };
+        Grid.SetColumn(coloredBox, 0);
+        grid.Children.Add(coloredBox);
+
+        // Create the text label
+        var textBlock = new TextBlock
+        {
+            Text = RaceTraceWorkflowService.BuildLegendLabel(driverName, isSolid),
+            Foreground = textBrush,
+            VerticalAlignment = System.Windows.VerticalAlignment.Center
+        };
+        Grid.SetColumn(textBlock, 1);
+        grid.Children.Add(textBlock);
+
         var toggle = new ToggleButton
         {
             IsChecked = isVisible,
@@ -968,11 +964,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Padding = new Thickness(8, 3, 8, 3),
             BorderThickness = new Thickness(1),
             BorderBrush = new WpfSolidColorBrush(WpfColors.LightGray),
-            Content = new TextBlock
-            {
-                Text = RaceTraceWorkflowService.BuildLegendLabel(driverName, isSolid),
-                Foreground = textBrush
-            }
+            Content = grid
+        };
+
+        toggle.MouseEnter += (_, _) =>
+        {
+            _hoveredDriverNumber = driverNumber;
+            UpdateTraceOpacityForHover();
+        };
+
+        toggle.MouseLeave += (_, _) =>
+        {
+            _hoveredDriverNumber = null;
+            UpdateTraceOpacityForHover();
         };
 
         toggle.Checked += (_, _) =>
@@ -1008,6 +1012,76 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         traceLegendPanel?.Children.Add(toggle);
     }
 
+    private void UpdateTraceOpacityForHover()
+    {
+        if (_raceTracePlot.Plot == null || _raceTracePlot.Plot.PlottableList.Count == 0)
+            return;
+
+        // For now, we'll need to re-render to apply opacity changes
+        // In a more sophisticated implementation, we could directly manipulate ScottPlot series
+        // But since we rebuild the plot each time, we'll apply opacity during the render based on hover state
+        // Store the hover state and trigger a re-render with opacity adjustments
+        RenderRaceTraceWithHoverOpacity();
+    }
+
+    private void RenderRaceTraceWithHoverOpacity()
+    {
+        var plot = _raceTracePlot.Plot;
+        plot.Clear();
+
+        plot.Title("Engineering Race Trace (Constant Reference)");
+        plot.XLabel("Lap Number");
+        plot.YLabel("Cumulative Delta to Constant Reference (s)");
+
+        var computation = RaceTraceWorkflowService.Compute(
+            laps: _currentLaps,
+            drivers: _currentDrivers,
+            raceControlMessages: _currentRaceControlMessages,
+            options: new RaceTraceComputationOptions(
+                IncludePitLaps: IncludePitLapsCheckBox.IsChecked != false,
+                IncludeScVscLaps: IncludeScVscLapsCheckBox.IsChecked != false,
+                ApplyFuelCorrection: ApplyFuelCorrectionCheckBox.IsChecked != false,
+                FuelSecondsPer10Kg: FuelSecondsPer10Kg,
+                FuelKg: FuelKg,
+                SortLegendByTeamThenNumber: LegendSortComboBox.SelectedIndex == 1),
+            traceVisibilityByDriver: _traceVisibilityByDriver);
+
+        if (!computation.HasRenderableData)
+        {
+            _raceTracePlot.Refresh();
+            return;
+        }
+
+        foreach (var series in computation.Series)
+        {
+            var lineColor = RaceTraceWorkflowService.ParseScottPlotColor(series.TeamColour, series.DriverNumber);
+            var displayColor = series.IsVisible ? lineColor : lineColor.MixedWith(ScottPlot.Colors.White, 0.85);
+
+            // Apply opacity dimming if there's a hovered driver and this isn't the hovered driver
+            if (_hoveredDriverNumber.HasValue && _hoveredDriverNumber.Value != series.DriverNumber)
+            {
+                // Dim to ~75% opacity (25% reduction)
+                displayColor = displayColor.MixedWith(ScottPlot.Colors.White, 0.25);
+            }
+
+            var scatter = plot.Add.Scatter(series.Xs.ToArray(), series.Ys.ToArray());
+            scatter.LineColor = displayColor;
+            scatter.LineWidth = 2;
+            scatter.LinePattern = series.IsSolidLine ? LinePattern.Solid : LinePattern.Dashed;
+            scatter.MarkerSize = 8;
+            scatter.MarkerFillColor = displayColor;
+            scatter.MarkerLineColor = displayColor;
+        }
+
+        var baseline = plot.Add.HorizontalLine(0);
+        baseline.Text = "Constant Reference";
+        baseline.LineWidth = 1.5f;
+        baseline.LinePattern = LinePattern.Dashed;
+
+        plot.Axes.AutoScale();
+        _raceTracePlot.Refresh();
+    }
+
     /// <summary>
     /// Applies event-selection control/display state to MainWindow controls.
     /// </summary>
@@ -1039,6 +1113,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ScanStartingGapBox.Text = string.Empty;
         ClearAllDriversResults();
         ClearSingleScanResults();
+    }
+
+    private void ClearSelectedMeeting()
+    {
+        _currentMeetingKey = null;
+        _eventSelectorViewModel.SelectedEvent = null;
+        ResetLoadedEventDataState();
+        ApplyEventUiState(EventWorkflowService.NoEventSelected());
+        RenderRaceTrace();
     }
 
     /// <summary>

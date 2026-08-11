@@ -2,7 +2,7 @@ namespace UndercutAnalyser.Domain.Prediction
 {
     /// <summary>
     /// Models the flat traffic penalty R applied to affected drivers during the pit sequence.
-    /// Traffic is an external race effect — it is not predicted, only applied when the
+    /// Traffic is an external race effect - it is not predicted, only applied when the
     /// analysing engineer decides it is likely. The penalty is added to the predicted lap
     /// time of the flagged driver on their out lap.
     /// </summary>

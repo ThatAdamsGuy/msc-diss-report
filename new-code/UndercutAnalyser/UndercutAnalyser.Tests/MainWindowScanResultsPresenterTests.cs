@@ -26,7 +26,7 @@ public sealed class MainWindowScanResultsPresenterTests
         Assert.DoesNotContain(state.FilteredRows, r => r.Result == "Marginal");
         Assert.Contains(state.FilteredRows, r => r.Result == "Behind");
         Assert.Contains(state.FilteredRows, r => r.Result.StartsWith("Error:", StringComparison.Ordinal));
-        Assert.Equal("3 shown (4 scanned) — 1 opportunity found", state.StatusText);
+        Assert.Equal("3 shown (4 scanned) - 1 opportunity found", state.StatusText);
         Assert.True(state.EnableExport);
     }
 
@@ -63,7 +63,7 @@ public sealed class MainWindowScanResultsPresenterTests
 
         Assert.Single(state.FilteredRows);
         Assert.Equal("Ahead", state.FilteredRows[0].Result);
-        Assert.Equal("2 single-driver scenarios scanned. — 1 shown, 1 opportunity found", state.StatusText);
+        Assert.Equal("2 single-driver scenarios scanned. - 1 shown, 1 opportunity found", state.StatusText);
         Assert.True(state.EnableExport);
     }
 

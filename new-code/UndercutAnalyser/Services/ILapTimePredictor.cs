@@ -18,7 +18,7 @@ namespace UndercutAnalyser.Services
 
     /// <summary>
     /// Predicts the time breakdown for a single driver lap.
-    /// Contains no race sequence logic — only the lap time equation.
+    /// Contains no race sequence logic - only the lap time equation.
     /// </summary>
     public interface ILapTimePredictor
     {

@@ -35,14 +35,14 @@ public sealed class MainWindowLogicTests
     public void BuildMainScanStatusText_UsesExpectedFormat()
     {
         var text = WorkspaceWorkflowService.BuildMainScanStatusText(shownCount: 7, scannedCount: 20, opportunityCount: 1);
-        Assert.Equal("7 shown (20 scanned) — 1 opportunity found", text);
+        Assert.Equal("7 shown (20 scanned) - 1 opportunity found", text);
     }
 
     [Fact]
     public void BuildSingleScanStatusText_UsesExpectedFormat()
     {
         var text = WorkspaceWorkflowService.BuildSingleScanStatusText("1 single-driver scenario scanned.", shownCount: 1, opportunityCount: 0);
-        Assert.Equal("1 single-driver scenario scanned. — 1 shown, 0 opportunities found", text);
+        Assert.Equal("1 single-driver scenario scanned. - 1 shown, 0 opportunities found", text);
     }
 
     [Theory]

@@ -134,6 +134,86 @@ public sealed class MainWindowEventDataLoadServiceTests
     }
 
     [Fact]
+    public async Task LoadAsync_ReturnsCancelledSession_WhenRaceSessionIsCancelled()
+    {
+        // Tests that cancelled race sessions are detected and reported before fetching lap data
+        var client = new StubClient
+        {
+            Sessions = [new EventSession { SessionKey = 300, SessionName = "Race", IsCancelled = true }],
+            // These should NOT be fetched because session is cancelled
+            Laps = [new EventLap { DriverNumber = 1, LapNumber = 1, DateStart = DateTime.UtcNow, LapDuration = 90f }],
+            Drivers = [new Driver { DriverNumber = 1, Code = "VER" }],
+            RaceControlMessages = [],
+            Stints = []
+        };
+
+        var result = await EventWorkflowService.LoadAsync(client, meetingKey: 4, fuelSecondsPer10Kg: 0.3, fuelKg: 110);
+
+        Assert.False(result.HasRaceSession);
+        Assert.True(result.IsSessionCancelled);
+        Assert.Empty(result.Laps);
+        Assert.Empty(result.Drivers);
+        Assert.Null(result.Reference);
+    }
+
+    [Fact]
+    public async Task LoadAsync_IgnoresCancelledSessions_WhenMultipleSessionsExist()
+    {
+        // Tests that cancelled race sessions are reported even if other race sessions exist
+        // (Implementation choice: report the first found race session's cancellation status)
+        var start = new DateTime(2025, 1, 15, 14, 30, 0, DateTimeKind.Utc);
+        var client = new StubClient
+        {
+            Sessions =
+            [
+                new EventSession { SessionKey = 300, SessionName = "Race", IsCancelled = true },
+                new EventSession { SessionKey = 301, SessionName = "Main Race", IsCancelled = false }
+            ],
+            Laps = [new EventLap { DriverNumber = 1, LapNumber = 1, DateStart = start, LapDuration = 90f }],
+            Drivers = [new Driver { DriverNumber = 1, Code = "VER" }],
+            RaceControlMessages = [],
+            Stints = []
+        };
+
+        var result = await EventWorkflowService.LoadAsync(client, meetingKey: 5, fuelSecondsPer10Kg: 0.3, fuelKg: 110);
+
+        // Should detect the first race session as cancelled
+        Assert.True(result.IsSessionCancelled);
+        Assert.False(result.HasRaceSession);
+        Assert.Empty(result.Laps);
+        Assert.Empty(result.Drivers);
+        Assert.Null(result.Reference);
+    }
+
+    [Fact]
+    public async Task LoadAsync_SucceedsWhenFirstRaceSessionNotCancelled()
+    {
+        // Tests successful load when the first race session found is not cancelled
+        var start = new DateTime(2025, 1, 15, 14, 30, 0, DateTimeKind.Utc);
+        var client = new StubClient
+        {
+            Sessions =
+            [
+                new EventSession { SessionKey = 300, SessionName = "Race", IsCancelled = false },
+                new EventSession { SessionKey = 301, SessionName = "Main Race", IsCancelled = true }
+            ],
+            Laps = [new EventLap { DriverNumber = 1, LapNumber = 1, DateStart = start, LapDuration = 90f }],
+            Drivers = [new Driver { DriverNumber = 1, Code = "VER" }],
+            RaceControlMessages = [],
+            Stints = []
+        };
+
+        var result = await EventWorkflowService.LoadAsync(client, meetingKey: 6, fuelSecondsPer10Kg: 0.3, fuelKg: 110);
+
+        // Should use the non-cancelled first race session
+        Assert.False(result.IsSessionCancelled);
+        Assert.True(result.HasRaceSession);
+        Assert.NotEmpty(result.Laps);
+        Assert.NotEmpty(result.Drivers);
+        Assert.NotNull(result.Reference);
+    }
+
+    [Fact]
     public async Task LoadAsync_PropagatesClientExceptions()
     {
         // Tests that exceptions from client are allowed to propagate (not swallowed)

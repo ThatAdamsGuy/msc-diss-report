@@ -76,10 +76,10 @@ public static partial class ScanWorkflowService
             TargetCompound: targetCompound,
             TargetTyreAge: targetTyreAge,
             G0: FormatSigned(g0),
-            GapAtTargetPitLapComplete: "—",
-            GapAtTargetOutLapComplete: "—",
-            GapAtBothDriversNormalLapComplete: "—",
-            DeltaGAtTargetPitLapComplete: "—",
+            GapAtTargetPitLapComplete: "-",
+            GapAtTargetOutLapComplete: "-",
+            GapAtBothDriversNormalLapComplete: "-",
+            DeltaGAtTargetPitLapComplete: "-",
             Result: $"Error: {errorMessage}");
     }
 

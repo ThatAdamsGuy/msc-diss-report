@@ -63,10 +63,10 @@ public sealed class MainWindowScanRowFactoryTests
             errorMessage: "boom");
 
         Assert.Equal("+0.456", row.G0);
-        Assert.Equal("—", row.GapAtTargetPitLapComplete);
-        Assert.Equal("—", row.GapAtTargetOutLapComplete);
-        Assert.Equal("—", row.GapAtBothDriversNormalLapComplete);
-        Assert.Equal("—", row.DeltaGAtTargetPitLapComplete);
+        Assert.Equal("-", row.GapAtTargetPitLapComplete);
+        Assert.Equal("-", row.GapAtTargetOutLapComplete);
+        Assert.Equal("-", row.GapAtBothDriversNormalLapComplete);
+        Assert.Equal("-", row.DeltaGAtTargetPitLapComplete);
         Assert.Equal("Error: boom", row.Result);
     }
 }

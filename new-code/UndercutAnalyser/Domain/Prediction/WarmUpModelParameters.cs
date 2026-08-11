@@ -2,7 +2,7 @@ namespace UndercutAnalyser.Domain.Prediction
 {
     /// <summary>
     /// Models the tyre warm-up penalty applied to the first lap after a pit stop (the out lap).
-    /// This is a configurable flat penalty that does not decay — subsequent laps are unaffected.
+    /// This is a configurable flat penalty that does not decay - subsequent laps are unaffected.
     /// Non-linear warm-up profiles are a future extension.
     /// </summary>
     public sealed record WarmUpModelParameters(double OutLapPenaltySeconds)

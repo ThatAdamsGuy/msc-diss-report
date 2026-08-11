@@ -8,6 +8,21 @@ namespace UndercutAnalyser.Services;
 public static partial class EventWorkflowService
 {
     /// <summary>
+    /// State shown when no event is currently selected.
+    /// </summary>
+    public static MainWindowEventUiState NoEventSelected()
+    {
+        return new MainWindowEventUiState(
+            DisplayText: string.Empty,
+            TooltipText: string.Empty,
+            EnableRawData: false,
+            EnablePredictionScan: false,
+            EnableScanAllDrivers: false,
+            EnableScanSingleDriver: false,
+            EnableRaceTrace: false);
+    }
+
+    /// <summary>
     /// State shown immediately after event selection, before data loading begins.
     /// </summary>
     public static MainWindowEventUiState Selected(EventMeeting selectedEvent)
@@ -63,6 +78,25 @@ public static partial class EventWorkflowService
         return new MainWindowEventUiState(
             DisplayText: BuildDisplayText(selectedEvent),
             TooltipText: "No race session found",
+            EnableRawData: false,
+            EnablePredictionScan: false,
+            EnableScanAllDrivers: false,
+            EnableScanSingleDriver: false,
+            EnableRaceTrace: false);
+    }
+
+    /// <summary>
+    /// State shown when the race session has been cancelled.
+    /// </summary>
+    public static MainWindowEventUiState SessionCancelled(EventMeeting? selectedEvent)
+    {
+        var displayText = selectedEvent is null
+            ? string.Empty
+            : BuildDisplayText(selectedEvent);
+
+        return new MainWindowEventUiState(
+            DisplayText: displayText,
+            TooltipText: "Race session cancelled",
             EnableRawData: false,
             EnablePredictionScan: false,
             EnableScanAllDrivers: false,

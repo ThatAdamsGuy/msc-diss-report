@@ -31,8 +31,8 @@ public sealed class MainWindowScanExecutorTests
 
         var row = Assert.Single(rows);
         Assert.Equal("Error: predict boom", row.Result);
-        Assert.Equal("—", row.GapAtTargetPitLapComplete);
-        Assert.Equal("—", row.DeltaGAtTargetPitLapComplete);
+        Assert.Equal("-", row.GapAtTargetPitLapComplete);
+        Assert.Equal("-", row.DeltaGAtTargetPitLapComplete);
     }
 
     [Fact]

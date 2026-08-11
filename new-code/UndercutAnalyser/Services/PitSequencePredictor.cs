@@ -21,9 +21,9 @@ namespace UndercutAnalyser.Services
     /// The three comparison gaps are calculated using:
     ///   G(n) = G0 + attackerElapsed − targetElapsed
     ///
-    ///   GapAtTargetPitLapCompleteSeconds         — TargetPitLapComplete: end of lap n+r
-    ///   GapAtTargetOutLapCompleteSeconds         — TargetOutLapComplete: end of lap n+r+1
-    ///   GapAtBothDriversNormalLapCompleteSeconds — BothDriversNormalLapComplete: end of lap n+r+2
+    ///   GapAtTargetPitLapCompleteSeconds         - TargetPitLapComplete: end of lap n+r
+    ///   GapAtTargetOutLapCompleteSeconds         - TargetOutLapComplete: end of lap n+r+1
+    ///   GapAtBothDriversNormalLapCompleteSeconds - BothDriversNormalLapComplete: end of lap n+r+2
     ///
     /// Sign convention: negative = attacking driver ahead.
     /// </summary>
@@ -219,22 +219,22 @@ namespace UndercutAnalyser.Services
 
             if (req.Attacker.ReferencePaceSeconds <= 0)
             {
-                warnings.Add($"Attacker reference pace is {req.Attacker.ReferencePaceSeconds:F3} s — must be positive.");
+                warnings.Add($"Attacker reference pace is {req.Attacker.ReferencePaceSeconds:F3} s - must be positive.");
             }
 
             if (req.Target.ReferencePaceSeconds <= 0)
             {
-                warnings.Add($"Target reference pace is {req.Target.ReferencePaceSeconds:F3} s — must be positive.");
+                warnings.Add($"Target reference pace is {req.Target.ReferencePaceSeconds:F3} s - must be positive.");
             }
 
             if (req.ModelParameters.PitLaneLossSeconds < 0)
             {
-                warnings.Add("Pit lane loss is negative — this is unusual and likely a configuration error.");
+                warnings.Add("Pit lane loss is negative - this is unusual and likely a configuration error.");
             }
 
             if (req.ModelParameters.MarginalThresholdSeconds < 0)
             {
-                warnings.Add("Marginal threshold is negative — clamped to 0.");
+                warnings.Add("Marginal threshold is negative - clamped to 0.");
             }
 
             if (!req.AttackerReplacementTyre.Compound.IsDryCompound())
@@ -249,22 +249,22 @@ namespace UndercutAnalyser.Services
 
             if (req.Attacker.CurrentTyreAgeLaps < 0)
             {
-                warnings.Add("Attacker current tyre age is negative — clamped to 0.");
+                warnings.Add("Attacker current tyre age is negative - clamped to 0.");
             }
 
             if (req.Target.CurrentTyreAgeLaps < 0)
             {
-                warnings.Add("Target current tyre age is negative — clamped to 0.");
+                warnings.Add("Target current tyre age is negative - clamped to 0.");
             }
 
             if (req.AttackerReplacementTyre.InitialAgeLaps < 0)
             {
-                warnings.Add("Attacker replacement tyre age is negative — clamped to 0.");
+                warnings.Add("Attacker replacement tyre age is negative - clamped to 0.");
             }
 
             if (req.TargetReplacementTyre.InitialAgeLaps < 0)
             {
-                warnings.Add("Target replacement tyre age is negative — clamped to 0.");
+                warnings.Add("Target replacement tyre age is negative - clamped to 0.");
             }
         }
     }

@@ -29,10 +29,10 @@ namespace UndercutAnalyser.Domain.Prediction
     ///   Positive gap = attacking driver is behind the target.
     ///
     /// Absolute predicted gaps (G(n) = G0 + T_A(n) - T_T(n)):
-    ///   GapAtTargetPitLapCompleteSeconds         — PRIMARY: end of target pit lap (n + response delay).
+    ///   GapAtTargetPitLapCompleteSeconds         - PRIMARY: end of target pit lap (n + response delay).
     ///     This is the undercut success point used for classification.
-    ///   GapAtTargetOutLapCompleteSeconds         — SECONDARY: end of target out lap.
-    ///   GapAtBothDriversNormalLapCompleteSeconds — TERTIARY: following normal lap for both drivers.
+    ///   GapAtTargetOutLapCompleteSeconds         - SECONDARY: end of target out lap.
+    ///   GapAtBothDriversNormalLapCompleteSeconds - TERTIARY: following normal lap for both drivers.
     ///
     /// Gap change (ΔG(n) = G(n) - G0 = T_A(n) - T_T(n)):
     ///   DeltaGAtTargetPitLapCompleteSeconds
@@ -40,7 +40,7 @@ namespace UndercutAnalyser.Domain.Prediction
     ///   DeltaGAtBothDriversNormalLapCompleteSeconds
     ///   Negative = attacking driver gained time on the target driver (regardless of final position).
     ///   Positive = attacking driver lost time to the target driver.
-    ///   This is derived purely from the predicted elapsed times — no Stay Out scenario required.
+    ///   This is derived purely from the predicted elapsed times - no Stay Out scenario required.
     ///
     /// Classification is derived from GapAtTargetPitLapCompleteSeconds vs MarginalThresholdSeconds.
     /// </summary>

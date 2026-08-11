@@ -40,7 +40,7 @@ namespace UndercutAnalyser.Infrastructure
                     if (DateTime.TryParse(s, out dt))
                         return dt;
 
-                    // Could not parse — return null rather than throwing
+                    // Could not parse - return null rather than throwing
                     return null;
                 }
 

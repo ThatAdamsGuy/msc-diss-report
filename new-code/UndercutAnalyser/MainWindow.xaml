@@ -205,56 +205,120 @@
                 <TabItem Header="Parameters">
                     <Grid Margin="6">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="8"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="8"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="8"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
 
-                        <GroupBox Grid.Row="0" Grid.Column="0" Header="Fuel">
-                            <StackPanel Margin="6,4,6,6">
-                                <TextBlock Text="Fuel seconds per 10kg"/>
-                                <TextBox x:Name="FuelSecondsPer10KgBox" Width="110" Margin="0,3,0,8" TextChanged="FuelSettings_TextChanged"/>
-                                <TextBlock Text="Fuel kg"/>
-                                <TextBox x:Name="FuelKgBox" Width="110" Margin="0,3,0,0" TextChanged="FuelSettings_TextChanged"/>
+                        <!-- Parameters Section -->
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="Prediction Parameters" FontWeight="SemiBold" Margin="0,0,0,8"/>
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <GroupBox Grid.Row="0" Grid.Column="0" Header="Fuel">
+                                    <StackPanel Margin="6,4,6,6">
+                                        <TextBlock Text="Fuel seconds per 10kg"/>
+                                        <TextBox x:Name="FuelSecondsPer10KgBox" Width="110" Margin="0,3,0,8" TextChanged="FuelSettings_TextChanged"/>
+                                        <TextBlock Text="Fuel kg"/>
+                                        <TextBox x:Name="FuelKgBox" Width="110" Margin="0,3,0,0" TextChanged="FuelSettings_TextChanged"/>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Grid.Row="0" Grid.Column="2" Header="Scenario">
+                                    <StackPanel Margin="6,4,6,6">
+                                        <TextBlock Text="Target response (laps)"/>
+                                        <TextBox x:Name="TargetResponseBox" Width="110" Margin="0,3,0,8" TextChanged="ScenarioSettings_TextChanged"/>
+                                        <TextBlock Text="Marginal threshold (s)"/>
+                                        <TextBox x:Name="MarginalThresholdBox" Width="110" Margin="0,3,0,0" TextChanged="ScenarioSettings_TextChanged"/>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Grid.Row="0" Grid.Column="4" Header="Traffic">
+                                    <StackPanel Margin="6,4,6,6">
+                                        <TextBlock Text="Traffic penalty (s)"/>
+                                        <TextBox x:Name="TrafficPenaltyBox" Width="110" Margin="0,3,0,8" TextChanged="TrafficSettings_TextChanged"/>
+                                        <CheckBox x:Name="ApplyAttackerTrafficCheckBox" Content="Apply to attacker" Margin="0,0,0,4" Checked="TrafficFlags_Changed" Unchecked="TrafficFlags_Changed"/>
+                                        <CheckBox x:Name="ApplyTargetTrafficCheckBox" Content="Apply to target" Checked="TrafficFlags_Changed" Unchecked="TrafficFlags_Changed"/>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Grid.Row="0" Grid.Column="6" Header="Pit Stop">
+                                    <StackPanel Margin="6,4,6,6">
+                                        <TextBlock Text="Pit lane loss (s)"/>
+                                        <TextBox x:Name="PitLaneLossBox" Width="110" Margin="0,3,0,0" TextChanged="PitStopSettings_TextChanged"/>
+                                    </StackPanel>
+                                </GroupBox>
+                            </Grid>
+
+                            <Button x:Name="ResetParamsButton" Content="Reset to defaults" Width="140" Margin="0,8,0,16"/>
+
+                            <Separator Margin="0,0,0,8"/>
+
+                            <!-- Results Section -->
+                            <TextBlock Text="Results" FontWeight="SemiBold" Margin="0,0,0,8"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Show:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <CheckBox x:Name="MainScanShowAheadCheckBox" Content="Ahead" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="MainScanShowMarginalCheckBox" Content="Marginal" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="MainScanShowBehindCheckBox" Content="Behind" IsChecked="True" VerticalAlignment="Center"/>
                             </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Grid.Row="0" Grid.Column="2" Header="Scenario">
-                            <StackPanel Margin="6,4,6,6">
-                                <TextBlock Text="Target response (laps)"/>
-                                <TextBox x:Name="TargetResponseBox" Width="110" Margin="0,3,0,8" TextChanged="ScenarioSettings_TextChanged"/>
-                                <TextBlock Text="Marginal threshold (s)"/>
-                                <TextBox x:Name="MarginalThresholdBox" Width="110" Margin="0,3,0,0" TextChanged="ScenarioSettings_TextChanged"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Grid.Row="0" Grid.Column="4" Header="Traffic">
-                            <StackPanel Margin="6,4,6,6">
-                                <TextBlock Text="Traffic penalty (s)"/>
-                                <TextBox x:Name="TrafficPenaltyBox" Width="110" Margin="0,3,0,8" TextChanged="TrafficSettings_TextChanged"/>
-                                <CheckBox x:Name="ApplyAttackerTrafficCheckBox" Content="Apply to attacker" Margin="0,0,0,4" Checked="TrafficFlags_Changed" Unchecked="TrafficFlags_Changed"/>
-                                <CheckBox x:Name="ApplyTargetTrafficCheckBox" Content="Apply to target" Checked="TrafficFlags_Changed" Unchecked="TrafficFlags_Changed"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Grid.Row="0" Grid.Column="6" Header="Pit Stop">
-                            <StackPanel Margin="6,4,6,6">
-                                <TextBlock Text="Pit lane loss (s)"/>
-                                <TextBox x:Name="PitLaneLossBox" Width="110" Margin="0,3,0,0" TextChanged="PitStopSettings_TextChanged"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="7" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,8,0,0">
-                            <Button x:Name="ResetParamsButton" Content="Reset to defaults" Width="140"/>
                         </StackPanel>
+
+                        <!-- Results Grid with Scrolling -->
+                        <DataGrid x:Name="MainScanSingleGrid"
+                                  Grid.Row="1"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserSortColumns="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderBrush="#D0D0D0" BorderThickness="1"
+                                  Margin="0,0,0,8">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Result}" Value="Ahead">
+                                            <Setter Property="Background" Value="#DFF6DD"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Result}" Value="Marginal">
+                                            <Setter Property="Background" Value="#FFF4D6"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Result}" Value="Behind">
+                                            <Setter Property="Background" Value="#FBE4E6"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Lap" Binding="{Binding DecisionLap}" Width="45"/>
+                                <DataGridTextColumn Header="Attacking" Binding="{Binding Attacker}" Width="70"/>
+                                <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="70"/>
+                                <DataGridTextColumn Header="Att. tyre" Binding="{Binding AttackerCompound}" Width="70"/>
+                                <DataGridTextColumn Header="Att. age" Binding="{Binding AttackerTyreAge}" Width="55"/>
+                                <DataGridTextColumn Header="Tar. tyre" Binding="{Binding TargetCompound}" Width="70"/>
+                                <DataGridTextColumn Header="Tar. age" Binding="{Binding TargetTyreAge}" Width="55"/>
+                                <DataGridTextColumn Header="G₀" Binding="{Binding G0}" Width="70"/>
+                                <DataGridTextColumn Header="Gap@PitLap" Binding="{Binding GapAtTargetPitLapComplete}" Width="95"/>
+                                <DataGridTextColumn Header="ΔG@PitLap" Binding="{Binding DeltaGAtTargetPitLapComplete}" Width="95"/>
+                                <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="90"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <TextBlock x:Name="MainScanSingleStatusText" Grid.Row="1" Foreground="#666666" FontSize="11" VerticalAlignment="Bottom"/>
                     </Grid>
                 </TabItem>
 
@@ -332,84 +396,20 @@
             </TabControl>
         </Border>
 
-        <!-- Main workspace tabs at graph area -->
+        <!-- Main workspace area: Race Trace Graph -->
         <Border Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="#E0E0E0" BorderThickness="1" Padding="8" Margin="0">
-            <TabControl>
-                <TabItem Header="Race Trace">
-                    <Grid Margin="4">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
+            <Grid Margin="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-                        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,6">
-                            <WrapPanel x:Name="TraceLegendPanel" Orientation="Horizontal" />
-                        </ScrollViewer>
+                <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,6">
+                    <WrapPanel x:Name="TraceLegendPanel" Orientation="Horizontal" />
+                </ScrollViewer>
 
-                        <Grid Grid.Row="1" x:Name="RaceTraceHost" />
-                    </Grid>
-                </TabItem>
-
-                <TabItem Header="Results">
-                    <Grid Margin="4">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                            <TextBlock Text="Show:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <CheckBox x:Name="MainScanShowAheadCheckBox" Content="Ahead" IsChecked="True" Margin="0,0,10,0"/>
-                            <CheckBox x:Name="MainScanShowMarginalCheckBox" Content="Marginal" IsChecked="True" Margin="0,0,10,0"/>
-                            <CheckBox x:Name="MainScanShowBehindCheckBox" Content="Behind" IsChecked="True"/>
-                        </StackPanel>
-
-                        <DataGrid x:Name="MainScanSingleGrid"
-                                  Grid.Row="1"
-                                  AutoGenerateColumns="False"
-                                  IsReadOnly="True"
-                                  CanUserAddRows="False"
-                                  CanUserSortColumns="True"
-                                  HeadersVisibility="Column"
-                                  GridLinesVisibility="Horizontal"
-                                  BorderBrush="#D0D0D0" BorderThickness="1">
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Result}" Value="Ahead">
-                                            <Setter Property="Background" Value="#DFF6DD"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Result}" Value="Marginal">
-                                            <Setter Property="Background" Value="#FFF4D6"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Result}" Value="Behind">
-                                            <Setter Property="Background" Value="#FBE4E6"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Lap" Binding="{Binding DecisionLap}" Width="45"/>
-                                <DataGridTextColumn Header="Attacking" Binding="{Binding Attacker}" Width="70"/>
-                                <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="70"/>
-                                <DataGridTextColumn Header="Att. tyre" Binding="{Binding AttackerCompound}" Width="70"/>
-                                <DataGridTextColumn Header="Att. age" Binding="{Binding AttackerTyreAge}" Width="55"/>
-                                <DataGridTextColumn Header="Tar. tyre" Binding="{Binding TargetCompound}" Width="70"/>
-                                <DataGridTextColumn Header="Tar. age" Binding="{Binding TargetTyreAge}" Width="55"/>
-                                <DataGridTextColumn Header="G₀" Binding="{Binding G0}" Width="70"/>
-                                <DataGridTextColumn Header="Gap@PitLap" Binding="{Binding GapAtTargetPitLapComplete}" Width="95"/>
-                                <DataGridTextColumn Header="ΔG@PitLap" Binding="{Binding DeltaGAtTargetPitLapComplete}" Width="95"/>
-                                <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="90"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
-                            <TextBlock x:Name="MainScanSingleStatusText" Foreground="#666666" FontSize="11" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Grid>
-                </TabItem>
-            </TabControl>
+                <Grid Grid.Row="1" x:Name="RaceTraceHost" />
+            </Grid>
         </Border>
     </Grid>
 </Window>

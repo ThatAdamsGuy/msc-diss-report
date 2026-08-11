@@ -42,7 +42,7 @@ public static partial class WorkspaceWorkflowService
     /// </summary>
     public static string BuildMainScanStatusText(int shownCount, int scannedCount, int opportunityCount)
     {
-        return $"{shownCount} shown ({scannedCount} scanned) — {opportunityCount} opportunit{(opportunityCount == 1 ? "y" : "ies")} found";
+        return $"{shownCount} shown ({scannedCount} scanned) - {opportunityCount} opportunit{(opportunityCount == 1 ? "y" : "ies")} found";
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public static partial class WorkspaceWorkflowService
     /// </summary>
     public static string BuildSingleScanStatusText(string summaryPrefix, int shownCount, int opportunityCount)
     {
-        return $"{summaryPrefix} — {shownCount} shown, {opportunityCount} opportunit{(opportunityCount == 1 ? "y" : "ies")} found";
+        return $"{summaryPrefix} - {shownCount} shown, {opportunityCount} opportunit{(opportunityCount == 1 ? "y" : "ies")} found";
     }
 
     /// <summary>
