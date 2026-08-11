@@ -381,7 +381,12 @@ public sealed class PitSequencePredictorTests
                 [TyreCompound.Medium] = 0.07,
                 [TyreCompound.Hard] = 0.04
             },
-            WarmUp: new WarmUpModelParameters(OutLapPenaltySeconds: 1.2),
+            WarmUpPenaltiesSeconds: new Dictionary<TyreCompound, double>
+            {
+                [TyreCompound.Soft] = 1.2,
+                [TyreCompound.Medium] = 1.2,
+                [TyreCompound.Hard] = 1.2
+            },
             PitLaneLossSeconds: pitLoss,
             MarginalThresholdSeconds: marginalThreshold,
             Traffic: new TrafficModelParameters(

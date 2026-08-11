@@ -99,7 +99,12 @@ public sealed class MainWindowSingleScanSimulationServiceTests
                     [TyreCompound.Medium] = 0.07,
                     [TyreCompound.Hard] = 0.04
                 },
-                new WarmUpModelParameters(0.3),
+                new Dictionary<TyreCompound, double>
+                {
+                    [TyreCompound.Soft] = 0.3,
+                    [TyreCompound.Medium] = 0.3,
+                    [TyreCompound.Hard] = 0.3
+                },
                 22,
                 0.25,
                 new TrafficModelParameters(false, false, 0.3)));

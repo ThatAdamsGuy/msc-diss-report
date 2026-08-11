@@ -247,8 +247,6 @@
 
                         <GroupBox Grid.Row="0" Grid.Column="6" Header="Pit Stop">
                             <StackPanel Margin="6,4,6,6">
-                                <TextBlock Text="Warm-up penalty (s)"/>
-                                <TextBox x:Name="WarmUpPenaltyBox" Width="110" Margin="0,3,0,8" TextChanged="PitStopSettings_TextChanged"/>
                                 <TextBlock Text="Pit lane loss (s)"/>
                                 <TextBox x:Name="PitLaneLossBox" Width="110" Margin="0,3,0,0" TextChanged="PitStopSettings_TextChanged"/>
                             </StackPanel>
@@ -266,6 +264,7 @@
                             <DataGridTextColumn Header="Compound" Binding="{Binding Compound}" IsReadOnly="True" Width="120"/>
                             <DataGridTextColumn Header="Pace" Binding="{Binding PaceOffset, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
                             <DataGridTextColumn Header="Deg" Binding="{Binding DegradationRate, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridTextColumn Header="Warmup" Binding="{Binding WarmUpPenalty, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
                             <DataGridTextColumn Header="Life Min" Binding="{Binding MinLaps, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
                             <DataGridTextColumn Header="Life Max" Binding="{Binding MaxLaps, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
                         </DataGrid.Columns>

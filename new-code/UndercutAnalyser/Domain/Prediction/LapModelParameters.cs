@@ -19,7 +19,7 @@ namespace UndercutAnalyser.Domain.Prediction
     public sealed record LapModelParameters(
         IReadOnlyDictionary<TyreCompound, double> CompoundOffsetsSeconds,
         IReadOnlyDictionary<TyreCompound, double> DegradationRatesSecondsPerLap,
-        WarmUpModelParameters WarmUp,
+        IReadOnlyDictionary<TyreCompound, double> WarmUpPenaltiesSeconds,
         double PitLaneLossSeconds,
         double MarginalThresholdSeconds,
         TrafficModelParameters Traffic)
@@ -42,7 +42,12 @@ namespace UndercutAnalyser.Domain.Prediction
                 [TyreCompound.Medium] = 0.07,
                 [TyreCompound.Hard]   = 0.04
             },
-            WarmUp: WarmUpModelParameters.Default(),
+            WarmUpPenaltiesSeconds: new Dictionary<TyreCompound, double>
+            {
+                [TyreCompound.Soft]   = 0.3,
+                [TyreCompound.Medium] = 0.3,
+                [TyreCompound.Hard]   = 0.3
+            },
             PitLaneLossSeconds: 22.0,
             MarginalThresholdSeconds: 0.25,
             Traffic: new TrafficModelParameters(
@@ -63,5 +68,12 @@ namespace UndercutAnalyser.Domain.Prediction
         /// </summary>
         public double GetDegradationRate(TyreCompound compound) =>
             DegradationRatesSecondsPerLap.TryGetValue(compound, out var v) ? v : 0.0;
+
+        /// <summary>
+        /// Returns the warm-up penalty (seconds) for out-lap on the given compound.
+        /// Returns 0.0 if the compound is not in the dictionary.
+        /// </summary>
+        public double GetWarmUpPenalty(TyreCompound compound) =>
+            WarmUpPenaltiesSeconds.TryGetValue(compound, out var v) ? v : 0.0;
     }
 }

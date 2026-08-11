@@ -41,7 +41,7 @@ namespace UndercutAnalyser.Services
             var degradation = degradationRate * input.TyreAgeAtStart;
 
             // W(i) — warm-up penalty on the out lap only
-            var warmUp = input.IsOutLap ? p.WarmUp.OutLapPenaltySeconds : 0.0;
+            var warmUp = input.IsOutLap ? p.GetWarmUpPenalty(input.Compound) : 0.0;
 
             // R(i) — traffic penalty on the out lap when flagged
             var traffic = (input.IsOutLap && input.ApplyTrafficPenalty)

@@ -11,7 +11,6 @@ public sealed class MainWindowModelParameterBuilderServiceTests
     {
         var result = WorkspaceWorkflowService.Build(
             tyreParameterRows: [],
-            warmUpPenalty: 0.42,
             pitLaneLoss: 21.3,
             marginalThreshold: 0.31,
             applyAttackerTraffic: true,
@@ -26,7 +25,9 @@ public sealed class MainWindowModelParameterBuilderServiceTests
         Assert.Equal(0.07, result.GetDegradationRate(TyreCompound.Medium), 10);
         Assert.Equal(0.04, result.GetDegradationRate(TyreCompound.Hard), 10);
 
-        Assert.Equal(0.42, result.WarmUp.OutLapPenaltySeconds, 10);
+        Assert.Equal(0.3, result.GetWarmUpPenalty(TyreCompound.Soft), 10);
+        Assert.Equal(0.3, result.GetWarmUpPenalty(TyreCompound.Medium), 10);
+        Assert.Equal(0.3, result.GetWarmUpPenalty(TyreCompound.Hard), 10);
         Assert.Equal(21.3, result.PitLaneLossSeconds, 10);
         Assert.Equal(0.31, result.MarginalThresholdSeconds, 10);
         Assert.True(result.Traffic.ApplyToAttacker);
@@ -39,15 +40,14 @@ public sealed class MainWindowModelParameterBuilderServiceTests
     {
         var rows = new List<TyreParameterRow>
         {
-            new("SOFT", 0.23, 0.19, isEditable: false),
-            new("MEDIUM", 0.34, 0.12, isEditable: true),
-            new("HARD", 0.45, 0.09, isEditable: true),
-            new("C5", 0.77, 0.66, isEditable: true)
+            new("SOFT", 0.23, 0.19, 0.25, isEditable: false),
+            new("MEDIUM", 0.34, 0.12, 0.35, isEditable: true),
+            new("HARD", 0.45, 0.09, 0.40, isEditable: true),
+            new("C5", 0.77, 0.66, 0.28, isEditable: true)
         };
 
         var result = WorkspaceWorkflowService.Build(
             tyreParameterRows: rows,
-            warmUpPenalty: 0.3,
             pitLaneLoss: 22.0,
             marginalThreshold: 0.25,
             applyAttackerTraffic: false,
@@ -62,7 +62,12 @@ public sealed class MainWindowModelParameterBuilderServiceTests
         Assert.Equal(0.12, result.GetDegradationRate(TyreCompound.Medium), 10);
         Assert.Equal(0.09, result.GetDegradationRate(TyreCompound.Hard), 10);
 
+        Assert.Equal(0.25, result.GetWarmUpPenalty(TyreCompound.Soft), 10);
+        Assert.Equal(0.35, result.GetWarmUpPenalty(TyreCompound.Medium), 10);
+        Assert.Equal(0.40, result.GetWarmUpPenalty(TyreCompound.Hard), 10);
+
         Assert.Equal(0.77, result.GetCompoundOffset(TyreCompound.Unknown), 10);
         Assert.Equal(0.66, result.GetDegradationRate(TyreCompound.Unknown), 10);
+        Assert.Equal(0.28, result.GetWarmUpPenalty(TyreCompound.Unknown), 10);
     }
 }

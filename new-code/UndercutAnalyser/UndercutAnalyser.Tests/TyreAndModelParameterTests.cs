@@ -89,7 +89,9 @@ public sealed class TyreAndModelParameterTests
         Assert.Equal(0.07, model.GetDegradationRate(TyreCompound.Medium), 10);
         Assert.Equal(0.04, model.GetDegradationRate(TyreCompound.Hard), 10);
 
-        Assert.Equal(0.3, model.WarmUp.OutLapPenaltySeconds, 10);
+        Assert.Equal(0.3, model.GetWarmUpPenalty(TyreCompound.Soft), 10);
+        Assert.Equal(0.3, model.GetWarmUpPenalty(TyreCompound.Medium), 10);
+        Assert.Equal(0.3, model.GetWarmUpPenalty(TyreCompound.Hard), 10);
         Assert.Equal(22.0, model.PitLaneLossSeconds, 10);
         Assert.Equal(0.25, model.MarginalThresholdSeconds, 10);
 
@@ -110,7 +112,10 @@ public sealed class TyreAndModelParameterTests
             {
                 [TyreCompound.Soft] = 0.2
             },
-            WarmUp: WarmUpModelParameters.None(),
+            WarmUpPenaltiesSeconds: new Dictionary<TyreCompound, double>
+            {
+                [TyreCompound.Soft] = 0.3
+            },
             PitLaneLossSeconds: 20.0,
             MarginalThresholdSeconds: 0.3,
             Traffic: TrafficModelParameters.None());
@@ -131,7 +136,10 @@ public sealed class TyreAndModelParameterTests
             {
                 [TyreCompound.Soft] = 0.2
             },
-            WarmUp: WarmUpModelParameters.None(),
+            WarmUpPenaltiesSeconds: new Dictionary<TyreCompound, double>
+            {
+                [TyreCompound.Soft] = 0.3
+            },
             PitLaneLossSeconds: 20.0,
             MarginalThresholdSeconds: 0.3,
             Traffic: TrafficModelParameters.None());
@@ -152,7 +160,10 @@ public sealed class TyreAndModelParameterTests
             {
                 [TyreCompound.Soft] = -0.05
             },
-            WarmUp: WarmUpModelParameters.None(),
+            WarmUpPenaltiesSeconds: new Dictionary<TyreCompound, double>
+            {
+                [TyreCompound.Soft] = 0.3
+            },
             PitLaneLossSeconds: 20.0,
             MarginalThresholdSeconds: 0.3,
             Traffic: TrafficModelParameters.None());

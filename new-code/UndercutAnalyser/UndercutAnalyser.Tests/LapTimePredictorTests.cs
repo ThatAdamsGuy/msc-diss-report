@@ -272,7 +272,12 @@ public sealed class LapTimePredictorTests
                 [TyreCompound.Medium] = mediumDeg,
                 [TyreCompound.Hard] = hardDeg
             },
-            WarmUp: new WarmUpModelParameters(warmUpPenalty),
+            WarmUpPenaltiesSeconds: new Dictionary<TyreCompound, double>
+            {
+                [TyreCompound.Soft] = warmUpPenalty,
+                [TyreCompound.Medium] = warmUpPenalty,
+                [TyreCompound.Hard] = warmUpPenalty
+            },
             PitLaneLossSeconds: pitLoss,
             MarginalThresholdSeconds: 0.25,
             Traffic: new TrafficModelParameters(

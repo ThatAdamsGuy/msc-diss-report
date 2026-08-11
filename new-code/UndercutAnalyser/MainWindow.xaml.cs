@@ -35,9 +35,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly Dictionary<int, bool> _traceVisibilityByDriver = new();
     private List<TyreParameterRow> _tyreParameterRows =
     [
-        new TyreParameterRow("Soft",   0.0, 0.10, isEditable: false, isDegradationEditable: true),
-        new TyreParameterRow("Medium", 0.1, 0.07, isEditable: true,  isDegradationEditable: true),
-        new TyreParameterRow("Hard",   0.2, 0.04, isEditable: true,  isDegradationEditable: true)
+        new TyreParameterRow("Soft",   0.0, 0.10, 0.3, isEditable: false, isDegradationEditable: true),
+        new TyreParameterRow("Medium", 0.1, 0.07, 0.3, isEditable: true,  isDegradationEditable: true),
+        new TyreParameterRow("Hard",   0.2, 0.04, 0.3, isEditable: true,  isDegradationEditable: true)
     ];
     private double _fuelSecondsPer10Kg = 0.3;
     private double _fuelKg = 110;
@@ -46,7 +46,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private double _trafficPenalty = 0.3;
     private bool _applyAttackerTraffic;
     private bool _applyTargetTraffic;
-    private double _warmUpPenalty = 0.3;
     private double _pitLaneLoss = 22.0;
     private bool _suppressMainSettingsHandlers;
     private bool _suppressScanSelectionHandlers;
@@ -147,14 +146,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Updates pit-stop model settings (warm-up penalty and pit-lane loss) from text inputs.
+    /// Updates pit-stop model settings from text inputs.
     /// </summary>
     private void PitStopSettings_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_suppressMainSettingsHandlers) return;
-
-        if (TryParseDouble(WarmUpPenaltyBox.Text, out var w))
-            _warmUpPenalty = w;
 
         if (TryParseDouble(PitLaneLossBox.Text, out var p))
             _pitLaneLoss = p;
@@ -233,7 +229,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             TrafficPenaltyBox.Text = _trafficPenalty.ToString("F1", CultureInfo.InvariantCulture);
             ApplyAttackerTrafficCheckBox.IsChecked = _applyAttackerTraffic;
             ApplyTargetTrafficCheckBox.IsChecked = _applyTargetTraffic;
-            WarmUpPenaltyBox.Text = _warmUpPenalty.ToString("F1", CultureInfo.InvariantCulture);
             PitLaneLossBox.Text = _pitLaneLoss.ToString("F1", CultureInfo.InvariantCulture);
         }
         finally
@@ -722,7 +717,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         return WorkspaceWorkflowService.Build(
             tyreParameterRows: _tyreParameterRows,
-            warmUpPenalty: _warmUpPenalty,
             pitLaneLoss: _pitLaneLoss,
             marginalThreshold: _marginalThreshold,
             applyAttackerTraffic: _applyAttackerTraffic,

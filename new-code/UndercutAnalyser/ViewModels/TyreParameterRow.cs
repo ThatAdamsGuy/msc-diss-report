@@ -11,19 +11,21 @@ namespace UndercutAnalyser.ViewModels
     {
         private double _paceOffset;
         private double _degradationRate;
+        private double _warmUpPenalty;
         private string _minLaps = string.Empty;
         private string _maxLaps = string.Empty;
 
         /// <summary>
         /// Creates one compound parameter row with editability flags.
         /// </summary>
-        public TyreParameterRow(string compound, double paceOffset, double degradationRate, bool isEditable, bool isDegradationEditable = true)
+        public TyreParameterRow(string compound, double paceOffset, double degradationRate, double warmUpPenalty, bool isEditable, bool isDegradationEditable = true)
         {
             Compound = compound;
             IsEditable = isEditable;
             IsDegradationEditable = isDegradationEditable;
             PaceOffset = paceOffset;
             DegradationRate = degradationRate;
+            WarmUpPenalty = warmUpPenalty;
         }
 
         public string Compound { get; }
@@ -46,6 +48,12 @@ namespace UndercutAnalyser.ViewModels
             set => SetField(ref _degradationRate, Math.Round(value, 2));
         }
 
+        public double WarmUpPenalty
+        {
+            get => _warmUpPenalty;
+            set => SetField(ref _warmUpPenalty, Math.Round(value, 2));
+        }
+
         public string MinLaps
         {
             get => _minLaps;
@@ -63,7 +71,7 @@ namespace UndercutAnalyser.ViewModels
         /// </summary>
         public TyreParameterRow Clone()
         {
-            return new TyreParameterRow(Compound, PaceOffset, DegradationRate, IsEditable, IsDegradationEditable)
+            return new TyreParameterRow(Compound, PaceOffset, DegradationRate, WarmUpPenalty, IsEditable, IsDegradationEditable)
             {
                 MinLaps = MinLaps,
                 MaxLaps = MaxLaps

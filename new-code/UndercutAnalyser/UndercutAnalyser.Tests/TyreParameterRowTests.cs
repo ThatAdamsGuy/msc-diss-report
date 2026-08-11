@@ -12,7 +12,7 @@ public sealed class TyreParameterRowTests
     [Fact]
     public void Constructor_SetsInputsAndAppliesRounding()
     {
-        var row = new TyreParameterRow("Medium", paceOffset: 0.567, degradationRate: 0.0349, isEditable: true, isDegradationEditable: false);
+        var row = new TyreParameterRow("Medium", paceOffset: 0.567, degradationRate: 0.0349, warmUpPenalty: 0.3, isEditable: true, isDegradationEditable: false);
 
         Assert.Equal("Medium", row.Compound);
         Assert.True(row.IsEditable);
@@ -24,7 +24,7 @@ public sealed class TyreParameterRowTests
     [Fact]
     public void PaceOffset_AndDegradationRate_RoundToTwoDecimals()
     {
-        var row = new TyreParameterRow("Hard", paceOffset: 0, degradationRate: 0, isEditable: true);
+        var row = new TyreParameterRow("Hard", paceOffset: 0, degradationRate: 0, warmUpPenalty: 0.3, isEditable: true);
 
         row.PaceOffset = 1.235;
         row.DegradationRate = 0.126;
@@ -36,7 +36,7 @@ public sealed class TyreParameterRowTests
     [Fact]
     public void MinLaps_AndMaxLaps_NormalizeNullToEmpty()
     {
-        var row = new TyreParameterRow("Soft", paceOffset: 0, degradationRate: 0, isEditable: false);
+        var row = new TyreParameterRow("Soft", paceOffset: 0, degradationRate: 0, warmUpPenalty: 0.3, isEditable: false);
 
         row.MinLaps = null!;
         row.MaxLaps = null!;
@@ -54,7 +54,7 @@ public sealed class TyreParameterRowTests
     [Fact]
     public void Clone_CreatesIndependentCopyWithSameValues()
     {
-        var original = new TyreParameterRow("Medium", 0.5, 0.07, isEditable: true, isDegradationEditable: true)
+        var original = new TyreParameterRow("Medium", 0.5, 0.07, 0.3, isEditable: true, isDegradationEditable: true)
         {
             MinLaps = "10",
             MaxLaps = "20"
@@ -74,7 +74,7 @@ public sealed class TyreParameterRowTests
     [Fact]
     public void SettingDifferentValue_RaisesPropertyChanged()
     {
-        var row = new TyreParameterRow("Hard", 1.0, 0.04, isEditable: true);
+        var row = new TyreParameterRow("Hard", 1.0, 0.04, 0.3, isEditable: true);
         var raised = new List<string>();
         row.PropertyChanged += (_, e) => raised.Add(e.PropertyName ?? string.Empty);
 
@@ -92,7 +92,7 @@ public sealed class TyreParameterRowTests
     [Fact]
     public void SettingSameValue_DoesNotRaisePropertyChanged()
     {
-        var row = new TyreParameterRow("Hard", 1.0, 0.04, isEditable: true)
+        var row = new TyreParameterRow("Hard", 1.0, 0.04, 0.3, isEditable: true)
         {
             MinLaps = "10",
             MaxLaps = "20"

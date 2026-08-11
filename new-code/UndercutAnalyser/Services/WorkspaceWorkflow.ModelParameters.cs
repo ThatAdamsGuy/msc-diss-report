@@ -13,7 +13,6 @@ public static partial class WorkspaceWorkflowService
     /// </summary>
     public static LapModelParameters Build(
         IReadOnlyList<TyreParameterRow> tyreParameterRows,
-        double warmUpPenalty,
         double pitLaneLoss,
         double marginalThreshold,
         bool applyAttackerTraffic,
@@ -34,17 +33,25 @@ public static partial class WorkspaceWorkflowService
             [TyreCompound.Hard] = 0.04
         };
 
+        var warmUpPenalties = new Dictionary<TyreCompound, double>
+        {
+            [TyreCompound.Soft] = 0.3,
+            [TyreCompound.Medium] = 0.3,
+            [TyreCompound.Hard] = 0.3
+        };
+
         foreach (var row in tyreParameterRows)
         {
             var compound = TyreCompoundParser.FromOpenF1String(row.Compound);
             offsets[compound] = row.PaceOffset;
             degRates[compound] = row.DegradationRate;
+            warmUpPenalties[compound] = row.WarmUpPenalty;
         }
 
         return new LapModelParameters(
             CompoundOffsetsSeconds: offsets,
             DegradationRatesSecondsPerLap: degRates,
-            WarmUp: new WarmUpModelParameters(warmUpPenalty),
+            WarmUpPenaltiesSeconds: warmUpPenalties,
             PitLaneLossSeconds: pitLaneLoss,
             MarginalThresholdSeconds: marginalThreshold,
             Traffic: new TrafficModelParameters(applyAttackerTraffic, applyTargetTraffic, trafficPenalty));
