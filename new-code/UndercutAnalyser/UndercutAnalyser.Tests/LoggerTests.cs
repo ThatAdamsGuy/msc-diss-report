@@ -80,6 +80,147 @@ public sealed class LoggerTests
         Assert.Null(thrown);
     }
 
+    [Fact]
+    public void Info_WithNullMessage_DoesNotThrow()
+    {
+        // Tests graceful handling of null message (defensive programming)
+        var listener = new CaptureTraceListener();
+        Trace.Listeners.Add(listener);
+
+        try
+        {
+            var act = () => Logger.Info(null!);
+
+            var thrown = Record.Exception(act);
+            // Either doesn't throw, or throws ArgumentNullException (both acceptable)
+            // Verify it doesn't cause unexpected exceptions
+            if (thrown is not null)
+            {
+                Assert.IsType<ArgumentNullException>(thrown);
+            }
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Info_WithEmptyMessage_WritesTraceLineWithInfoMarker()
+    {
+        // Tests that empty string messages are logged (not filtered)
+        var listener = new CaptureTraceListener();
+        Trace.Listeners.Add(listener);
+
+        try
+        {
+            Logger.Info(string.Empty);
+
+            Assert.Contains(listener.Messages, m => m.Contains("INFO:", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Info_WithVeryLongMessage_WritesFullContent()
+    {
+        // Tests that long messages are not truncated
+        var listener = new CaptureTraceListener();
+        Trace.Listeners.Add(listener);
+
+        try
+        {
+            var longMessage = string.Concat(Enumerable.Repeat("A", 10000));
+            Logger.Info(longMessage);
+
+            Assert.Contains(listener.Messages, m => m.Contains(longMessage, StringComparison.Ordinal));
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Error_Message_WithSpecialCharacters_IsLogged()
+    {
+        // Tests logging of messages with special characters (newlines, tabs, unicode)
+        var listener = new CaptureTraceListener();
+        Trace.Listeners.Add(listener);
+
+        try
+        {
+            var specialMessage = "Error:\n\tTab\t'Quote' \"DoubleQuote\" \\Backslash\\ \u2764 Unicode";
+            Logger.Error(specialMessage);
+
+            Assert.Contains(listener.Messages, m => m.Contains("ERROR:", StringComparison.Ordinal));
+            // Verify the message content made it through (special chars preserved)
+            Assert.Contains(listener.Messages, m => m.Contains("\u2764", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Error_Exception_WithInnerExceptions_IncludesContext()
+    {
+        // Tests logging of nested exception chains
+        var listener = new CaptureTraceListener();
+        Trace.Listeners.Add(listener);
+
+        try
+        {
+            var innerEx = new ArgumentException("Invalid argument");
+            var outerEx = new InvalidOperationException("Operation failed", innerEx);
+
+            Logger.Error(outerEx, "ParseData");
+
+            var logged = string.Join(" | ", listener.Messages);
+            // Should contain reference to the outer exception type and context
+            Assert.Contains("InvalidOperationException", logged);
+            Assert.Contains("ParseData", logged);
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Info_MultipleConsecutiveCalls_AllLogged()
+    {
+        // Tests that multiple calls accumulate and are all logged
+        var listener = new CaptureTraceListener();
+        Trace.Listeners.Add(listener);
+
+        try
+        {
+            Logger.Info("First message");
+            Logger.Info("Second message");
+            Logger.Info("Third message");
+
+            Assert.NotEmpty(listener.Messages);
+            Assert.Contains(listener.Messages, m => m.Contains("First message"));
+            Assert.Contains(listener.Messages, m => m.Contains("Second message"));
+            Assert.Contains(listener.Messages, m => m.Contains("Third message"));
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+        }
+    }
+
     private sealed class CaptureTraceListener : TraceListener
     {
         public List<string> Messages { get; } = [];

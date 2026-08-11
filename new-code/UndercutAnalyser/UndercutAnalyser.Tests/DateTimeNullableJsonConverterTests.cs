@@ -85,9 +85,94 @@ public sealed class DateTimeNullableJsonConverterTests
     [Fact]
     public void Read_OutOfRangeUnixEpoch_ReturnsNullViaFallback()
     {
-        var result = DeserializeDate("{" + "\"value\":9223372036854775807" + "}");
+        var result = DeserializeDate("{" + "\"value\":" + long.MaxValue + "}");
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void Read_MinDateBoundary_ReturnsMinDateTime()
+    {
+        // Tests parsing of minimum representable date
+        var result = DeserializeDate("{\n" + "\"value\":\"0001-01-01T00:00:00Z\"\n" + "}");
+
+        Assert.NotNull(result);
+        Assert.Equal(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), result);
+    }
+
+    [Fact]
+    public void Read_MaxDateBoundary_ReturnsMaxDateTime()
+    {
+        // Tests parsing of maximum representable date
+        var result = DeserializeDate("{\n" + "\"value\":\"9999-12-31T23:59:59Z\"\n" + "}");
+
+        Assert.NotNull(result);
+        // Just verify it's a valid DateTime with correct year/month/day
+        Assert.Equal(9999, result.Value.Year);
+        Assert.Equal(12, result.Value.Month);
+        Assert.Equal(31, result.Value.Day);
+    }
+
+    [Fact]
+    public void Read_LeapYearDate_ReturnsParsedDateTime()
+    {
+        // Tests parsing of leap year date (Feb 29)
+        var result = DeserializeDate("{\n" + "\"value\":\"2024-02-29T12:00:00Z\"\n" + "}");
+
+        Assert.NotNull(result);
+        Assert.Equal(29, result.Value.Day);
+    }
+
+    [Fact]
+    public void Read_InvalidLeapYearDate_ReturnsNull()
+    {
+        // Tests rejection of Feb 29 in non-leap years
+        var result = DeserializeDate("{\n" + "\"value\":\"2023-02-29T12:00:00Z\"\n" + "}");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Read_PartialDateString_ParsesAsDate()
+    {
+        // DateTime converter is lenient and parses "YYYY-MM" as first day of month
+        var result = DeserializeDate("{\n" + "\"value\":\"2025-01\"\n" + "}");
+
+        // Converter accepts this and fills in missing components
+        Assert.NotNull(result);
+        Assert.Equal(2025, result.Value.Year);
+        Assert.Equal(1, result.Value.Month);
+    }
+
+    [Fact]
+    public void Read_MalformedDateString_MayParsePartially()
+    {
+        // DateTime converter is lenient with some formats; test the ones it definitely rejects
+        var strictlyInvalidCases = new[] 
+        { 
+            "not-a-date",
+            "abc-def-ghi",
+            "2025-13-01",  // Invalid month (>12)
+        };
+
+        foreach (var invalid in strictlyInvalidCases)
+        {
+            var result = DeserializeDate("{\n" + "\"value\":\"" + invalid + "\"\n" + "}");
+            Assert.Null(result);
+        }
+    }
+
+    [Fact]
+    public void Read_DateTimeWithTimezone_ParsesButKindMayVary()
+    {
+        // DateTime converter parses timezone but kind depends on converter implementation
+        var result = DeserializeDate("{\n" + "\"value\":\"2025-01-02T03:04:05+02:00\"\n" + "}");
+
+        Assert.NotNull(result);
+        // Just verify it parsed; the kind is converter-specific
+        Assert.Equal(2025, result.Value.Year);
+        Assert.Equal(1, result.Value.Month);
+        Assert.Equal(2, result.Value.Day);
     }
 
     #endregion
@@ -112,6 +197,30 @@ public sealed class DateTimeNullableJsonConverterTests
         var json = SerializeDate(dt);
 
         Assert.Equal("{\"value\":\"2025-06-01T12:30:45.0000000Z\"}", json);
+    }
+
+    [Fact]
+    public void Write_MinDateTime_WritesCorrectlyFormatted()
+    {
+        // Tests serialization of minimum datetime
+        var dt = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
+
+        var json = SerializeDate(dt);
+
+        Assert.Contains("0001-01-01", json);
+        Assert.DoesNotContain("null", json);
+    }
+
+    [Fact]
+    public void Write_MaxDateTime_WritesCorrectlyFormatted()
+    {
+        // Tests serialization of maximum datetime
+        var dt = DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc);
+
+        var json = SerializeDate(dt);
+
+        Assert.Contains("9999-12-31", json);
+        Assert.DoesNotContain("null", json);
     }
 
     #endregion
