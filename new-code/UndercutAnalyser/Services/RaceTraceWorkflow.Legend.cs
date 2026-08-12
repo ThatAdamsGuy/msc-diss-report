@@ -27,19 +27,5 @@ public static partial class RaceTraceWorkflowService
         return next;
     }
 
-    /// <summary>
-    /// Isolates one driver and hides all other currently tracked drivers.
-    /// </summary>
-    public static IReadOnlyDictionary<int, bool> IsolateDriver(
-        IReadOnlyDictionary<int, bool> currentVisibility,
-        int driverNumber)
-    {
-        var next = new Dictionary<int, bool>(currentVisibility.Count);
-        foreach (var key in currentVisibility.Keys)
-        {
-            next[key] = key == driverNumber;
-        }
 
-        return next;
-    }
 }

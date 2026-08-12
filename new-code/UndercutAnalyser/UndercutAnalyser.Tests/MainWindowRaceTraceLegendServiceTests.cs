@@ -29,20 +29,4 @@ public sealed class MainWindowRaceTraceLegendServiceTests
         Assert.True(next[81]);
     }
 
-    [Fact]
-    public void IsolateDriver_MarksOnlyRequestedDriverVisible()
-    {
-        var current = new Dictionary<int, bool>
-        {
-            [4] = true,
-            [81] = true,
-            [63] = false
-        };
-
-        var next = RaceTraceWorkflowService.IsolateDriver(current, driverNumber: 81);
-
-        Assert.False(next[4]);
-        Assert.True(next[81]);
-        Assert.False(next[63]);
-    }
 }

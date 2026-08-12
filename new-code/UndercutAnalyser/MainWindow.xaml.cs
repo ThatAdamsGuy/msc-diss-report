@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
@@ -33,7 +34,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private ReferenceLapTimeResult? _currentReference;
     private readonly WpfPlot _raceTracePlot = new();
     private readonly Dictionary<int, bool> _traceVisibilityByDriver = new();
+    private readonly HashSet<int> _selectedLegendDriverNumbers = [];
     private int? _hoveredDriverNumber;
+    private int? _focusedDriverNumber;
+    private bool _suppressLegendToggleHandlers;
     private List<TyreParameterRow> _tyreParameterRows =
     [
         new TyreParameterRow("Soft",   0.0, 0.10, 0.3, isEditable: false, isDegradationEditable: true),
@@ -244,6 +248,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ApplyFuelCorrectionCheckBox.Checked += OnRaceTraceRefreshRequested;
         ApplyFuelCorrectionCheckBox.Unchecked += OnRaceTraceRefreshRequested;
         LegendSortComboBox.SelectionChanged += OnRaceTraceSortSelectionChanged;
+        ShowPredictionMarkersCheckBox.Checked += OnPredictionMarkerOptionsChanged;
+        ShowPredictionMarkersCheckBox.Unchecked += OnPredictionMarkerOptionsChanged;
+        ShowPredictionGuidesCheckBox.Checked += OnPredictionMarkerOptionsChanged;
+        ShowPredictionGuidesCheckBox.Unchecked += OnPredictionMarkerOptionsChanged;
+        MarkerOnlySelectedAttackerCheckBox.Checked += OnPredictionMarkerOptionsChanged;
+        MarkerOnlySelectedAttackerCheckBox.Unchecked += OnPredictionMarkerOptionsChanged;
+        MarkerShowAheadCheckBox.Checked += OnPredictionMarkerOptionsChanged;
+        MarkerShowAheadCheckBox.Unchecked += OnPredictionMarkerOptionsChanged;
+        MarkerShowMarginalCheckBox.Checked += OnPredictionMarkerOptionsChanged;
+        MarkerShowMarginalCheckBox.Unchecked += OnPredictionMarkerOptionsChanged;
+        MarkerShowBehindCheckBox.Checked += OnPredictionMarkerOptionsChanged;
+        MarkerShowBehindCheckBox.Unchecked += OnPredictionMarkerOptionsChanged;
 
         Loaded += OnMainWindowLoadedAsync;
         EventButton.Click += OnEventButtonClickAsync;
@@ -257,22 +273,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ScanSingleTargetCombo.SelectionChanged += OnScanSingleTargetSelectionChanged;
         ScanTargetLapCombo.SelectionChanged += OnScanTargetLapSelectionChanged;
 
-        GetMainScanShowAheadCheckBox()?.Checked += OnMainScanFilterChanged;
-        GetMainScanShowAheadCheckBox()?.Unchecked += OnMainScanFilterChanged;
-        GetMainScanShowMarginalCheckBox()?.Checked += OnMainScanFilterChanged;
-        GetMainScanShowMarginalCheckBox()?.Unchecked += OnMainScanFilterChanged;
-        GetMainScanShowBehindCheckBox()?.Checked += OnMainScanFilterChanged;
-        GetMainScanShowBehindCheckBox()?.Unchecked += OnMainScanFilterChanged;
-
-        GetSingleScanShowAheadCheckBox()?.Checked += OnSingleScanFilterChanged;
-        GetSingleScanShowAheadCheckBox()?.Unchecked += OnSingleScanFilterChanged;
-        GetSingleScanShowMarginalCheckBox()?.Checked += OnSingleScanFilterChanged;
-        GetSingleScanShowMarginalCheckBox()?.Unchecked += OnSingleScanFilterChanged;
-        GetSingleScanShowBehindCheckBox()?.Checked += OnSingleScanFilterChanged;
-        GetSingleScanShowBehindCheckBox()?.Unchecked += OnSingleScanFilterChanged;
+        GetMainScanShowAheadCheckBox()?.Checked += OnResultsFilterChanged;
+        GetMainScanShowAheadCheckBox()?.Unchecked += OnResultsFilterChanged;
+        GetMainScanShowMarginalCheckBox()?.Checked += OnResultsFilterChanged;
+        GetMainScanShowMarginalCheckBox()?.Unchecked += OnResultsFilterChanged;
+        GetMainScanShowBehindCheckBox()?.Checked += OnResultsFilterChanged;
+        GetMainScanShowBehindCheckBox()?.Unchecked += OnResultsFilterChanged;
 
         ExportResultsCsvButton.Click += (_, _) => ExportDisplayedResultsCsv();
         ExportAllButton.Click += (_, _) => ExportAllScenarioData();
+        ClearResultsButton.Click += (_, _) => ClearAllResultsAndRefreshGraph();
+        ClearTraceSelectionButton.Click += (_, _) => ClearTraceSelection();
         SimulateSingleUndercutButton.Click += (_, _) => SimulateSingleUndercut();
 
     }
@@ -284,6 +295,29 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnRaceTraceSortSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        RenderRaceTrace();
+    }
+
+    private void OnPredictionMarkerOptionsChanged(object sender, RoutedEventArgs e)
+    {
+        RenderRaceTrace();
+    }
+
+    private void ClearTraceSelection()
+    {
+        _selectedLegendDriverNumbers.Clear();
+        _focusedDriverNumber = null;
+        _hoveredDriverNumber = null;
+        RenderRaceTrace();
+    }
+
+    private void ClearAllResultsAndRefreshGraph()
+    {
+        _mainScanRows = [];
+        _singleScanRows = [];
+        MainScanSingleGrid.ItemsSource = null;
+        MainScanSingleStatusText.Text = string.Empty;
+        UpdateExportButtonsState();
         RenderRaceTrace();
     }
 
@@ -493,14 +527,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RefreshScenarioFromSelection(forceAutoSelectTarget: true);
     }
 
-    private void OnMainScanFilterChanged(object sender, RoutedEventArgs e)
+    private void OnResultsFilterChanged(object sender, RoutedEventArgs e)
     {
-        RefreshMainScanResultsView();
-    }
-
-    private void OnSingleScanFilterChanged(object sender, RoutedEventArgs e)
-    {
-        RefreshSingleScanResultsView();
+        if (_singleScanRows.Count > 0)
+            RefreshSingleScanResultsView();
+        else
+            RefreshMainScanResultsView();
     }
 
     /// <summary>
@@ -653,6 +685,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         _mainScanRows = rows;
         RefreshMainScanResultsView();
+        RenderRaceTrace();
     }
 
     /// <summary>
@@ -662,6 +695,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         _singleScanRows = rows;
         RefreshSingleScanResultsView(status);
+        RenderRaceTrace();
     }
 
     /// <summary>
@@ -710,9 +744,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var state = ScanWorkflowService.BuildSingleScanViewState(
             allRows: _singleScanRows,
             baseStatus: baseStatus,
-            showAhead: GetSingleScanShowAheadCheckBox()?.IsChecked,
-            showMarginal: GetSingleScanShowMarginalCheckBox()?.IsChecked,
-            showBehind: GetSingleScanShowBehindCheckBox()?.IsChecked);
+            showAhead: GetMainScanShowAheadCheckBox()?.IsChecked,
+            showMarginal: GetMainScanShowMarginalCheckBox()?.IsChecked,
+            showBehind: GetMainScanShowBehindCheckBox()?.IsChecked);
 
         MainScanSingleGrid.ItemsSource = state.FilteredRows;
         MainScanSingleStatusText.Text = state.StatusText;
@@ -912,20 +946,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private CheckBox? GetMainScanShowBehindCheckBox() => FindName("MainScanShowBehindCheckBox") as CheckBox;
 
-    /// <summary>
-    /// Returns the single-scan Ahead filter checkbox. Both tabs share the same filter checkboxes.
-    /// </summary>
-    private CheckBox? GetSingleScanShowAheadCheckBox() => FindName("MainScanShowAheadCheckBox") as CheckBox;
-
-    /// <summary>
-    /// Returns the single-scan Marginal filter checkbox. Both tabs share the same filter checkboxes.
-    /// </summary>
-    private CheckBox? GetSingleScanShowMarginalCheckBox() => FindName("MainScanShowMarginalCheckBox") as CheckBox;
-
-    /// <summary>
-    /// Returns the single-scan Behind filter checkbox. Both tabs share the same filter checkboxes.
-    /// </summary>
-    private CheckBox? GetSingleScanShowBehindCheckBox() => FindName("MainScanShowBehindCheckBox") as CheckBox;
 
     /// <summary>
     /// Parses OpenF1 tyre compound text into the internal compound enum used by the prediction model.
@@ -1122,8 +1142,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void RenderRaceTrace()
     {
-        _hoveredDriverNumber = null;
-        RenderRaceTraceWithHoverOpacity();
+        RenderRaceTraceWithHoverOpacity(isHoverRefresh: false);
     }
 
     /// <summary>
@@ -1187,7 +1206,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         var toggle = new ToggleButton
         {
-            IsChecked = isVisible,
+            IsChecked = _selectedLegendDriverNumbers.Contains(driverNumber),
             Margin = new Thickness(0, 0, 8, 6),
             Padding = new Thickness(8, 3, 8, 3),
             BorderThickness = new Thickness(1),
@@ -1207,30 +1226,51 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             UpdateTraceOpacityForHover();
         };
 
-        toggle.Checked += (_, _) =>
+        toggle.PreviewMouseLeftButtonDown += (_, e) =>
         {
-            var next = RaceTraceWorkflowService.ApplyToggle(_traceVisibilityByDriver, driverNumber, isVisible: true);
-            _traceVisibilityByDriver.Clear();
-            foreach (var kvp in next)
-                _traceVisibilityByDriver[kvp.Key] = kvp.Value;
+            // Handle left-click selection ourselves to avoid ToggleButton state churn during hover-driven rerenders.
+            e.Handled = true;
+        };
+
+        toggle.PreviewMouseLeftButtonUp += (_, e) =>
+        {
+            if (_suppressLegendToggleHandlers)
+                return;
+
+            var next = RaceTraceWorkflowService.ApplyLeftClickSelection(
+                _selectedLegendDriverNumbers,
+                _focusedDriverNumber,
+                clickedDriverNumber: driverNumber);
+
+            _selectedLegendDriverNumbers.Clear();
+            foreach (var selected in next.SelectedDriverNumbers)
+                _selectedLegendDriverNumbers.Add(selected);
+            _focusedDriverNumber = next.FocusedDriverNumber;
+
+            e.Handled = true;
             RenderRaceTrace();
         };
 
-        toggle.Unchecked += (_, _) =>
+        toggle.PreviewMouseRightButtonDown += (_, e) =>
         {
-            var next = RaceTraceWorkflowService.ApplyToggle(_traceVisibilityByDriver, driverNumber, isVisible: false);
-            _traceVisibilityByDriver.Clear();
-            foreach (var kvp in next)
-                _traceVisibilityByDriver[kvp.Key] = kvp.Value;
-            RenderRaceTrace();
+            // Prevent ToggleButton's default right-click state change behavior.
+            e.Handled = true;
         };
 
-        toggle.PreviewMouseRightButtonUp += (sender, e) =>
+        toggle.PreviewMouseRightButtonUp += (_, e) =>
         {
-            var next = RaceTraceWorkflowService.IsolateDriver(_traceVisibilityByDriver, driverNumber);
-            _traceVisibilityByDriver.Clear();
-            foreach (var kvp in next)
-                _traceVisibilityByDriver[kvp.Key] = kvp.Value;
+            if (_suppressLegendToggleHandlers)
+                return;
+
+            var next = RaceTraceWorkflowService.ApplyRightClickFocus(
+                _selectedLegendDriverNumbers,
+                _focusedDriverNumber,
+                clickedDriverNumber: driverNumber);
+
+            _selectedLegendDriverNumbers.Clear();
+            foreach (var selected in next.SelectedDriverNumbers)
+                _selectedLegendDriverNumbers.Add(selected);
+            _focusedDriverNumber = next.FocusedDriverNumber;
 
             e.Handled = true;
             RenderRaceTrace();
@@ -1245,14 +1285,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_raceTracePlot.Plot == null || _raceTracePlot.Plot.PlottableList.Count == 0)
             return;
 
-        // For now, we'll need to re-render to apply opacity changes
-        // In a more sophisticated implementation, we could directly manipulate ScottPlot series
-        // But since we rebuild the plot each time, we'll apply opacity during the render based on hover state
-        // Store the hover state and trigger a re-render with opacity adjustments
-        RenderRaceTraceWithHoverOpacity();
+        // Re-render for hover opacity changes, but preserve the user's current pan/zoom viewport.
+        RenderRaceTraceWithHoverOpacity(isHoverRefresh: true);
     }
 
-    private void RenderRaceTraceWithHoverOpacity()
+    private void RenderRaceTraceWithHoverOpacity(bool isHoverRefresh)
     {
         var plot = _raceTracePlot.Plot;
         plot.Clear();
@@ -1276,13 +1313,44 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 SortLegendByTeamThenNumber: LegendSortComboBox.SelectedIndex == 1),
             traceVisibilityByDriver: _traceVisibilityByDriver);
 
+        _traceVisibilityByDriver.Clear();
+        foreach (var kvp in computation.NormalizedVisibilityByDriver)
+            _traceVisibilityByDriver[kvp.Key] = true;
+
+        var prunedSelected = RaceTraceWorkflowService.PruneSelectedDrivers(_selectedLegendDriverNumbers, computation.Series);
+        _selectedLegendDriverNumbers.Clear();
+        foreach (var selected in prunedSelected)
+            _selectedLegendDriverNumbers.Add(selected);
+
+        _focusedDriverNumber = RaceTraceWorkflowService.PruneFocusedDriver(_focusedDriverNumber, computation.Series);
+
         if (!computation.HasRenderableData)
         {
             _raceTracePlot.Refresh();
             return;
         }
 
-        foreach (var series in computation.Series)
+        var markerOptions = new RaceTracePredictionMarkerOptions(
+            ShowMarkers: ShowPredictionMarkersCheckBox.IsChecked == true,
+            ShowGuides: ShowPredictionGuidesCheckBox.IsChecked == true,
+            OnlySelectedAttacker: MarkerOnlySelectedAttackerCheckBox.IsChecked == true,
+            ShowAhead: MarkerShowAheadCheckBox.IsChecked != false,
+            ShowMarginal: MarkerShowMarginalCheckBox.IsChecked != false,
+            ShowBehind: MarkerShowBehindCheckBox.IsChecked != false);
+
+        var selectedAttacker = ScanSingleAttackerCombo.SelectedItem as MainScanDriverItem;
+        var markerSelections = RaceTraceWorkflowService.ResolvePredictionMarkerSelections(
+            rows: GetDisplayedResultsRows(),
+            drivers: _currentDrivers,
+            options: markerOptions,
+            selectedAttackerDriverNumber: selectedAttacker?.DriverNumber);
+
+        var seriesByDriver = computation.Series.ToDictionary(s => s.DriverNumber, s => s);
+        var displayColorByDriver = new Dictionary<int, Color>();
+        var focusedPlottables = new List<IPlottable>();
+        var hoveredPlottables = new List<IPlottable>();
+
+        void RenderDriverSeries(RaceTraceDriverSeries series)
         {
             var lineColor = RaceTraceWorkflowService.ParseScottPlotColor(series.TeamColour, series.DriverNumber);
             AddLegendToggle(
@@ -1294,35 +1362,112 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 series.IsVisible,
                 lineColor);
 
-            var displayColor = series.IsVisible ? lineColor : lineColor.MixedWith(ScottPlot.Colors.White, 0.85);
+            if (!series.IsVisible)
+                return;
 
-            // Apply opacity dimming if there's a hovered driver and this isn't the hovered driver
-            if (_hoveredDriverNumber.HasValue && _hoveredDriverNumber.Value != series.DriverNumber)
-            {
-                // Dim to ~75% opacity (25% reduction)
-                displayColor = displayColor.MixedWith(ScottPlot.Colors.White, 0.25);
-            }
+            var displayColor = lineColor;
+            var dimmingMix = RaceTraceWorkflowService.ResolveDimmingMix(
+                driverNumber: series.DriverNumber,
+                selectedDriverNumbers: _selectedLegendDriverNumbers,
+                focusedDriverNumber: _focusedDriverNumber,
+                hoveredDriverNumber: _hoveredDriverNumber);
+            if (dimmingMix.HasValue)
+                displayColor = displayColor.MixedWith(ScottPlot.Colors.White, dimmingMix.Value);
+
+            displayColorByDriver[series.DriverNumber] = displayColor;
 
             var scatter = plot.Add.Scatter(series.Xs.ToArray(), series.Ys.ToArray());
             scatter.LineColor = displayColor;
             scatter.LineWidth = 2;
             scatter.LinePattern = series.IsSolidLine ? LinePattern.Solid : LinePattern.Dashed;
-            scatter.MarkerSize = 8;
+            scatter.MarkerSize = markerOptions.ShowMarkers ? 0 : 8;
             scatter.MarkerFillColor = displayColor;
             scatter.MarkerLineColor = displayColor;
 
-            // Add driver acronym annotation at the end of the line
+            var isSelectedFocusedSeries = _selectedLegendDriverNumbers.Contains(series.DriverNumber);
+            var isFocusedSeries = isSelectedFocusedSeries || (_focusedDriverNumber.HasValue && series.DriverNumber == _focusedDriverNumber.Value);
+            var isHoveredSeries = _hoveredDriverNumber.HasValue && series.DriverNumber == _hoveredDriverNumber.Value;
+            if (isFocusedSeries)
+                focusedPlottables.Add(scatter);
+            if (isHoveredSeries)
+                hoveredPlottables.Add(scatter);
+
             if (series.Xs.Count > 0 && !string.IsNullOrEmpty(series.DriverCode))
             {
                 var lastX = series.Xs[series.Xs.Count - 1];
                 var lastY = series.Ys[series.Ys.Count - 1];
 
-                // Create a text annotation with the driver code
                 var annotation = plot.Add.Text(series.DriverCode, lastX, lastY);
                 annotation.LabelFontSize = 10;
-                annotation.OffsetX = 5;  // Slight offset to avoid overlapping the line end
+                annotation.OffsetX = 5;
                 annotation.OffsetY = 0;
                 annotation.LabelFontColor = displayColor;
+
+                if (isFocusedSeries)
+                    focusedPlottables.Add(annotation);
+                if (isHoveredSeries)
+                    hoveredPlottables.Add(annotation);
+            }
+        }
+
+        _suppressLegendToggleHandlers = true;
+        try
+        {
+            foreach (var series in computation.Series)
+                RenderDriverSeries(series);
+        }
+        finally
+        {
+            _suppressLegendToggleHandlers = false;
+        }
+
+        if (markerOptions.ShowMarkers && markerSelections.Count > 0)
+        {
+            var markerGroups = markerSelections
+                .GroupBy(m => (m.AttackerDriverNumber, m.DecisionLap, m.Result))
+                .Select(g => g.First())
+                .ToList();
+
+            foreach (var marker in markerGroups)
+            {
+                if (!seriesByDriver.TryGetValue(marker.AttackerDriverNumber, out var markerSeries))
+                    continue;
+
+                if (!markerSeries.IsVisible)
+                    continue;
+
+                if (!RaceTraceWorkflowService.TryResolveSeriesPointAtLap(markerSeries, marker.DecisionLap, out var x, out var y))
+                    continue;
+
+                var seriesColor = RaceTraceWorkflowService.ParseScottPlotColor(markerSeries.TeamColour, markerSeries.DriverNumber);
+                var markerColor = displayColorByDriver.TryGetValue(marker.AttackerDriverNumber, out var dimmedColor)
+                    ? dimmedColor
+                    : seriesColor;
+
+                var symbol = RaceTraceWorkflowService.ResolveMarkerSymbol(marker.Result);
+                if (string.IsNullOrEmpty(symbol))
+                    continue;
+
+                var textMarker = plot.Add.Text(symbol, x, y);
+                textMarker.LabelFontSize = 18;
+                textMarker.LabelFontColor = markerColor;
+                textMarker.Alignment = Alignment.MiddleCenter;
+
+                var isSelectedFocusedMarker = _selectedLegendDriverNumbers.Contains(marker.AttackerDriverNumber);
+                var isFocusedMarker = isSelectedFocusedMarker || (_focusedDriverNumber.HasValue && marker.AttackerDriverNumber == _focusedDriverNumber.Value);
+                var isHoveredMarker = _hoveredDriverNumber.HasValue && marker.AttackerDriverNumber == _hoveredDriverNumber.Value;
+                if (isFocusedMarker)
+                    focusedPlottables.Add(textMarker);
+                if (isHoveredMarker)
+                    hoveredPlottables.Add(textMarker);
+
+                if (markerOptions.ShowGuides)
+                {
+                    var vline = plot.Add.VerticalLine(marker.DecisionLap);
+                    vline.LinePattern = LinePattern.Dashed;
+                    vline.LineColor = markerColor.WithAlpha(80);
+                    vline.LineWidth = 1;
+                }
             }
         }
 
@@ -1331,7 +1476,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         baseline.LineWidth = 1.5f;
         baseline.LinePattern = LinePattern.Dashed;
 
-        plot.Axes.AutoScale();
+        foreach (var plottable in focusedPlottables)
+            plot.MoveToFront(plottable);
+
+        foreach (var plottable in hoveredPlottables)
+            plot.MoveToFront(plottable);
+
+        if (!isHoverRefresh)
+            plot.Axes.AutoScale();
+
         _raceTracePlot.Refresh();
     }
 
@@ -1362,6 +1515,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _currentRaceControlMessages = Array.Empty<RaceControlMessage>();
         _currentReference = null;
         _traceVisibilityByDriver.Clear();
+        _selectedLegendDriverNumbers.Clear();
+        _focusedDriverNumber = null;
         ScanSingleAttackerCombo.ItemsSource = null;
         ScanSingleTargetCombo.ItemsSource = null;
         ScanTargetLapCombo.ItemsSource = null;

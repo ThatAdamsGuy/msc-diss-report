@@ -50,23 +50,8 @@
             <Button x:Name="PredictionScanButton" Content="Prediction / Scan" Width="130" Height="20" IsEnabled="False" Visibility="Collapsed" HorizontalAlignment="Left" />
         </StackPanel>
 
-        <!-- Row 2, Col 0: Engineering Trace options -->
-        <Border Grid.Row="2" Grid.Column="0" Margin="10" Padding="5"  BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Engineering Trace" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="IncludePitLapsCheckBox" Content="Include pit laps" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                <CheckBox x:Name="IncludeScVscLapsCheckBox" Content="Include SC/VSC laps" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                <CheckBox x:Name="ApplyFuelCorrectionCheckBox" Content="Apply fuel correction" IsChecked="True" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Legend sort:" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="LegendSortComboBox" Width="170" SelectedIndex="0" VerticalAlignment="Center">
-                    <ComboBoxItem Content="Driver Number"/>
-                    <ComboBoxItem Content="Team, then Number"/>
-                </ComboBox>
-            </StackPanel>
-        </Border>
-
-        <!-- Row 3, Col 0: Single Driver Scenario -->
-        <Border Grid.Row="3" Grid.Column="0" Margin="10"  BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="10">
+        <!-- Row 2, Col 0: Single Driver Scenario -->
+        <Border Grid.Row="2" Grid.Column="0" Margin="10"  BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="10">
             <StackPanel>
                 <TextBlock Text="Single Driver Scenario" FontWeight="SemiBold" Margin="0,0,0,8"/>
 
@@ -189,6 +174,33 @@
             </StackPanel>
         </Border>
 
+        <!-- Row 3, Col 0: Engineering Trace options -->
+        <Border Grid.Row="3" Grid.Column="0" Margin="10" Padding="5"  BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4">
+            <StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Trace" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="IncludePitLapsCheckBox" Content="Include pit laps" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <CheckBox x:Name="IncludeScVscLapsCheckBox" Content="Include SC/VSC laps" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <CheckBox x:Name="ApplyFuelCorrectionCheckBox" Content="Apply fuel correction" IsChecked="True" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Legend sort:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <ComboBox x:Name="LegendSortComboBox" Width="140" SelectedIndex="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <ComboBoxItem Content="Driver Number"/>
+                    <ComboBoxItem Content="Team, then Number"/>
+                </ComboBox>
+                <Button x:Name="ClearTraceSelectionButton" Content="Clear Selection" Width="100" Margin="0,0,10,0" VerticalAlignment="Center"/>
+             </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,10,0,0">
+                <CheckBox x:Name="ShowPredictionMarkersCheckBox" Content="Show prediction markers" IsChecked="True" Margin="40,0,10,0" VerticalAlignment="Center"/>
+                <CheckBox x:Name="ShowPredictionGuidesCheckBox" Content="Show lap guides" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <CheckBox x:Name="MarkerOnlySelectedAttackerCheckBox" Content="Only selected attacker" IsChecked="False" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Markers:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <CheckBox x:Name="MarkerShowAheadCheckBox" Content="Ahead ◆" IsChecked="True" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <CheckBox x:Name="MarkerShowMarginalCheckBox" Content="Marginal ▲" IsChecked="True" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <CheckBox x:Name="MarkerShowBehindCheckBox" Content="Behind ■" IsChecked="True" VerticalAlignment="Center"/>
+            </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- Right panel: tabs replacing former Parameters inputs -->
         <Border Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Background="#2F80ED" BorderBrush="#1F5FB4" BorderThickness="1" CornerRadius="4" Padding="8" Margin="10" Height="440">
             <TabControl x:Name="RightPanelTabControl">
@@ -287,7 +299,8 @@
                             <TextBlock Text="Show:" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <CheckBox x:Name="MainScanShowAheadCheckBox" Content="Ahead" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <CheckBox x:Name="MainScanShowMarginalCheckBox" Content="Marginal" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            <CheckBox x:Name="MainScanShowBehindCheckBox" Content="Behind" IsChecked="True" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="MainScanShowBehindCheckBox" Content="Behind" IsChecked="True" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                            <Button x:Name="ClearResultsButton" Content="Clear Results" Width="120" Height="24" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <DataGrid x:Name="MainScanSingleGrid"

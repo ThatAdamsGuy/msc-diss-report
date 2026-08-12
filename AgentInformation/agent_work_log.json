@@ -876,6 +876,80 @@
                                            "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowScanCandidateServiceTests.cs"
                                        ],
                         "notes":  "New test BuildOnTrackOrderPerLap_UsesSectorTwoCrossing_NotLapDuration intentionally sets opposite lap-duration ordering to verify S2 crossing governs ahead/behind order."
+                    },
+                    {
+                        "id":  "step-20260812-008",
+                        "timestamp":  "2026-08-12T15:54:20.0793610Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Fixed legend visibility persistence by syncing normalized visibility map after race-trace compute",
+                        "rationale":  "Legend isolate/toggle could re-show lines when visibility dictionary lacked full active-driver set",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowRaceTraceServiceTests.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 341 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during test run with existing warning CS8629",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/Services/RaceTraceWorkflow.Compute.cs",
+                                           "new-code/UndercutAnalyser/Services/RaceTraceWorkflow.Legend.cs",
+                                           "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                       ],
+                        "notes":  "MainWindow now replaces _traceVisibilityByDriver with computation.NormalizedVisibilityByDriver each render; added regression test asserting normalized visibility feedback preserves isolate state across renders."
+                    },
+                    {
+                        "id":  "step-20260812-009",
+                        "timestamp":  "2026-08-12T16:06:21.3136413Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Implemented race-trace prediction markers with non-circle symbols, marker controls, and clear-results action",
+                        "rationale":  "User requested visible lap/driver marker overlays for populated prediction results, no circle outcome marker usage, and the ability to clear results to return to normal graph view",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/Services/RaceTraceWorkflow.PredictionMarkers.cs",
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowRaceTracePredictionMarkerServiceTests.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 350 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during test run with existing warning CS8629",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/MainWindow.xaml",
+                                           "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                           "new-code/UndercutAnalyser/Services/RaceTraceWorkflow.PredictionMarkers.cs"
+                                       ],
+                        "notes":  "Added marker controls (show markers/guides, selected attacker filter, result filters), draw overlays as text symbols ? ? ¦ at attacker lap points, hide base scatter circles when markers enabled to reduce clutter, and clear-results button that clears both result sets + table + graph overlays."
+                    },
+                    {
+                        "id":  "step-20260812-010",
+                        "timestamp":  "2026-08-12T16:11:53.7586901Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Adjusted marker glyph compatibility and fixed trace rerender/viewport reset behavior",
+                        "rationale":  "User reported Ahead marker rendered as empty square, missing immediate rerender after scans, and unwanted zoom/pan reset when mouse leaves graph",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/Services/RaceTraceWorkflow.PredictionMarkers.cs",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowRaceTracePredictionMarkerServiceTests.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 350 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during test run with existing warning CS8629",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                           "new-code/UndercutAnalyser/Services/RaceTraceWorkflow.PredictionMarkers.cs"
+                                       ],
+                        "notes":  "Changed Ahead marker symbol from ? to ? for broader font support. PublishScanRows/PublishSingleScanRows now call RenderRaceTrace() to update markers immediately. RenderRaceTrace no longer clears hovered state, reducing unintended autoscale resets on mouse leave."
                     }
                 ]
 }
