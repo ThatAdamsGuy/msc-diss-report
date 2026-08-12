@@ -265,14 +265,21 @@ public sealed class RawDataView : Window
             return compoundByLap;
         }
 
+        var maxDriverLap = _laps
+            .Where(l => l.DriverNumber == driverNumber)
+            .Select(l => l.LapNumber)
+            .DefaultIfEmpty(0)
+            .Max();
+
         foreach (var stint in driverStints)
         {
-            if (stint.LapStart <= 0 || stint.LapEnd <= 0 || stint.LapEnd < stint.LapStart)
+            var lapEnd = stint.LapEnd ?? maxDriverLap;
+            if (stint.LapStart <= 0 || lapEnd <= 0 || lapEnd < stint.LapStart)
             {
                 continue;
             }
 
-            for (var lap = stint.LapStart; lap <= stint.LapEnd; lap++)
+            for (var lap = stint.LapStart; lap <= lapEnd; lap++)
             {
                 compoundByLap[lap] = stint.Compound;
             }

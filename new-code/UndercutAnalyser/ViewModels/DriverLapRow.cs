@@ -159,7 +159,7 @@ namespace UndercutAnalyser.ViewModels
             {
                 var detail = JsonSerializer.Serialize(lap, new JsonSerializerOptions { WriteIndented = true });
 
-                var compoundText = _compoundByLap.TryGetValue(lapNumber, out var compound)
+                var compoundText = _compoundByLap.TryGetValue(lapNumber, out var compound) && !string.IsNullOrWhiteSpace(compound)
                     ? compound
                     : "Unknown";
 
@@ -191,20 +191,27 @@ namespace UndercutAnalyser.ViewModels
         {
             if (_compoundByLap.TryGetValue(lapNumber, out var compound))
             {
-                if (compound.Equals("SOFT", StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrWhiteSpace(compound) || string.Equals(compound, "UNKNOWN", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Brushes.Black;
+                }
+
+                if (string.Equals(compound, "SOFT", StringComparison.OrdinalIgnoreCase))
                 {
                     return Brushes.Red;
                 }
 
-                if (compound.Equals("MEDIUM", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(compound, "MEDIUM", StringComparison.OrdinalIgnoreCase))
                 {
                     return Brushes.Yellow;
                 }
 
-                if (compound.Equals("HARD", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(compound, "HARD", StringComparison.OrdinalIgnoreCase))
                 {
                     return Brushes.White;
                 }
+
+                return Brushes.Transparent;
             }
 
             return Brushes.Transparent;

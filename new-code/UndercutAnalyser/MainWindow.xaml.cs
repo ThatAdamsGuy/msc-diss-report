@@ -303,6 +303,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RenderRaceTrace();
     }
 
+    private void OpenResultsTab()
+    {
+        if (RightPanelTabControl is not null && ScanSingleDriverTab is not null)
+            RightPanelTabControl.SelectedItem = ScanSingleDriverTab;
+    }
+
     private void ClearTraceSelection()
     {
         _selectedLegendDriverNumbers.Clear();
@@ -429,6 +435,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_currentLaps.Count == 0) return;
 
+        OpenResultsTab();
         ClearAllDriversResults("Scanning all drivers…");
         ClearSingleScanResults();
         ScanAllDriversButton.IsEnabled = false;
@@ -453,6 +460,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (ScanSingleAttackerCombo.SelectedItem is not MainScanDriverItem attacker) return;
         if (ScanSingleTargetCombo.SelectedItem is not MainScanDriverItem target) return;
 
+        OpenResultsTab();
         ClearAllDriversResults();
         ClearSingleScanResults("Scanning all laps for selected driver…");
         SimulateAllUndercutsButton.IsEnabled = false;
@@ -478,6 +486,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (ScanSingleAttackerCombo.SelectedItem is not MainScanDriverItem attacker) return;
 
+        OpenResultsTab();
         ClearAllDriversResults();
         ClearSingleScanResults("Scanning all laps for selected driver…");
         ScanAllLapsButton.IsEnabled = false;
@@ -839,6 +848,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private void SimulateSingleUndercut()
     {
+        OpenResultsTab();
         ClearAllDriversResults();
         ClearSingleScanResults();
 
