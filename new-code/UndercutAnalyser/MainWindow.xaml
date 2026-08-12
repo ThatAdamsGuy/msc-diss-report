@@ -37,14 +37,15 @@
                 </StackPanel>
             </Border>
             <StackPanel Grid.Row="0" Grid.Column="1">
-                <Button x:Name="FullScanExportCsvButton" Content="Export Full Scan CSV" Width="140" IsEnabled="False" Margin="5"/>
-                <Button x:Name="SingleScanExportCsvButton" Content="Export Single Driver Scan CSV" Width="140" IsEnabled="False" Margin="5"/>
+                <Button x:Name="ExportResultsCsvButton" Content="Export Results CSV" Width="140" IsEnabled="False" Margin="5"/>
+                <Button x:Name="ExportAllButton" Content="Export All (JSON)" Width="140" IsEnabled="False" Margin="5"/>
             </StackPanel>
         </Grid>
 
         <!-- Row 1, Col 0: Scan/Raw buttons -->
         <StackPanel Grid.Row="1" Grid.Column="0" Margin="10" Orientation="Horizontal" HorizontalAlignment="Left">
             <Button x:Name="ScanAllDriversButton" Content="Scan All Drivers" Width="140" Height="40" Margin="0,0,8,0" IsEnabled="False" HorizontalAlignment="Left" />
+            <Button x:Name="ScanAllLapsButton" Content="Scan All Laps" Width="120" Height="40" Margin="0,0,8,0" IsEnabled="False" HorizontalAlignment="Left" />
             <Button x:Name="RawDataButton" Content="Raw Data" Width="100" Height="20" Margin="0,0,8,0" IsEnabled="False" HorizontalAlignment="Left" />
             <Button x:Name="PredictionScanButton" Content="Prediction / Scan" Width="130" Height="20" IsEnabled="False" Visibility="Collapsed" HorizontalAlignment="Left" />
         </StackPanel>
@@ -66,25 +67,12 @@
 
         <!-- Row 3, Col 0: Single Driver Scenario -->
         <Border Grid.Row="3" Grid.Column="0" Margin="10"  BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="10">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Visibility" Value="Hidden"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding ElementName=RightPanelTabControl, Path=SelectedIndex}" Value="2">
-                            <Setter Property="Visibility" Value="Visible"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
-
             <StackPanel>
                 <TextBlock Text="Single Driver Scenario" FontWeight="SemiBold" Margin="0,0,0,8"/>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
                     <TextBlock Text="Minimum tyre age (laps):" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <TextBox x:Name="ScanMinTyreAgeBox" Width="50" Text="5" Margin="0,0,14,0" HorizontalContentAlignment="Right"/>
-                    <Button x:Name="ScanSingleDriverButton" Content="Scan Single Driver" Width="140" IsEnabled="False" Margin="0,0,10,0"/>
-                    <TextBlock Text="Scan selected attacking driver against all eligible targets." VerticalAlignment="Center" Foreground="#666666" FontSize="11"/>
                 </StackPanel>
 
                 <Grid HorizontalAlignment="Stretch">
@@ -184,6 +172,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Target lap"/>
@@ -192,7 +181,8 @@
                             <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Starting gap (s)"/>
                             <TextBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" x:Name="ScanStartingGapBox" Width="90" IsReadOnly="True" Background="#F8F8F8" Margin="0,0,0,6"/>
 
-                            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" x:Name="SimulateSingleUndercutButton" Content="Simulate Single Undercut" Height="24"/>
+                            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" x:Name="SimulateSingleUndercutButton" Content="Simulate Single Undercut" Height="24" Margin="0,0,0,6"/>
+                            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" x:Name="SimulateAllUndercutsButton" Content="Simulate All Undercuts" Height="24"/>
                         </Grid>
                     </GroupBox>
                 </Grid>
@@ -265,19 +255,41 @@
                             <Button x:Name="ResetParamsButton" Content="Reset to defaults" Width="140" Margin="0,8,0,16"/>
 
                             <Separator Margin="0,0,0,8"/>
-
-                            <!-- Results Section -->
-                            <TextBlock Text="Results" FontWeight="SemiBold" Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <TextBlock Text="Show:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <CheckBox x:Name="MainScanShowAheadCheckBox" Content="Ahead" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                <CheckBox x:Name="MainScanShowMarginalCheckBox" Content="Marginal" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                <CheckBox x:Name="MainScanShowBehindCheckBox" Content="Behind" IsChecked="True" VerticalAlignment="Center"/>
-                            </StackPanel>
                         </StackPanel>
 
-                        <!-- Results Grid with Scrolling -->
+                        </Grid>
+                </TabItem>
+
+
+
+                <TabItem Header="Tyres">
+                    <DataGrid x:Name="TyreGrid" Margin="8" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" CellEditEnding="TyreGrid_CellEditEnding">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Compound" Binding="{Binding Compound}" IsReadOnly="True" Width="120"/>
+                            <DataGridTextColumn Header="Pace" Binding="{Binding PaceOffset, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridTextColumn Header="Deg" Binding="{Binding DegradationRate, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridTextColumn Header="Warmup" Binding="{Binding WarmUpPenalty, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridTextColumn Header="Life Min" Binding="{Binding MinLaps, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridTextColumn Header="Life Max" Binding="{Binding MaxLaps, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+
+                <TabItem x:Name="ScanSingleDriverTab" Header="Results">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Show:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="MainScanShowAheadCheckBox" Content="Ahead" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="MainScanShowMarginalCheckBox" Content="Marginal" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="MainScanShowBehindCheckBox" Content="Behind" IsChecked="True" VerticalAlignment="Center"/>
+                        </StackPanel>
+
                         <DataGrid x:Name="MainScanSingleGrid"
                                   Grid.Row="1"
                                   AutoGenerateColumns="False"
@@ -318,78 +330,7 @@
                             </DataGrid.Columns>
                         </DataGrid>
 
-                        <TextBlock x:Name="MainScanSingleStatusText" Grid.Row="1" Foreground="#666666" FontSize="11" VerticalAlignment="Bottom"/>
-                    </Grid>
-                </TabItem>
-
-                <TabItem Header="Tyres">
-                    <DataGrid x:Name="TyreGrid" Margin="8" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" CellEditEnding="TyreGrid_CellEditEnding">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Compound" Binding="{Binding Compound}" IsReadOnly="True" Width="120"/>
-                            <DataGridTextColumn Header="Pace" Binding="{Binding PaceOffset, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
-                            <DataGridTextColumn Header="Deg" Binding="{Binding DegradationRate, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
-                            <DataGridTextColumn Header="Warmup" Binding="{Binding WarmUpPenalty, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
-                            <DataGridTextColumn Header="Life Min" Binding="{Binding MinLaps, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
-                            <DataGridTextColumn Header="Life Max" Binding="{Binding MaxLaps, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </TabItem>
-
-                <TabItem x:Name="ScanSingleDriverTab" Header="Scan Single Driver">
-                    <Grid Margin="8">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                            <TextBlock Text="Show:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <CheckBox x:Name="SingleScanShowAheadCheckBox" Content="Ahead" IsChecked="True" Margin="0,0,10,0"/>
-                            <CheckBox x:Name="SingleScanShowMarginalCheckBox" Content="Marginal" IsChecked="True" Margin="0,0,10,0"/>
-                            <CheckBox x:Name="SingleScanShowBehindCheckBox" Content="Behind" IsChecked="True"/>
-                        </StackPanel>
-
-                        <DataGrid x:Name="ScanSingleResultsGrid"
-                                  Grid.Row="1"
-                                  AutoGenerateColumns="False"
-                                  IsReadOnly="True"
-                                  CanUserAddRows="False"
-                                  CanUserSortColumns="True"
-                                  HeadersVisibility="Column"
-                                  GridLinesVisibility="Horizontal"
-                                  BorderBrush="#D0D0D0" BorderThickness="1">
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Result}" Value="Ahead">
-                                            <Setter Property="Background" Value="#DFF6DD"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Result}" Value="Marginal">
-                                            <Setter Property="Background" Value="#FFF4D6"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Result}" Value="Behind">
-                                            <Setter Property="Background" Value="#FBE4E6"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Lap" Binding="{Binding DecisionLap}" Width="45"/>
-                                <DataGridTextColumn Header="Attacking" Binding="{Binding Attacker}" Width="70"/>
-                                <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="70"/>
-                                <DataGridTextColumn Header="Att. tyre" Binding="{Binding AttackerCompound}" Width="70"/>
-                                <DataGridTextColumn Header="Att. age" Binding="{Binding AttackerTyreAge}" Width="55"/>
-                                <DataGridTextColumn Header="Tar. tyre" Binding="{Binding TargetCompound}" Width="70"/>
-                                <DataGridTextColumn Header="Tar. age" Binding="{Binding TargetTyreAge}" Width="55"/>
-                                <DataGridTextColumn Header="G₀" Binding="{Binding G0}" Width="70"/>
-                                <DataGridTextColumn Header="Gap@PitLap" Binding="{Binding GapAtTargetPitLapComplete}" Width="95"/>
-                                <DataGridTextColumn Header="ΔG@PitLap" Binding="{Binding DeltaGAtTargetPitLapComplete}" Width="95"/>
-                                <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="90"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-
-                        <TextBlock Grid.Row="2" x:Name="ScanSingleResultsStatusText" Foreground="#666666" FontSize="11" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="2" x:Name="MainScanSingleStatusText" Foreground="#666666" FontSize="11" VerticalAlignment="Bottom"/>
                     </Grid>
                 </TabItem>
                 

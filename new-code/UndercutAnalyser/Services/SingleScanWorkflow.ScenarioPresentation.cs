@@ -12,14 +12,16 @@ public static partial class SingleScanWorkflowService
     /// </summary>
     public static MainWindowSingleScanScenarioPresentation Build(
         MainWindowSingleScanScenarioResult scenario,
-        int? selectedTargetDriverNumber)
+        int? selectedTargetDriverNumber,
+        bool forceAutoSelectTarget)
     {
         if (!scenario.HasScenario)
             return MainWindowSingleScanScenarioPresentation.Empty;
 
+        // Auto-select when no target is selected, or when the caller explicitly requests
+        // re-synchronization to the on-track target after attacker/lap changes.
         var shouldAutoSelectTarget = scenario.EffectiveTargetDriverNumber.HasValue &&
-                                     (!selectedTargetDriverNumber.HasValue ||
-                                      selectedTargetDriverNumber.Value != scenario.EffectiveTargetDriverNumber.Value);
+                                     (forceAutoSelectTarget || !selectedTargetDriverNumber.HasValue);
 
         return new MainWindowSingleScanScenarioPresentation(
             HasScenario: true,

@@ -1,4 +1,4 @@
-﻿{
+{
     "schemaVersion":  1,
     "agent":  "UndercutToolAgent",
     "createdBy":  "GitHub Copilot",
@@ -710,7 +710,172 @@
                                          ],
                         "buildResult":  "SUCCESS",
                         "notes":  "PredictionResult now has InitialGapSeconds + DeltaGAtN1/N2/N3Seconds. DeltaG = G(n) - G0 = T_A(n) - T_T(n). Negative = attacker gained time. Stale \u0027deferred\u0027 note removed from code XML doc. No instructions changes needed."
+                    },
+                    {
+                        "id":  "step-20260812-001",
+                        "timestamp":  "2026-08-12T12:24:25.8444925Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Aligned single-scan gap calculation with full-scan logic using absolute Sector 2 crossing timestamps",
+                        "rationale":  "User reported Simulate All Undercuts and Scan All Laps gaps differ from Scan All Drivers despite same laps; root cause was relative-lap-time subtraction instead of absolute crossing-time gap",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet build UndercutAnalyser.sln",
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 315 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded with existing warning CS8629 in ScanWorkflow.Candidates.cs",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                           "new-code/UndercutAnalyser/Services/WorkspaceWorkflow.PredictGap.cs",
+                                           "new-code/UndercutAnalyser/Services/ScanWorkflow.Candidates.cs"
+                                       ],
+                        "notes":  "GetGapBetweenDriversAtLap now delegates to WorkspaceWorkflowService.TryDeriveInitialGapSeconds to match full-scan g0 convention."
+                    },
+                    {
+                        "id":  "step-20260812-002",
+                        "timestamp":  "2026-08-12T12:36:53.8080635Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Added extensive regression tests for gap consistency across scan paths",
+                        "rationale":  "User requested broad protection after difficult diagnosis of mismatch between Scan All Drivers and single-attacker scan paths",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowPredictGapServiceTests.cs",
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowScanCandidateServiceTests.cs",
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowGapConsistencyRegressionTests.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 322 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during dotnet test run",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/Services/WorkspaceWorkflow.PredictGap.cs",
+                                           "new-code/UndercutAnalyser/Services/ScanWorkflow.Candidates.cs"
+                                       ],
+                        "notes":  "Tests validate absolute Sector 2 crossing-time gap convention, sign convention, candidate filtering with non-positive gaps, and parity between full-scan candidate g0 and single-scan derived gap for same lap/drivers."
+                    },
+                    {
+                        "id":  "step-20260812-003",
+                        "timestamp":  "2026-08-12T12:39:33.5656045Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Restored target auto-sync on attacker/lap changes while preserving manual target override",
+                        "rationale":  "User requested target to jump to on-track ahead driver when attacker or lap changes, but still allow manual target selection afterward",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/Services/SingleScanWorkflow.ScenarioPresentation.cs",
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowSingleScanScenarioPresentationServiceTests.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 323 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during test run with existing warning CS8629",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                           "new-code/UndercutAnalyser/Services/SingleScanWorkflow.ScenarioPresentation.cs"
+                                       ],
+                        "notes":  "Added forceAutoSelectTarget flow: attacker/lap selection changes force auto-sync; manual target change does not."
+                    },
+                    {
+                        "id":  "step-20260812-004",
+                        "timestamp":  "2026-08-12T12:45:24.0900840Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Added expanded single-scan target-selection and auto-sync regression tests",
+                        "rationale":  "User requested heavy test coverage for attacker/lap-driven target auto-jump behaviour and manual override safety",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowSingleScanScenarioServiceTests.cs",
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowSingleScanScenarioPresentationServiceTests.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 331 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during test run with existing warning CS8629",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/Services/SingleScanWorkflow.Scenario.cs",
+                                           "new-code/UndercutAnalyser/Services/SingleScanWorkflow.ScenarioPresentation.cs",
+                                           "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                       ],
+                        "notes":  "New tests cover decision-lap changes updating suggested target, unavailable suggested target fallback, null decision-lap handling, force-auto-select edge cases, and manual target preservation behaviour."
+                    },
+                    {
+                        "id":  "step-20260812-005",
+                        "timestamp":  "2026-08-12T12:47:39.9042462Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Fixed missing target driver code in Scan All Laps result rows",
+                        "rationale":  "User reported blank target identifier in Scan All Laps table; target Code can be empty for some drivers and was passed through without fallback",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 331 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during test run with existing warning CS8629",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                           "new-code/UndercutAnalyser/Services/SingleScanWorkflow.Simulation.cs"
+                                       ],
+                        "notes":  "RunScanAllLapsForAttackerAsync now resolves targetCode with fallback to driver number when Driver.Code is blank."
+                    },
+                    {
+                        "id":  "step-20260812-006",
+                        "timestamp":  "2026-08-12T13:01:20.6707642Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Consolidated results export button and added full scenario export JSON",
+                        "rationale":  "User requested one results export button for shared table plus an export-all artifact suitable for reconstructing scenario state",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/MainWindow.xaml",
+                                             "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                             "new-code/UndercutAnalyser/Services/WorkspaceWorkflow.ScenarioExport.cs",
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/WorkspaceScenarioExportServiceTests.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 339 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during test run with existing warning CS8629",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/MainWindow.xaml",
+                                           "new-code/UndercutAnalyser/MainWindow.xaml.cs",
+                                           "new-code/UndercutAnalyser/Services/WorkspaceWorkflow.ScenarioExport.cs"
+                                       ],
+                        "notes":  "Replaced dual CSV buttons with ExportResultsCsvButton + ExportAllButton. Results CSV exports whichever rows are currently displayed; export-all writes JSON including event selection, parameters, loaded raw data, and result sets (main/single/displayed)."
+                    },
+                    {
+                        "id":  "step-20260812-007",
+                        "timestamp":  "2026-08-12T13:41:48.2766748Z",
+                        "author":  "GitHub Copilot",
+                        "summary":  "Added explicit regression test to ensure ahead-ordering uses Sector 2 crossing, not lap duration",
+                        "rationale":  "User requested additional hardening after audit concern that scans might use final lap times instead of decision-point timing",
+                        "filesChanged":  [
+                                             "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowScanCandidateServiceTests.cs"
+                                         ],
+                        "commandsRun":  [
+                                            "dotnet test UndercutAnalyser.sln -v minimal"
+                                        ],
+                        "testsRun":  [
+                                         "dotnet test UndercutAnalyser.sln: 340 passed, 0 failed"
+                                     ],
+                        "buildResult":  "Build succeeded during test run",
+                        "references":  [
+                                           "new-code/UndercutAnalyser/Services/ScanWorkflow.Candidates.cs",
+                                           "new-code/UndercutAnalyser/UndercutAnalyser.Tests/MainWindowScanCandidateServiceTests.cs"
+                                       ],
+                        "notes":  "New test BuildOnTrackOrderPerLap_UsesSectorTwoCrossing_NotLapDuration intentionally sets opposite lap-duration ordering to verify S2 crossing governs ahead/behind order."
                     }
                 ]
 }
-

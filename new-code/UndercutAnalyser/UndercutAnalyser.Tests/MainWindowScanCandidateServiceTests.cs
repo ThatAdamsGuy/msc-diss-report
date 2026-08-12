@@ -109,6 +109,51 @@ public sealed class MainWindowScanCandidateServiceTests
     }
 
     [Fact]
+    public void FindCandidates_UsesAbsoluteSectorTwoCrossings_ForInitialGap()
+    {
+        var t0 = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+
+        var lapIndex = new Dictionary<int, Dictionary<int, EventLap>>
+        {
+            [1] = new Dictionary<int, EventLap>
+            {
+                // Attacker starts earlier but has slower S1+S2 (crosses at +61)
+                [14] = new() { DriverNumber = 1, LapNumber = 14, DateStart = t0, DurationSector1 = 30f, DurationSector2 = 31f, LapDuration = 91f }
+            },
+            [2] = new Dictionary<int, EventLap>
+            {
+                // Target starts 8s later but has quicker S1+S2 (crosses at +59)
+                [14] = new() { DriverNumber = 2, LapNumber = 14, DateStart = t0.AddSeconds(8), DurationSector1 = 25f, DurationSector2 = 26f, LapDuration = 90f }
+            }
+        };
+
+        var orderPerLap = new Dictionary<int, List<int>>
+        {
+            [14] = [2, 1]
+        };
+
+        var refPace = new Dictionary<int, double>
+        {
+            [1] = 91.0,
+            [2] = 90.5
+        };
+
+        (string compound, int age) TyreResolver(int driver, int lap) => ("SOFT", 8);
+
+        var candidates = ScanWorkflowService.FindCandidates(
+            driverNumbers: [1],
+            lapIndex: lapIndex,
+            orderPerLap: orderPerLap,
+            referencePaceByDriver: refPace,
+            safetyCarWindows: [],
+            minAge: 5,
+            tyreStateResolver: TyreResolver);
+
+        var candidate = Assert.Single(candidates);
+        Assert.Equal(2.0, candidate.InitialGapSeconds, 10);
+    }
+
+    [Fact]
     public void FindCandidates_SkipsWhenAttackerTyreAgeBelowMinimum()
     {
         var t0 = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
@@ -138,5 +183,29 @@ public sealed class MainWindowScanCandidateServiceTests
             tyreStateResolver: TyreResolver);
 
         Assert.Empty(candidates);
+    }
+
+    [Fact]
+    public void BuildOnTrackOrderPerLap_UsesSectorTwoCrossing_NotLapDuration()
+    {
+        var t0 = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+
+        var lapIndex = new Dictionary<int, Dictionary<int, EventLap>>
+        {
+            [4] = new Dictionary<int, EventLap>
+            {
+                // Slower full lap, but earlier S2 crossing
+                [20] = new() { DriverNumber = 4, LapNumber = 20, DateStart = t0, DurationSector1 = 20f, DurationSector2 = 30f, LapDuration = 95f }
+            },
+            [81] = new Dictionary<int, EventLap>
+            {
+                // Faster full lap, but later S2 crossing
+                [20] = new() { DriverNumber = 81, LapNumber = 20, DateStart = t0, DurationSector1 = 21f, DurationSector2 = 31f, LapDuration = 88f }
+            }
+        };
+
+        var orderPerLap = ScanWorkflowService.BuildOnTrackOrderPerLap(lapIndex);
+
+        Assert.Equal(new[] { 4, 81 }, orderPerLap[20]);
     }
 }

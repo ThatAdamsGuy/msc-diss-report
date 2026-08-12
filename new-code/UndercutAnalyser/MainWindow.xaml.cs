@@ -250,7 +250,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RawDataButton.Click += OnRawDataButtonClick;
         PredictionScanButton.Click += OnPredictionScanButtonClick;
         ScanAllDriversButton.Click += OnScanAllDriversButtonClickAsync;
-        ScanSingleDriverButton.Click += OnScanSingleDriverButtonClickAsync;
+        ScanAllLapsButton.Click += OnScanAllLapsButtonClickAsync;
+        SimulateAllUndercutsButton.Click += OnSimulateAllUndercutsButtonClickAsync;
 
         ScanSingleAttackerCombo.SelectionChanged += OnScanSingleAttackerSelectionChanged;
         ScanSingleTargetCombo.SelectionChanged += OnScanSingleTargetSelectionChanged;
@@ -270,8 +271,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         GetSingleScanShowBehindCheckBox()?.Checked += OnSingleScanFilterChanged;
         GetSingleScanShowBehindCheckBox()?.Unchecked += OnSingleScanFilterChanged;
 
-        FullScanExportCsvButton.Click += (_, _) => ExportMainScanCsv();
-        SingleScanExportCsvButton.Click += (_, _) => ExportSingleScanCsv();
+        ExportResultsCsvButton.Click += (_, _) => ExportDisplayedResultsCsv();
+        ExportAllButton.Click += (_, _) => ExportAllScenarioData();
         SimulateSingleUndercutButton.Click += (_, _) => SimulateSingleUndercut();
 
     }
@@ -413,17 +414,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private async void OnScanSingleDriverButtonClickAsync(object sender, RoutedEventArgs e)
+    private async void OnSimulateAllUndercutsButtonClickAsync(object sender, RoutedEventArgs e)
     {
         if (ScanSingleAttackerCombo.SelectedItem is not MainScanDriverItem attacker) return;
+        if (ScanSingleTargetCombo.SelectedItem is not MainScanDriverItem target) return;
 
         ClearAllDriversResults();
-        ClearSingleScanResults("Scanning single driver…");
-        ScanSingleDriverButton.IsEnabled = false;
+        ClearSingleScanResults("Scanning all laps for selected driver…");
+        SimulateAllUndercutsButton.IsEnabled = false;
 
         try
         {
-            var rows = await RunScanInMainAsync([attacker.DriverNumber]);
+            var rows = await RunSingleDriverAllLapsAsync(attacker, target);
             PublishSingleScanRows(rows, $"{rows.Count} single-driver scenario{(rows.Count == 1 ? string.Empty : "s")} scanned.");
         }
         catch (Exception ex)
@@ -432,9 +434,33 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         finally
         {
-            ScanSingleDriverButton.IsEnabled =
+            SimulateAllUndercutsButton.IsEnabled =
                 ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
                 ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
+        }
+    }
+
+    private async void OnScanAllLapsButtonClickAsync(object sender, RoutedEventArgs e)
+    {
+        if (ScanSingleAttackerCombo.SelectedItem is not MainScanDriverItem attacker) return;
+
+        ClearAllDriversResults();
+        ClearSingleScanResults("Scanning all laps for selected driver…");
+        ScanAllLapsButton.IsEnabled = false;
+
+        try
+        {
+            var rows = await RunScanAllLapsForAttackerAsync(attacker);
+            PublishSingleScanRows(rows, $"{rows.Count} scenario{(rows.Count == 1 ? string.Empty : "s")} scanned.");
+        }
+        catch (Exception ex)
+        {
+            ClearSingleScanResults($"Scan failed: {ex.Message}");
+        }
+        finally
+        {
+            ScanAllLapsButton.IsEnabled =
+                ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem;
         }
     }
 
@@ -442,10 +468,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_suppressScanSelectionHandlers) return;
 
-        RefreshScenarioFromSelection();
-        ScanSingleDriverButton.IsEnabled =
+        RefreshScenarioFromSelection(forceAutoSelectTarget: true);
+        SimulateAllUndercutsButton.IsEnabled =
             ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
             ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
+        ScanAllLapsButton.IsEnabled =
+            ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem;
     }
 
     private void OnScanSingleTargetSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -453,8 +481,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (_suppressScanSelectionHandlers) return;
 
         PopulateTargetLapChoices();
-        RefreshScenarioFromSelection();
-        ScanSingleDriverButton.IsEnabled =
+        RefreshScenarioFromSelection(forceAutoSelectTarget: false);
+        SimulateAllUndercutsButton.IsEnabled =
             ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
             ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
     }
@@ -462,7 +490,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void OnScanTargetLapSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_suppressScanSelectionHandlers) return;
-        RefreshScenarioFromSelection();
+        RefreshScenarioFromSelection(forceAutoSelectTarget: true);
     }
 
     private void OnMainScanFilterChanged(object sender, RoutedEventArgs e)
@@ -505,7 +533,121 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Publishes full-scan rows to the grid and updates export availability.
+    /// Runs single-driver scans for all laps, comparing the attacker against the target driver.
+    /// </summary>
+    private async Task<List<ScanRowData>> RunSingleDriverAllLapsAsync(MainScanDriverItem attacker, MainScanDriverItem target)
+    {
+        var rows = new List<ScanRowData>();
+
+        // Get all valid decision laps for the attacker driver
+        var availableLaps = WorkspaceWorkflowService.BuildTargetDecisionLapChoices(_currentLaps, attacker.DriverNumber);
+
+        foreach (var lapNumber in availableLaps)
+        {
+            // Calculate the actual gap between attacker and target at this lap (not the static gap from the text box)
+            string gapAtLap = GetGapBetweenDriversAtLap(attacker.DriverNumber, target.DriverNumber, lapNumber);
+            if (string.IsNullOrEmpty(gapAtLap))
+                continue; // Skip lap if gap cannot be calculated
+
+            var runInput = new MainWindowSingleScanRunInput(
+                EventName: SelectedEventDisplay.Text,
+                Attacker: new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName),
+                Target: new PredictionSelection(target.DriverNumber, target.Code, target.DisplayName),
+                DecisionLapNumber: lapNumber,
+                StartingGapText: gapAtLap,
+                AttackerPaceOverrideText: ScanAttackerPaceBox.Text,
+                TargetPaceOverrideText: ScanTargetPaceBox.Text,
+                DerivedReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
+                AttackerCompound: GetTyreStateAtLap(attacker.DriverNumber, lapNumber).compound,
+                AttackerTyreAge: GetTyreStateAtLap(attacker.DriverNumber, lapNumber).age,
+                TargetCompound: GetTyreStateAtLap(target.DriverNumber, lapNumber).compound,
+                TargetTyreAge: GetTyreStateAtLap(target.DriverNumber, lapNumber).age,
+                AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
+                AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
+                TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
+                TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
+                TargetResponseLaps: _targetResponseLaps,
+                ModelParameters: BuildModelParametersFromMain());
+
+            var result = SingleScanWorkflowService.Run(runInput);
+            if (result.IsSuccess && result.Row is not null)
+            {
+                rows.Add(result.Row);
+            }
+        }
+
+        return await Task.FromResult(rows);
+    }
+
+    private async Task<List<ScanRowData>> RunScanAllLapsForAttackerAsync(MainScanDriverItem attacker)
+    {
+        var rows = new List<ScanRowData>();
+
+        // Get all valid decision laps for the attacker driver
+        var availableLaps = WorkspaceWorkflowService.BuildTargetDecisionLapChoices(_currentLaps, attacker.DriverNumber);
+
+        // Build on-track order for each lap
+        var lapIndex = ScanWorkflowService.BuildLapIndex(_currentLaps);
+        var orderPerLap = ScanWorkflowService.BuildOnTrackOrderPerLap(lapIndex);
+
+        foreach (var lapNumber in availableLaps)
+        {
+            // Find the driver ahead on track for this lap
+            int? targetDriverNumber = null;
+            if (orderPerLap.TryGetValue(lapNumber, out var order))
+            {
+                var attackerPos = order.IndexOf(attacker.DriverNumber);
+                if (attackerPos > 0)
+                    targetDriverNumber = order[attackerPos - 1];
+            }
+
+            if (!targetDriverNumber.HasValue) continue;
+
+            // Get target driver details
+            var targetDriver = _currentDrivers.FirstOrDefault(d => d.DriverNumber == targetDriverNumber.Value);
+            if (targetDriver is null) continue;
+
+            var targetCode = string.IsNullOrWhiteSpace(targetDriver.Code)
+                ? targetDriver.DriverNumber.ToString(CultureInfo.InvariantCulture)
+                : targetDriver.Code;
+
+            // Calculate the actual gap between attacker and target at this lap (not the static gap from the text box)
+            string gapAtLap = GetGapBetweenDriversAtLap(attacker.DriverNumber, targetDriver.DriverNumber, lapNumber);
+            if (string.IsNullOrEmpty(gapAtLap))
+                continue; // Skip lap if gap cannot be calculated
+
+            var runInput = new MainWindowSingleScanRunInput(
+                EventName: SelectedEventDisplay.Text,
+                Attacker: new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName),
+                Target: new PredictionSelection(targetDriver.DriverNumber, targetCode, targetDriver.BroadcastName),
+                DecisionLapNumber: lapNumber,
+                StartingGapText: gapAtLap,
+                AttackerPaceOverrideText: ScanAttackerPaceBox.Text,
+                TargetPaceOverrideText: ScanTargetPaceBox.Text,
+                DerivedReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
+                AttackerCompound: GetTyreStateAtLap(attacker.DriverNumber, lapNumber).compound,
+                AttackerTyreAge: GetTyreStateAtLap(attacker.DriverNumber, lapNumber).age,
+                TargetCompound: GetTyreStateAtLap(targetDriver.DriverNumber, lapNumber).compound,
+                TargetTyreAge: GetTyreStateAtLap(targetDriver.DriverNumber, lapNumber).age,
+                AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
+                AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
+                TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
+                TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
+                TargetResponseLaps: _targetResponseLaps,
+                ModelParameters: BuildModelParametersFromMain());
+
+            var result = SingleScanWorkflowService.Run(runInput);
+            if (result.IsSuccess && result.Row is not null)
+            {
+                rows.Add(result.Row);
+            }
+        }
+
+        return await Task.FromResult(rows);
+    }
+
+    /// <summary>
+    /// Publishes full-scan rows and refreshes the results view.
     /// </summary>
     private void PublishScanRows(List<ScanRowData> rows)
     {
@@ -523,25 +665,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Clears single-scan grid data and status text, and disables single-scan export.
+    /// Clears single-scan grid data and status text, and updates export button states.
     /// </summary>
     private void ClearSingleScanResults(string status = "")
     {
         _singleScanRows = [];
-        ScanSingleResultsGrid.ItemsSource = null;
-        ScanSingleResultsStatusText.Text = status;
-        SingleScanExportCsvButton.SetCurrentValue(IsEnabledProperty, false);
+        MainScanSingleGrid.ItemsSource = null;
+        MainScanSingleStatusText.Text = status;
+        UpdateExportButtonsState();
     }
 
     /// <summary>
-    /// Clears full-scan grid data and status text, and disables full-scan export.
+    /// Clears full-scan grid data and status text, and updates export button states.
     /// </summary>
     private void ClearAllDriversResults(string status = "")
     {
         _mainScanRows = [];
         MainScanSingleGrid.ItemsSource = null;
         MainScanSingleStatusText.Text = status;
-        FullScanExportCsvButton.SetCurrentValue(IsEnabledProperty, false);
+        UpdateExportButtonsState();
     }
 
     /// <summary>
@@ -557,7 +699,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         MainScanSingleGrid.ItemsSource = state.FilteredRows;
         MainScanSingleStatusText.Text = state.StatusText;
-        FullScanExportCsvButton.SetCurrentValue(IsEnabledProperty, state.EnableExport);
+        UpdateExportButtonsState();
     }
 
     /// <summary>
@@ -572,9 +714,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             showMarginal: GetSingleScanShowMarginalCheckBox()?.IsChecked,
             showBehind: GetSingleScanShowBehindCheckBox()?.IsChecked);
 
-        ScanSingleResultsGrid.ItemsSource = state.FilteredRows;
-        ScanSingleResultsStatusText.Text = state.StatusText;
-        SingleScanExportCsvButton.SetCurrentValue(IsEnabledProperty, state.EnableExport);
+        MainScanSingleGrid.ItemsSource = state.FilteredRows;
+        MainScanSingleStatusText.Text = state.StatusText;
+        UpdateExportButtonsState();
     }
 
     /// <summary>
@@ -583,6 +725,25 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private (string compound, int age) GetTyreStateAtLap(int driverNumber, int lapNumber)
     {
         return WorkspaceWorkflowService.ResolveTyreStateAtLap(_currentStints, _currentLaps, driverNumber, lapNumber);
+    }
+
+    /// <summary>
+    /// Calculates the gap between two drivers at a specific lap using absolute Sector 2 crossing timestamps.
+    /// Returns the gap formatted as a string (positive = attacker behind target, negative = attacker ahead).
+    /// Returns empty string if gap cannot be calculated.
+    /// </summary>
+    private string GetGapBetweenDriversAtLap(int attackerNumber, int targetNumber, int lapNumber)
+    {
+        var gap = WorkspaceWorkflowService.TryDeriveInitialGapSeconds(
+            laps: _currentLaps,
+            attackerDriverNumber: attackerNumber,
+            targetDriverNumber: targetNumber,
+            decisionLapNumber: lapNumber);
+
+        if (!gap.HasValue)
+            return string.Empty;
+
+        return gap.Value.ToString("F3", CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -634,7 +795,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         RefreshScenarioFromSelection();
 
-        ScanSingleDriverButton.IsEnabled =
+        SimulateAllUndercutsButton.IsEnabled =
             ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem &&
             ScanSingleTargetCombo.SelectedItem is MainScanDriverItem;
     }
@@ -752,19 +913,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private CheckBox? GetMainScanShowBehindCheckBox() => FindName("MainScanShowBehindCheckBox") as CheckBox;
 
     /// <summary>
-    /// Returns the single-scan Ahead filter checkbox if it exists in the loaded visual tree.
+    /// Returns the single-scan Ahead filter checkbox. Both tabs share the same filter checkboxes.
     /// </summary>
-    private CheckBox? GetSingleScanShowAheadCheckBox() => FindName("SingleScanShowAheadCheckBox") as CheckBox;
+    private CheckBox? GetSingleScanShowAheadCheckBox() => FindName("MainScanShowAheadCheckBox") as CheckBox;
 
     /// <summary>
-    /// Returns the single-scan Marginal filter checkbox if it exists in the loaded visual tree.
+    /// Returns the single-scan Marginal filter checkbox. Both tabs share the same filter checkboxes.
     /// </summary>
-    private CheckBox? GetSingleScanShowMarginalCheckBox() => FindName("SingleScanShowMarginalCheckBox") as CheckBox;
+    private CheckBox? GetSingleScanShowMarginalCheckBox() => FindName("MainScanShowMarginalCheckBox") as CheckBox;
 
     /// <summary>
-    /// Returns the single-scan Behind filter checkbox if it exists in the loaded visual tree.
+    /// Returns the single-scan Behind filter checkbox. Both tabs share the same filter checkboxes.
     /// </summary>
-    private CheckBox? GetSingleScanShowBehindCheckBox() => FindName("SingleScanShowBehindCheckBox") as CheckBox;
+    private CheckBox? GetSingleScanShowBehindCheckBox() => FindName("MainScanShowBehindCheckBox") as CheckBox;
 
     /// <summary>
     /// Parses OpenF1 tyre compound text into the internal compound enum used by the prediction model.
@@ -788,7 +949,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// <summary>
     /// Refreshes single-scan scenario inputs from current driver/lap selections, including auto-targeting and derived starting gap.
     /// </summary>
-    private void RefreshScenarioFromSelection()
+    private void RefreshScenarioFromSelection(bool forceAutoSelectTarget = false)
     {
         var attackerSelection = ScanSingleAttackerCombo.SelectedItem is MainScanDriverItem attacker
             ? new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName)
@@ -821,9 +982,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         var presentation = SingleScanWorkflowService.Build(
             scenario,
-            selectedTargetDriverNumber: selectedTarget?.DriverNumber);
+            selectedTargetDriverNumber: selectedTarget?.DriverNumber,
+            forceAutoSelectTarget: forceAutoSelectTarget);
 
-        if (presentation.ShouldAutoSelectTarget && presentation.TargetDriverToSelect.HasValue)
+        // Only auto-select target if we're not in the initial population phase and the user hasn't manually selected
+        if (!_suppressScanSelectionHandlers && presentation.ShouldAutoSelectTarget && presentation.TargetDriverToSelect.HasValue)
         {
             var targetItems = ScanSingleTargetCombo.ItemsSource as IEnumerable<MainScanDriverItem>
                               ?? ScanSingleTargetCombo.Items.Cast<object>().OfType<MainScanDriverItem>();
@@ -848,27 +1011,43 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         ScanAttackerTyreAgeBox.Text = presentation.AttackerTyreAgeText;
         ScanTargetCurrentCompoundBox.Text = presentation.TargetCompoundText;
         ScanTargetTyreAgeBox.Text = presentation.TargetTyreAgeText;
+
         ScanStartingGapBox.Text = presentation.StartingGapText;
     }
 
     /// <summary>
-    /// Exports currently displayed full-scan rows to CSV.
+    /// Exports whichever scan results are currently displayed in the shared results table.
     /// </summary>
-    private void ExportMainScanCsv()
+    private void ExportDisplayedResultsCsv()
     {
-        ExportScanRowsCsv(_mainScanRows, "scan_results_mainwindow.csv");
+        var rows = GetDisplayedResultsRows();
+        if (rows.Count == 0)
+            return;
+
+        ExportScanRowsCsv(rows.ToList(), "scan_results.csv");
     }
 
     /// <summary>
-    /// Exports currently displayed single-scan rows to CSV.
+    /// Exports full scenario context (event, inputs, loaded data, and any results) as JSON for reproducibility.
     /// </summary>
-    private void ExportSingleScanCsv()
+    private void ExportAllScenarioData()
     {
-        ExportScanRowsCsv(_singleScanRows, "scan_results_single_scan.csv");
+        var payload = BuildScenarioExportPayload();
+        var json = WorkspaceWorkflowService.SerializeScenarioExport(payload);
+
+        WorkspaceWorkflowService.TrySaveCsv(
+            owner: this,
+            csvContent: json,
+            options: new MainWindowCsvSaveOptions(
+                Title: "Export full scenario",
+                Filter: "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                FileName: "undercut_scenario_export.json",
+                DefaultExt: ".json",
+                Encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)));
     }
 
     /// <summary>
-    /// Writes a set of scan rows to a user-selected CSV file using a consistent export schema.
+    /// Writes rows content to a user-selected file using the shared save helper.
     /// </summary>
     private void ExportScanRowsCsv(List<ScanRowData> rows, string defaultFileName)
     {
@@ -885,6 +1064,55 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 FileName: defaultFileName,
                 DefaultExt: ".csv",
                 Encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)));
+    }
+
+    private IReadOnlyList<ScanRowData> GetDisplayedResultsRows()
+    {
+        return WorkspaceWorkflowService.ResolveDisplayedResultsRows(_mainScanRows, _singleScanRows);
+    }
+
+    private void UpdateExportButtonsState()
+    {
+        ExportResultsCsvButton.SetCurrentValue(IsEnabledProperty, GetDisplayedResultsRows().Count > 0);
+        ExportAllButton.SetCurrentValue(IsEnabledProperty, WorkspaceWorkflowService.HasExportableScenarioData(_currentMeetingKey, _currentLaps, _currentDrivers));
+    }
+
+    private ScenarioExportPayload BuildScenarioExportPayload()
+    {
+        var attacker = ScanSingleAttackerCombo.SelectedItem as MainScanDriverItem;
+        var target = ScanSingleTargetCombo.SelectedItem as MainScanDriverItem;
+        var lap = (ScanTargetLapCombo.SelectedItem as DecisionLapItem)?.LapNumber;
+
+        return WorkspaceWorkflowService.BuildScenarioExportPayload(
+            exportedAtUtc: DateTime.UtcNow,
+            eventDisplay: SelectedEventDisplay.Text,
+            meetingKey: _currentMeetingKey,
+            selection: new ScenarioExportSelection(
+                AttackerDriverNumber: attacker?.DriverNumber,
+                AttackerCode: attacker?.Code,
+                TargetDriverNumber: target?.DriverNumber,
+                TargetCode: target?.Code,
+                DecisionLap: lap),
+            parameters: new ScenarioExportParameters(
+                FuelSecondsPer10Kg: _fuelSecondsPer10Kg,
+                FuelKg: _fuelKg,
+                TargetResponseLaps: _targetResponseLaps,
+                MarginalThreshold: _marginalThreshold,
+                TrafficPenalty: _trafficPenalty,
+                ApplyAttackerTraffic: _applyAttackerTraffic,
+                ApplyTargetTraffic: _applyTargetTraffic,
+                PitLaneLoss: _pitLaneLoss,
+                ScanMinTyreAge: TryParseInt(ScanMinTyreAgeBox.Text, out var minAge) ? minAge : null,
+                AttackerReplacementCompound: GetComboText(ScanAttackerReplCompoundCombo),
+                AttackerReplacementAge: TryParseInt(ScanAttackerReplAgeBox.Text, out var attackerAge) ? attackerAge : null,
+                TargetReplacementCompound: GetComboText(ScanTargetReplCompoundCombo),
+                TargetReplacementAge: TryParseInt(ScanTargetReplAgeBox.Text, out var targetAge) ? targetAge : null),
+            drivers: _currentDrivers,
+            laps: _currentLaps,
+            stints: _currentStints,
+            raceControlMessages: _currentRaceControlMessages,
+            mainScanRows: _mainScanRows,
+            singleScanRows: _singleScanRows);
     }
 
 
@@ -1028,6 +1256,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         var plot = _raceTracePlot.Plot;
         plot.Clear();
+        var traceLegendPanel = FindName("TraceLegendPanel") as WrapPanel;
+        traceLegendPanel?.Children.Clear();
 
         plot.Title("Engineering Race Trace (Constant Reference)");
         plot.XLabel("Lap Number");
@@ -1055,6 +1285,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         foreach (var series in computation.Series)
         {
             var lineColor = RaceTraceWorkflowService.ParseScottPlotColor(series.TeamColour, series.DriverNumber);
+            AddLegendToggle(
+                series.DriverNumber,
+                series.DriverName,
+                series.DriverCode,
+                RaceTraceWorkflowService.ParseLegendBrush(series.TeamColour, series.DriverNumber),
+                series.IsSolidLine,
+                series.IsVisible,
+                lineColor);
+
             var displayColor = series.IsVisible ? lineColor : lineColor.MixedWith(ScottPlot.Colors.White, 0.85);
 
             // Apply opacity dimming if there's a hovered driver and this isn't the hovered driver
@@ -1071,6 +1310,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             scatter.MarkerSize = 8;
             scatter.MarkerFillColor = displayColor;
             scatter.MarkerLineColor = displayColor;
+
+            // Add driver acronym annotation at the end of the line
+            if (series.Xs.Count > 0 && !string.IsNullOrEmpty(series.DriverCode))
+            {
+                var lastX = series.Xs[series.Xs.Count - 1];
+                var lastY = series.Ys[series.Ys.Count - 1];
+
+                // Create a text annotation with the driver code
+                var annotation = plot.Add.Text(series.DriverCode, lastX, lastY);
+                annotation.LabelFontSize = 10;
+                annotation.OffsetX = 5;  // Slight offset to avoid overlapping the line end
+                annotation.OffsetY = 0;
+                annotation.LabelFontColor = displayColor;
+            }
         }
 
         var baseline = plot.Add.HorizontalLine(0);
@@ -1092,8 +1345,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         RawDataButton.IsEnabled = state.EnableRawData;
         PredictionScanButton.IsEnabled = state.EnablePredictionScan;
         ScanAllDriversButton.IsEnabled = state.EnableScanAllDrivers;
-        ScanSingleDriverButton.IsEnabled = state.EnableScanSingleDriver;
+        // Note: ScanSingleDriverButton.IsEnabled is managed by selection handlers in PopulateMainScanDriverSelectors
+        // Do not override it here, as it should reflect the current attacker/target selections
         SetRaceTraceEnabled(state.EnableRaceTrace);
+        UpdateExportButtonsState();
     }
 
     /// <summary>
