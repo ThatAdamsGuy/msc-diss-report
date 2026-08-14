@@ -268,6 +268,33 @@ public sealed class OpenF1RaceDataClientTests
     }
 
     [Fact]
+    public async Task GetRaceControlMessagesBySessionKeyAsync_ParsesNumericFields_WhenEncodedAsStrings()
+    {
+        const string json = """
+        [
+          {
+            "meeting_key": "1284",
+            "session_key": "9999",
+            "date": "2026-05-03T19:01:00Z",
+            "driver_number": "1",
+            "lap_number": "4",
+            "category": "SafetyCar",
+            "message": "SAFETY CAR DEPLOYED"
+          }
+        ]
+        """;
+
+        var sut = CreateClient(new RoutingHandler(_ => JsonResponse(json)));
+        var messages = await sut.GetRaceControlMessagesBySessionKeyAsync(9999);
+
+        var message = Assert.Single(messages);
+        Assert.Equal(1284, message.MeetingKey);
+        Assert.Equal(9999, message.SessionKey);
+        Assert.Equal(1, message.DriverNumber);
+        Assert.Equal(4, message.LapNumber);
+    }
+
+    [Fact]
     public async Task GetStintsBySessionKeyAsync_DeserializesStintPayload()
     {
         const string json = """

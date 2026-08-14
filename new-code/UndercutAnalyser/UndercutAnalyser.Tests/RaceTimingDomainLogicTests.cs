@@ -67,4 +67,18 @@ public sealed class RaceTimingDomainLogicTests
         Assert.Equal(baseTime.AddSeconds(10), window.StartUtc);
         Assert.Equal(baseTime.AddSeconds(40), window.EndUtc);
     }
+
+    [Fact]
+    public void BuildSafetyCarLapNumbers_ReturnsInclusiveLapRange()
+    {
+        var messages = new List<RaceControlMessage>
+        {
+            new() { Category = "SafetyCar", Message = "SAFETY CAR DEPLOYED", LapNumber = 4 },
+            new() { Category = "SafetyCar", Message = "SAFETY CAR IN THIS LAP", LapNumber = 11 }
+        };
+
+        var laps = RaceTimingDomainLogic.BuildSafetyCarLapNumbers(messages);
+
+        Assert.Equal([4, 5, 6, 7, 8, 9, 10, 11], laps.OrderBy(x => x).ToArray());
+    }
 }

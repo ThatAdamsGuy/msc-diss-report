@@ -29,6 +29,7 @@ public static partial class RaceTraceWorkflowService
         }
 
         var safetyCarWindows = RaceTimingDomainLogic.BuildSafetyCarWindows(raceControlMessages);
+        var safetyCarLapNumbers = RaceTimingDomainLogic.BuildSafetyCarLapNumbers(raceControlMessages);
         var maxSessionLapNumber = laps.Max(l => l.LapNumber);
         var fuelEffectPerLapSeconds = options.ApplyFuelCorrection && maxSessionLapNumber > 0
             ? options.FuelSecondsPer10Kg * (options.FuelKg / 10.0) / maxSessionLapNumber
@@ -38,12 +39,10 @@ public static partial class RaceTraceWorkflowService
 
         var displayEligibleLaps = laps
             .Where(l => l.LapDuration.HasValue && l.DateStart.HasValue)
-            .Where(l => IsLapEligible(l, options.IncludePitLaps, options.IncludeScVscLaps, safetyCarWindows, pitInLaps))
-            .Select(l => new
-            {
-                Lap = l,
-                AdjustedLapSeconds = l.LapDuration!.Value - (fuelEffectPerLapSeconds * Math.Max(0, maxSessionLapNumber - l.LapNumber))
-            })
+            .Where(l => IsLapEligible(l, options.IncludePitLaps, options.IncludeScVscLaps, safetyCarWindows, safetyCarLapNumbers, pitInLaps))
+            .Select(l => new EligibleLapSample(
+                Lap: l,
+                AdjustedLapSeconds: l.LapDuration!.Value - (fuelEffectPerLapSeconds * Math.Max(0, maxSessionLapNumber - l.LapNumber))))
             .ToList();
 
         if (displayEligibleLaps.Count == 0)
@@ -71,6 +70,12 @@ public static partial class RaceTraceWorkflowService
         }
 
         var constantReference = referenceForTrace.AverageLapTimeSeconds.Value;
+        var scLeaderReferenceByLap = BuildSafetyCarLeaderReferenceByLap(
+            displayEligibleLaps,
+            safetyCarWindows,
+            safetyCarLapNumbers,
+            options.IncludeScVscLaps,
+            constantReference);
 
         var driverByNumber = drivers
             .GroupBy(d => d.DriverNumber)
@@ -112,7 +117,10 @@ public static partial class RaceTraceWorkflowService
             foreach (var item in driverLaps)
             {
                 var lapNumber = item.Lap.LapNumber;
-                var lapDelta = constantReference - item.AdjustedLapSeconds;
+                var effectiveReference = scLeaderReferenceByLap.TryGetValue(lapNumber, out var scReference)
+                    ? scReference
+                    : constantReference;
+                var lapDelta = effectiveReference - item.AdjustedLapSeconds;
                 cumulativeDelta += lapDelta;
 
                 xs.Add(lapNumber);
@@ -158,6 +166,7 @@ public static partial class RaceTraceWorkflowService
         bool includePitLaps,
         bool includeScVscLaps,
         IReadOnlyList<TimeWindow> safetyCarWindows,
+        IReadOnlySet<int> safetyCarLapNumbers,
         HashSet<(int DriverNumber, int LapNumber)> pitInLaps)
     {
         if (!includePitLaps)
@@ -168,17 +177,75 @@ public static partial class RaceTraceWorkflowService
             }
         }
 
-        if (!includeScVscLaps && lap.DateStart.HasValue && lap.LapDuration.HasValue)
+        if (!includeScVscLaps)
         {
-            var lapStartUtc = RaceTimingDomainLogic.AsUtc(lap.DateStart.Value);
-            var lapEndUtc = lapStartUtc.AddSeconds(lap.LapDuration.Value);
-            if (RaceTimingDomainLogic.IsInAnyWindow(lapStartUtc, lapEndUtc, safetyCarWindows))
+            if (safetyCarLapNumbers.Contains(lap.LapNumber))
             {
                 return false;
+            }
+
+            if (lap.DateStart.HasValue && lap.LapDuration.HasValue)
+            {
+                var lapStartUtc = RaceTimingDomainLogic.AsUtc(lap.DateStart.Value);
+                var lapEndUtc = lapStartUtc.AddSeconds(lap.LapDuration.Value);
+                if (RaceTimingDomainLogic.IsInAnyWindow(lapStartUtc, lapEndUtc, safetyCarWindows))
+                {
+                    return false;
+                }
             }
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Builds per-lap reference overrides for SC/VSC windows using the race leader's adjusted lap time,
+    /// so the leader trace remains flat across safety-car periods.
+    /// </summary>
+    private static Dictionary<int, double> BuildSafetyCarLeaderReferenceByLap(
+        IReadOnlyList<EligibleLapSample> displayEligibleLaps,
+        IReadOnlyList<TimeWindow> safetyCarWindows,
+        IReadOnlySet<int> safetyCarLapNumbers,
+        bool includeScVscLaps,
+        double constantReference)
+    {
+        var map = new Dictionary<int, double>();
+
+        if (!includeScVscLaps || (safetyCarWindows.Count == 0 && safetyCarLapNumbers.Count == 0))
+        {
+            return map;
+        }
+
+        var leaderByLap = displayEligibleLaps
+            .GroupBy(x => x.Lap.LapNumber)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderBy(x => x.AdjustedLapSeconds)
+                      .ThenBy(x => RaceTimingDomainLogic.AsUtc(x.Lap.DateStart!.Value))
+                      .First());
+
+        foreach (var kvp in leaderByLap)
+        {
+            var leaderLap = kvp.Value.Lap;
+            if (!leaderLap.DateStart.HasValue || !leaderLap.LapDuration.HasValue)
+            {
+                continue;
+            }
+
+            var lapStartUtc = RaceTimingDomainLogic.AsUtc(leaderLap.DateStart.Value);
+            var lapEndUtc = lapStartUtc.AddSeconds(leaderLap.LapDuration.Value);
+            var isSafetyCarLap = safetyCarLapNumbers.Contains(leaderLap.LapNumber)
+                || RaceTimingDomainLogic.IsInAnyWindow(lapStartUtc, lapEndUtc, safetyCarWindows);
+            if (!isSafetyCarLap)
+            {
+                continue;
+            }
+
+            var adjustedLeaderLapSeconds = kvp.Value.AdjustedLapSeconds;
+            map[kvp.Key] = adjustedLeaderLapSeconds > 0 ? adjustedLeaderLapSeconds : constantReference;
+        }
+
+        return map;
     }
 
     /// <summary>
@@ -346,6 +413,10 @@ public static partial class RaceTraceWorkflowService
         return new System.Windows.Media.SolidColorBrush(fallback[Math.Abs(fallbackSeed) % fallback.Length]);
     }
 }
+
+internal sealed record EligibleLapSample(
+    EventLap Lap,
+    double AdjustedLapSeconds);
 
 /// <summary>
 /// Input options used to compute race-trace render series.

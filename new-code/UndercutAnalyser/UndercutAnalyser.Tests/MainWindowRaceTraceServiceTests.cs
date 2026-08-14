@@ -162,6 +162,89 @@ public sealed class MainWindowRaceTraceServiceTests
     }
 
     [Fact]
+    public void Compute_UsesLeaderLapReferenceDuringSafetyCarWindow_KeepingLeaderFlat()
+    {
+        var t0 = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var laps = new List<EventLap>
+        {
+            new() { DriverNumber = 4, LapNumber = 1, DateStart = t0, LapDuration = 90f },
+            new() { DriverNumber = 81, LapNumber = 1, DateStart = t0, LapDuration = 91f },
+
+            new() { DriverNumber = 4, LapNumber = 2, DateStart = t0.AddSeconds(90), LapDuration = 120f },
+            new() { DriverNumber = 81, LapNumber = 2, DateStart = t0.AddSeconds(91), LapDuration = 121f },
+
+            new() { DriverNumber = 4, LapNumber = 3, DateStart = t0.AddSeconds(210), LapDuration = 119f },
+            new() { DriverNumber = 81, LapNumber = 3, DateStart = t0.AddSeconds(212), LapDuration = 121f }
+        };
+
+        var messages = new List<RaceControlMessage>
+        {
+            new() { Category = "SafetyCar", Date = t0.AddSeconds(95), Message = "SAFETY CAR DEPLOYED" },
+            new() { Category = "SafetyCar", Date = t0.AddSeconds(330), Message = "SAFETY CAR IN THIS LAP" }
+        };
+
+        var drivers = new List<Driver>
+        {
+            new() { DriverNumber = 4, Code = "NOR" },
+            new() { DriverNumber = 81, Code = "PIA" }
+        };
+
+        var result = RaceTraceWorkflowService.Compute(
+            laps,
+            drivers,
+            raceControlMessages: messages,
+            options: new RaceTraceComputationOptions(true, true, false, 0.3, 110, false),
+            traceVisibilityByDriver: new Dictionary<int, bool>());
+
+        var leaderSeries = Assert.Single(result.Series.Where(s => s.DriverNumber == 4));
+        Assert.Equal(0d, leaderSeries.Ys[1] - leaderSeries.Ys[0], 6);
+        Assert.Equal(0d, leaderSeries.Ys[2] - leaderSeries.Ys[1], 6);
+    }
+
+    [Fact]
+    public void Compute_UsesLeaderLapReferenceDuringSafetyCarLapNumbersWindow_KeepingLeaderFlat()
+    {
+        var t0 = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var laps = new List<EventLap>
+        {
+            new() { DriverNumber = 4, LapNumber = 1, DateStart = t0, LapDuration = 90f },
+            new() { DriverNumber = 81, LapNumber = 1, DateStart = t0.AddSeconds(2), LapDuration = 91f },
+
+            new() { DriverNumber = 4, LapNumber = 2, DateStart = t0.AddSeconds(90), LapDuration = 120f },
+            new() { DriverNumber = 81, LapNumber = 2, DateStart = t0.AddSeconds(92), LapDuration = 121f },
+
+            new() { DriverNumber = 4, LapNumber = 3, DateStart = t0.AddSeconds(210), LapDuration = 118f },
+            new() { DriverNumber = 81, LapNumber = 3, DateStart = t0.AddSeconds(213), LapDuration = 121f },
+
+            new() { DriverNumber = 4, LapNumber = 4, DateStart = t0.AddSeconds(328), LapDuration = 119f },
+            new() { DriverNumber = 81, LapNumber = 4, DateStart = t0.AddSeconds(332), LapDuration = 121f }
+        };
+
+        var messages = new List<RaceControlMessage>
+        {
+            new() { Category = "SafetyCar", Message = "SAFETY CAR DEPLOYED", LapNumber = 2 },
+            new() { Category = "SafetyCar", Message = "SAFETY CAR IN THIS LAP", LapNumber = 3 }
+        };
+
+        var drivers = new List<Driver>
+        {
+            new() { DriverNumber = 4, Code = "NOR" },
+            new() { DriverNumber = 81, Code = "PIA" }
+        };
+
+        var result = RaceTraceWorkflowService.Compute(
+            laps,
+            drivers,
+            raceControlMessages: messages,
+            options: new RaceTraceComputationOptions(true, true, false, 0.3, 110, false),
+            traceVisibilityByDriver: new Dictionary<int, bool>());
+
+        var leaderSeries = Assert.Single(result.Series.Where(s => s.DriverNumber == 4));
+        Assert.Equal(0d, leaderSeries.Ys[1] - leaderSeries.Ys[0], 6);
+        Assert.Equal(0d, leaderSeries.Ys[2] - leaderSeries.Ys[1], 6);
+    }
+
+    [Fact]
     public void ParseScottPlotColor_FallsBackForInvalidHex()
     {
         var color = RaceTraceWorkflowService.ParseScottPlotColor("not-a-color", 3);
