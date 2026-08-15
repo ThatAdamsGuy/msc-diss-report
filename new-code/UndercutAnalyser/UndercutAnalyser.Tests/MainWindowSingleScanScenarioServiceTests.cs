@@ -15,7 +15,8 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             AvailableTargetDriverNumbers: [81],
             Laps: [],
             Stints: [],
-            RaceControlMessages: []));
+            RaceControlMessages: [],
+            PreferSuggestedTarget: false));
 
         Assert.False(result.HasScenario);
     }
@@ -30,7 +31,8 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             AvailableTargetDriverNumbers: [81],
             Laps: [],
             Stints: [],
-            RaceControlMessages: []));
+            RaceControlMessages: [],
+            PreferSuggestedTarget: false));
 
         Assert.False(result.HasScenario);
     }
@@ -52,7 +54,8 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             AvailableTargetDriverNumbers: [81, 63],
             Laps: laps,
             Stints: [],
-            RaceControlMessages: []));
+            RaceControlMessages: [],
+            PreferSuggestedTarget: true));
 
         Assert.True(result.HasScenario);
         Assert.Equal(81, result.SuggestedAheadDriverNumber);
@@ -80,7 +83,8 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             AvailableTargetDriverNumbers: [63],
             Laps: laps,
             Stints: [],
-            RaceControlMessages: []));
+            RaceControlMessages: [],
+            PreferSuggestedTarget: true));
 
         Assert.True(result.HasScenario);
         Assert.Equal(81, result.SuggestedAheadDriverNumber);
@@ -104,7 +108,8 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             AvailableTargetDriverNumbers: [63],
             Laps: laps,
             Stints: [],
-            RaceControlMessages: []));
+            RaceControlMessages: [],
+            PreferSuggestedTarget: false));
 
         Assert.False(result.HasScenario);
     }
@@ -131,7 +136,8 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             AvailableTargetDriverNumbers: [81, 63],
             Laps: laps,
             Stints: [],
-            RaceControlMessages: []));
+            RaceControlMessages: [],
+            PreferSuggestedTarget: true));
 
         var lap11 = SingleScanWorkflowService.Derive(new MainWindowSingleScanScenarioInput(
             Attacker: new PredictionSelection(4, "NOR", "NOR"),
@@ -140,7 +146,8 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             AvailableTargetDriverNumbers: [81, 63],
             Laps: laps,
             Stints: [],
-            RaceControlMessages: []));
+            RaceControlMessages: [],
+            PreferSuggestedTarget: true));
 
         Assert.True(lap10.HasScenario);
         Assert.True(lap11.HasScenario);
@@ -167,11 +174,43 @@ public sealed class MainWindowSingleScanScenarioServiceTests
             AvailableTargetDriverNumbers: [81],
             Laps: laps,
             Stints: [],
-            RaceControlMessages: []));
+            RaceControlMessages: [],
+            PreferSuggestedTarget: false));
 
         Assert.True(result.HasScenario);
         Assert.NotNull(result.StartingGapSeconds);
         Assert.True(result.StartingGapSeconds!.Value > 0);
         Assert.Equal(2.0, result.StartingGapSeconds.Value, 10);
+    }
+
+    [Fact]
+    public void Derive_UsesManualTarget_WhenAutoSuggestNotPreferred_AndRecomputesStartingGap()
+    {
+        var t0 = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var laps = new List<EventLap>
+        {
+            // Suggested ahead driver at this lap (directly ahead of attacker)
+            new() { DriverNumber = 81, LapNumber = 15, DateStart = t0.AddSeconds(5), DurationSector1 = 25f, DurationSector2 = 25f, LapDuration = 90f },
+            // Manually selected alternative target (not directly ahead)
+            new() { DriverNumber = 63, LapNumber = 15, DateStart = t0.AddSeconds(11), DurationSector1 = 25f, DurationSector2 = 25f, LapDuration = 90f },
+            // Attacker
+            new() { DriverNumber = 4, LapNumber = 15, DateStart = t0, DurationSector1 = 30f, DurationSector2 = 30f, LapDuration = 92f }
+        };
+
+        var result = SingleScanWorkflowService.Derive(new MainWindowSingleScanScenarioInput(
+            Attacker: new PredictionSelection(4, "NOR", "NOR"),
+            SelectedTarget: new PredictionSelection(63, "RUS", "RUS"),
+            DecisionLapNumber: 15,
+            AvailableTargetDriverNumbers: [81, 63],
+            Laps: laps,
+            Stints: [],
+            RaceControlMessages: [],
+            PreferSuggestedTarget: false));
+
+        Assert.True(result.HasScenario);
+        Assert.Equal(81, result.SuggestedAheadDriverNumber);
+        Assert.Equal(63, result.EffectiveTargetDriverNumber);
+        Assert.NotNull(result.StartingGapSeconds);
+        Assert.Equal(-1.0, result.StartingGapSeconds!.Value, 10);
     }
 }

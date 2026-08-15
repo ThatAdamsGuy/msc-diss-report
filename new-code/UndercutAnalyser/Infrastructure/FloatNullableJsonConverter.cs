@@ -22,39 +22,25 @@ namespace UndercutAnalyser.Infrastructure
                     return null;
 
                 if (reader.TokenType == JsonTokenType.Number)
-                {
-                    if (reader.TryGetDouble(out var d))
-                        return (float)d;
+                    return (float)reader.GetDouble();
 
+                if (reader.TokenType != JsonTokenType.String)
                     return null;
-                }
 
-                if (reader.TokenType == JsonTokenType.String)
-                {
-                    var s = reader.GetString();
-                    if (string.IsNullOrWhiteSpace(s))
-                        return null;
-
-                    // Allow values like "1.234" or "1234" or with comma
-                    if (float.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var f))
-                        return f;
-
-                    // Try parse with current culture just in case
-                    if (float.TryParse(s, out f))
-                        return f;
-
-                    // Last resort: parse as double then cast
-                    if (double.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var d2))
-                        return (float)d2;
-
+                var s = reader.GetString();
+                if (string.IsNullOrWhiteSpace(s))
                     return null;
-                }
+
+                if (float.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var invariant))
+                    return invariant;
+
+                if (float.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out var current))
+                    return current;
 
                 return null;
             }
-            catch (Exception ex)
+            catch
             {
-                try { System.Diagnostics.Debug.WriteLine($"FloatNullableJsonConverter parse error: {ex.Message}"); } catch { }
                 return null;
             }
         }

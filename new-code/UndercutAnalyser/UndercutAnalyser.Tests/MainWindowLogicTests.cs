@@ -110,4 +110,33 @@ public sealed class MainWindowLogicTests
         Assert.Equal("UNKNOWN", compound);
         Assert.Equal(3, age);
     }
+
+    [Fact]
+    public void ResolveTyreStateAtLap_PrefersKnownRecentStint_WhenActiveStintCompoundIsUnknown()
+    {
+        var stints = new List<EventStint>
+        {
+            new() { DriverNumber = 4, StintNumber = 1, LapStart = 1, LapEnd = 5, Compound = "MEDIUM", TyreAgeAtStart = 0 },
+            new() { DriverNumber = 4, StintNumber = 2, LapStart = 6, LapEnd = 12, Compound = "", TyreAgeAtStart = 0 }
+        };
+
+        var (compound, age) = WorkspaceWorkflowService.ResolveTyreStateAtLap(stints, [], driverNumber: 4, lapNumber: 8);
+
+        Assert.Equal("MEDIUM", compound);
+        Assert.Equal(7, age);
+    }
+
+    [Fact]
+    public void ResolveTyreStateAtLap_UsesNearestUpcomingKnownStint_WhenNoPriorKnownStintExists()
+    {
+        var stints = new List<EventStint>
+        {
+            new() { DriverNumber = 4, StintNumber = 3, LapStart = 11, LapEnd = 20, Compound = "HARD", TyreAgeAtStart = 2 }
+        };
+
+        var (compound, age) = WorkspaceWorkflowService.ResolveTyreStateAtLap(stints, [], driverNumber: 4, lapNumber: 9);
+
+        Assert.Equal("HARD", compound);
+        Assert.Equal(2, age);
+    }
 }

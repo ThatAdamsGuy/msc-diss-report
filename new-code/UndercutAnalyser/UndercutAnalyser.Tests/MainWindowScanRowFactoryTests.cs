@@ -45,6 +45,8 @@ public sealed class MainWindowScanRowFactoryTests
         Assert.Equal("-0.100 s", row.GapAtTargetOutLapComplete);
         Assert.Equal("-0.250 s", row.GapAtBothDriversNormalLapComplete);
         Assert.Equal("-0.750", row.DeltaGAtTargetPitLapComplete);
+        Assert.Equal("-1.600", row.DeltaGAtTargetOutLapComplete);
+        Assert.Equal("-1.750", row.DeltaGAtBothDriversNormalLapComplete);
         Assert.Equal("Marginal", row.Result);
     }
 
@@ -67,6 +69,8 @@ public sealed class MainWindowScanRowFactoryTests
         Assert.Equal("-", row.GapAtTargetOutLapComplete);
         Assert.Equal("-", row.GapAtBothDriversNormalLapComplete);
         Assert.Equal("-", row.DeltaGAtTargetPitLapComplete);
+        Assert.Equal("-", row.DeltaGAtTargetOutLapComplete);
+        Assert.Equal("-", row.DeltaGAtBothDriversNormalLapComplete);
         Assert.Equal("Error: boom", row.Result);
     }
 }

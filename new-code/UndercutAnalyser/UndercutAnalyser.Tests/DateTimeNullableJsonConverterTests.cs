@@ -72,6 +72,14 @@ public sealed class DateTimeNullableJsonConverterTests
     }
 
     [Fact]
+    public void Read_WhitespaceString_ReturnsNull()
+    {
+        var result = DeserializeDate("{" + "\"value\":\"   \"" + "}");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public void Read_CommonDateTimeFormat_ReturnsParsedDateTime()
     {
         var result = DeserializeDate("{" + "\"value\":\"2025-01-02 03:04:05\"" + "}");
@@ -88,6 +96,23 @@ public sealed class DateTimeNullableJsonConverterTests
         var result = DeserializeDate("{" + "\"value\":" + long.MaxValue + "}");
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void Read_NumberThatCannotBeInt64_ReturnsNull()
+    {
+        var result = DeserializeDate("{" + "\"value\":1.5" + "}");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Read_NumberZeroUnixEpoch_ReturnsUtcUnixEpochStart()
+    {
+        var result = DeserializeDate("{" + "\"value\":0" + "}");
+
+        Assert.NotNull(result);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(0).UtcDateTime, result.Value);
     }
 
     [Fact]
@@ -148,8 +173,8 @@ public sealed class DateTimeNullableJsonConverterTests
     public void Read_MalformedDateString_MayParsePartially()
     {
         // DateTime converter is lenient with some formats; test the ones it definitely rejects
-        var strictlyInvalidCases = new[] 
-        { 
+        var strictlyInvalidCases = new[]
+        {
             "not-a-date",
             "abc-def-ghi",
             "2025-13-01",  // Invalid month (>12)
@@ -160,6 +185,65 @@ public sealed class DateTimeNullableJsonConverterTests
             var result = DeserializeDate("{\n" + "\"value\":\"" + invalid + "\"\n" + "}");
             Assert.Null(result);
         }
+    }
+
+    [Fact]
+    public void Read_InvalidUtf8ReaderState_ReturnsNullFromCatchPath()
+    {
+        var converter = new DateTimeNullableJsonConverter();
+        var malformedBytes = new byte[] { (byte)'x' };
+        var reader = new Utf8JsonReader(malformedBytes);
+
+        var result = converter.Read(ref reader, typeof(DateTime?), new JsonSerializerOptions());
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void DebuggerLogCore_WhenDebuggerNotAttached_WritesDebugOnly()
+    {
+        var writeCalls = 0;
+        var debuggerLogCalls = 0;
+
+        DateTimeNullableJsonConverter.DebuggerLogCore(
+            new InvalidOperationException("boom"),
+            isDebuggerAttached: () => false,
+            debugWriteLine: _ => writeCalls++,
+            debuggerLog: (_, _, _) => debuggerLogCalls++);
+
+        Assert.Equal(1, writeCalls);
+        Assert.Equal(0, debuggerLogCalls);
+    }
+
+    [Fact]
+    public void DebuggerLogCore_WhenDebuggerAttached_WritesDebugAndDebuggerLog()
+    {
+        var writeCalls = 0;
+        var debuggerLogCalls = 0;
+
+        DateTimeNullableJsonConverter.DebuggerLogCore(
+            new InvalidOperationException("boom"),
+            isDebuggerAttached: () => true,
+            debugWriteLine: _ => writeCalls++,
+            debuggerLog: (_, category, message) =>
+            {
+                debuggerLogCalls++;
+                Assert.Equal("UndercutAnalyser", category);
+                Assert.Contains("InvalidOperationException", message);
+            });
+
+        Assert.Equal(1, writeCalls);
+        Assert.Equal(1, debuggerLogCalls);
+    }
+
+    [Fact]
+    public void DebuggerLogCore_SwallowsSinkExceptions()
+    {
+        DateTimeNullableJsonConverter.DebuggerLogCore(
+            new InvalidOperationException("boom"),
+            isDebuggerAttached: () => true,
+            debugWriteLine: _ => throw new Exception("debug sink fail"),
+            debuggerLog: (_, _, _) => throw new Exception("debugger sink fail"));
     }
 
     [Fact]

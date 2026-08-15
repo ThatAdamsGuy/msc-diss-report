@@ -194,6 +194,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         public string GapAtTargetOutLapComplete { get; init; } = string.Empty;
         public string GapAtBothDriversNormalLapComplete { get; init; } = string.Empty;
         public string DeltaGAtTargetPitLapComplete { get; init; } = string.Empty;
+        public string DeltaGAtTargetOutLapComplete { get; init; } = string.Empty;
+        public string DeltaGAtBothDriversNormalLapComplete { get; init; } = string.Empty;
         public string Result { get; init; } = string.Empty;
     }
 
@@ -280,12 +282,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         GetMainScanShowBehindCheckBox()?.Checked += OnResultsFilterChanged;
         GetMainScanShowBehindCheckBox()?.Unchecked += OnResultsFilterChanged;
 
+        GetShowGnColumnsCheckBox()?.Checked += OnGapColumnsFilterChanged;
+        GetShowGnColumnsCheckBox()?.Unchecked += OnGapColumnsFilterChanged;
+        GetShowGnPlus1ColumnsCheckBox()?.Checked += OnGapColumnsFilterChanged;
+        GetShowGnPlus1ColumnsCheckBox()?.Unchecked += OnGapColumnsFilterChanged;
+        GetShowGnPlus2ColumnsCheckBox()?.Checked += OnGapColumnsFilterChanged;
+        GetShowGnPlus2ColumnsCheckBox()?.Unchecked += OnGapColumnsFilterChanged;
+
         ExportResultsCsvButton.Click += (_, _) => ExportDisplayedResultsCsv();
         ExportAllButton.Click += (_, _) => ExportAllScenarioData();
         ClearResultsButton.Click += (_, _) => ClearAllResultsAndRefreshGraph();
         ClearTraceSelectionButton.Click += (_, _) => ClearTraceSelection();
         SimulateSingleUndercutButton.Click += (_, _) => SimulateSingleUndercut();
 
+        RefreshGapColumnsVisibility();
     }
 
     private void OnRaceTraceRefreshRequested(object sender, RoutedEventArgs e)
@@ -301,6 +311,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void OnPredictionMarkerOptionsChanged(object sender, RoutedEventArgs e)
     {
         RenderRaceTrace();
+    }
+
+    private void OnGapColumnsFilterChanged(object sender, RoutedEventArgs e)
+    {
+        RefreshGapColumnsVisibility();
     }
 
     private void OpenResultsTab()
@@ -578,113 +593,51 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private async Task<List<ScanRowData>> RunSingleDriverAllLapsAsync(MainScanDriverItem attacker, MainScanDriverItem target)
     {
-        var rows = new List<ScanRowData>();
-
-        // Get all valid decision laps for the attacker driver
         var availableLaps = WorkspaceWorkflowService.BuildTargetDecisionLapChoices(_currentLaps, attacker.DriverNumber);
+        var input = new MainWindowSingleScanAllLapsInput(
+            Attacker: new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName),
+            Target: new PredictionSelection(target.DriverNumber, target.Code, target.DisplayName),
+            DecisionLapNumbers: availableLaps,
+            EventName: SelectedEventDisplay.Text,
+            AttackerPaceOverrideText: ScanAttackerPaceBox.Text,
+            TargetPaceOverrideText: ScanTargetPaceBox.Text,
+            DerivedReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
+            AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
+            AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
+            TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
+            TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
+            TargetResponseLaps: _targetResponseLaps,
+            ModelParameters: BuildModelParametersFromMain());
 
-        foreach (var lapNumber in availableLaps)
-        {
-            // Calculate the actual gap between attacker and target at this lap (not the static gap from the text box)
-            string gapAtLap = GetGapBetweenDriversAtLap(attacker.DriverNumber, target.DriverNumber, lapNumber);
-            if (string.IsNullOrEmpty(gapAtLap))
-                continue; // Skip lap if gap cannot be calculated
-
-            var runInput = new MainWindowSingleScanRunInput(
-                EventName: SelectedEventDisplay.Text,
-                Attacker: new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName),
-                Target: new PredictionSelection(target.DriverNumber, target.Code, target.DisplayName),
-                DecisionLapNumber: lapNumber,
-                StartingGapText: gapAtLap,
-                AttackerPaceOverrideText: ScanAttackerPaceBox.Text,
-                TargetPaceOverrideText: ScanTargetPaceBox.Text,
-                DerivedReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
-                AttackerCompound: GetTyreStateAtLap(attacker.DriverNumber, lapNumber).compound,
-                AttackerTyreAge: GetTyreStateAtLap(attacker.DriverNumber, lapNumber).age,
-                TargetCompound: GetTyreStateAtLap(target.DriverNumber, lapNumber).compound,
-                TargetTyreAge: GetTyreStateAtLap(target.DriverNumber, lapNumber).age,
-                AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
-                AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
-                TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
-                TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
-                TargetResponseLaps: _targetResponseLaps,
-                ModelParameters: BuildModelParametersFromMain());
-
-            var result = SingleScanWorkflowService.Run(runInput);
-            if (result.IsSuccess && result.Row is not null)
-            {
-                rows.Add(result.Row);
-            }
-        }
-
-        return await Task.FromResult(rows);
+        return await Task.Run(() => SingleScanWorkflowService.RunAllLaps(
+            input,
+            resolveGapText: GetGapBetweenDriversAtLap,
+            resolveTyreState: GetTyreStateAtLap));
     }
 
     private async Task<List<ScanRowData>> RunScanAllLapsForAttackerAsync(MainScanDriverItem attacker)
     {
-        var rows = new List<ScanRowData>();
-
-        // Get all valid decision laps for the attacker driver
         var availableLaps = WorkspaceWorkflowService.BuildTargetDecisionLapChoices(_currentLaps, attacker.DriverNumber);
+        var input = new MainWindowSingleScanAllLapsForAttackerInput(
+            Attacker: new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName),
+            DecisionLapNumbers: availableLaps,
+            EventName: SelectedEventDisplay.Text,
+            AttackerPaceOverrideText: ScanAttackerPaceBox.Text,
+            TargetPaceOverrideText: ScanTargetPaceBox.Text,
+            DerivedReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
+            AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
+            AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
+            TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
+            TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
+            TargetResponseLaps: _targetResponseLaps,
+            ModelParameters: BuildModelParametersFromMain(),
+            Laps: _currentLaps,
+            Drivers: _currentDrivers);
 
-        // Build on-track order for each lap
-        var lapIndex = ScanWorkflowService.BuildLapIndex(_currentLaps);
-        var orderPerLap = ScanWorkflowService.BuildOnTrackOrderPerLap(lapIndex);
-
-        foreach (var lapNumber in availableLaps)
-        {
-            // Find the driver ahead on track for this lap
-            int? targetDriverNumber = null;
-            if (orderPerLap.TryGetValue(lapNumber, out var order))
-            {
-                var attackerPos = order.IndexOf(attacker.DriverNumber);
-                if (attackerPos > 0)
-                    targetDriverNumber = order[attackerPos - 1];
-            }
-
-            if (!targetDriverNumber.HasValue) continue;
-
-            // Get target driver details
-            var targetDriver = _currentDrivers.FirstOrDefault(d => d.DriverNumber == targetDriverNumber.Value);
-            if (targetDriver is null) continue;
-
-            var targetCode = string.IsNullOrWhiteSpace(targetDriver.Code)
-                ? targetDriver.DriverNumber.ToString(CultureInfo.InvariantCulture)
-                : targetDriver.Code;
-
-            // Calculate the actual gap between attacker and target at this lap (not the static gap from the text box)
-            string gapAtLap = GetGapBetweenDriversAtLap(attacker.DriverNumber, targetDriver.DriverNumber, lapNumber);
-            if (string.IsNullOrEmpty(gapAtLap))
-                continue; // Skip lap if gap cannot be calculated
-
-            var runInput = new MainWindowSingleScanRunInput(
-                EventName: SelectedEventDisplay.Text,
-                Attacker: new PredictionSelection(attacker.DriverNumber, attacker.Code, attacker.DisplayName),
-                Target: new PredictionSelection(targetDriver.DriverNumber, targetCode, targetDriver.BroadcastName),
-                DecisionLapNumber: lapNumber,
-                StartingGapText: gapAtLap,
-                AttackerPaceOverrideText: ScanAttackerPaceBox.Text,
-                TargetPaceOverrideText: ScanTargetPaceBox.Text,
-                DerivedReferencePaceByDriver: DeriveReferencePacePerDriver(BuildSafetyCarWindows(_currentRaceControlMessages)),
-                AttackerCompound: GetTyreStateAtLap(attacker.DriverNumber, lapNumber).compound,
-                AttackerTyreAge: GetTyreStateAtLap(attacker.DriverNumber, lapNumber).age,
-                TargetCompound: GetTyreStateAtLap(targetDriver.DriverNumber, lapNumber).compound,
-                TargetTyreAge: GetTyreStateAtLap(targetDriver.DriverNumber, lapNumber).age,
-                AttackerReplacementCompoundText: GetComboText(ScanAttackerReplCompoundCombo),
-                AttackerReplacementAgeText: ScanAttackerReplAgeBox.Text,
-                TargetReplacementCompoundText: GetComboText(ScanTargetReplCompoundCombo),
-                TargetReplacementAgeText: ScanTargetReplAgeBox.Text,
-                TargetResponseLaps: _targetResponseLaps,
-                ModelParameters: BuildModelParametersFromMain());
-
-            var result = SingleScanWorkflowService.Run(runInput);
-            if (result.IsSuccess && result.Row is not null)
-            {
-                rows.Add(result.Row);
-            }
-        }
-
-        return await Task.FromResult(rows);
+        return await Task.Run(() => SingleScanWorkflowService.RunAllLapsForAttacker(
+            input,
+            resolveGapText: GetGapBetweenDriversAtLap,
+            resolveTyreState: GetTyreStateAtLap));
     }
 
     /// <summary>
@@ -956,6 +909,47 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// </summary>
     private CheckBox? GetMainScanShowBehindCheckBox() => FindName("MainScanShowBehindCheckBox") as CheckBox;
 
+    private CheckBox? GetShowGnColumnsCheckBox() => FindName("ShowGnColumnsCheckBox") as CheckBox;
+
+    private CheckBox? GetShowGnPlus1ColumnsCheckBox() => FindName("ShowGnPlus1ColumnsCheckBox") as CheckBox;
+
+    private CheckBox? GetShowGnPlus2ColumnsCheckBox() => FindName("ShowGnPlus2ColumnsCheckBox") as CheckBox;
+
+    private void RefreshGapColumnsVisibility()
+    {
+        SetGapColumnsVisibility(
+            GetShowGnColumnsCheckBox()?.IsChecked == true,
+            GetMainScanColumn(8),
+            GetMainScanColumn(9));
+
+        SetGapColumnsVisibility(
+            GetShowGnPlus1ColumnsCheckBox()?.IsChecked == true,
+            GetMainScanColumn(10),
+            GetMainScanColumn(11));
+
+        SetGapColumnsVisibility(
+            GetShowGnPlus2ColumnsCheckBox()?.IsChecked == true,
+            GetMainScanColumn(12),
+            GetMainScanColumn(13));
+    }
+
+    private DataGridColumn? GetMainScanColumn(int index)
+    {
+        return index >= 0 && index < MainScanSingleGrid.Columns.Count
+            ? MainScanSingleGrid.Columns[index]
+            : null;
+    }
+
+    private static void SetGapColumnsVisibility(bool isVisible, params DataGridColumn?[] columns)
+    {
+        foreach (var column in columns)
+        {
+            if (column is null)
+                continue;
+
+            column.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
 
     /// <summary>
     /// Parses OpenF1 tyre compound text into the internal compound enum used by the prediction model.
@@ -1008,7 +1002,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             AvailableTargetDriverNumbers: availableTargets,
             Laps: _currentLaps,
             Stints: _currentStints,
-            RaceControlMessages: _currentRaceControlMessages));
+            RaceControlMessages: _currentRaceControlMessages,
+            PreferSuggestedTarget: forceAutoSelectTarget));
 
         var presentation = SingleScanWorkflowService.Build(
             scenario,

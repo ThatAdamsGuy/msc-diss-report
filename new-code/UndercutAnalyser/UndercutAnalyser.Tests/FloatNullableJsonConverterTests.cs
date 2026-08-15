@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using UndercutAnalyser.Infrastructure;
 
@@ -60,12 +61,53 @@ public sealed class FloatNullableJsonConverterTests
     }
 
     [Fact]
+    public void Read_StringWithCurrencySymbol_ReturnsNull()
+    {
+        var result = DeserializeFloat("{" + "\"value\":\"$123.45\"" + "}");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public void Read_StringWithThousandsSeparator_ReturnsFloat()
     {
         var result = DeserializeFloat("{" + "\"value\":\"1,234.5\"" + "}");
 
         Assert.NotNull(result);
         Assert.Equal(1234.5f, result.Value, 3);
+    }
+
+    [Fact]
+    public void Read_StringUsingCurrentCultureFormatting_ReturnsFloatFromCultureFallback()
+    {
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUiCulture = CultureInfo.CurrentUICulture;
+
+        try
+        {
+            var french = CultureInfo.GetCultureInfo("fr-FR");
+            CultureInfo.CurrentCulture = french;
+            CultureInfo.CurrentUICulture = french;
+
+            var result = DeserializeFloat("{" + "\"value\":\"1 234,5\"" + "}");
+
+            Assert.NotNull(result);
+            Assert.Equal(1234.5f, result.Value, 3);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUiCulture;
+        }
+    }
+
+    [Fact]
+    public void Read_NumberOutsideDoubleRange_ReturnsPositiveInfinity()
+    {
+        var result = DeserializeFloat("{" + "\"value\":1e9999" + "}");
+
+        Assert.NotNull(result);
+        Assert.True(float.IsPositiveInfinity(result.Value));
     }
 
     [Fact]
@@ -174,37 +216,54 @@ public sealed class FloatNullableJsonConverterTests
     }
 
     [Fact]
-    public void Write_NaNValue_DoesNotSerializeNaN()
+    public void Write_NaNValue_ThrowsSerializationException()
     {
-        // JSON spec doesn't officially support NaN; test that it either throws or writes alternative
         var act = () => SerializeFloat(float.NaN);
 
-        // Either throws or writing the value fails gracefully - both are acceptable
         var exception = Record.Exception(act);
-        // If it doesn't throw, just verify the operation completed
-        Assert.True(exception != null || true);
+        Assert.NotNull(exception);
+        Assert.True(exception is JsonException or ArgumentException);
     }
 
     [Fact]
-    public void Write_PositiveInfinityValue_CannotSerialize()
+    public void Read_InvalidTokenThatThrowsInternally_ReturnsNullFromCatch()
     {
-        // JSON spec doesn't support Infinity; converter should handle gracefully (throw or error)
+        var converter = new FloatNullableJsonConverter();
+        var malformedBytes = new byte[] { (byte)'x' };
+        var reader = new Utf8JsonReader(malformedBytes);
+
+        var result = converter.Read(ref reader, typeof(float?), new JsonSerializerOptions());
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Write_PositiveInfinityValue_ThrowsSerializationException()
+    {
         var act = () => SerializeFloat(float.PositiveInfinity);
 
         var exception = Record.Exception(act);
-        // Either throws or completes with error - both acceptable for invalid JSON values
-        Assert.True(exception != null || true);
+        Assert.NotNull(exception);
+        Assert.True(exception is JsonException or ArgumentException);
     }
 
     [Fact]
-    public void Write_NegativeInfinityValue_CannotSerialize()
+    public void Read_StringWithLeadingAndTrailingWhitespaceNumber_ReturnsFloat()
     {
-        // JSON spec doesn't support -Infinity; converter should handle gracefully
+        var result = DeserializeFloat("{" + "\"value\":\"  42.75  \"" + "}");
+
+        Assert.NotNull(result);
+        Assert.Equal(42.75f, result.Value, 3);
+    }
+
+    [Fact]
+    public void Write_NegativeInfinityValue_ThrowsSerializationException()
+    {
         var act = () => SerializeFloat(float.NegativeInfinity);
 
         var exception = Record.Exception(act);
-        // Either throws or completes with error - both acceptable
-        Assert.True(exception != null || true);
+        Assert.NotNull(exception);
+        Assert.True(exception is JsonException or ArgumentException);
     }
 
     #endregion

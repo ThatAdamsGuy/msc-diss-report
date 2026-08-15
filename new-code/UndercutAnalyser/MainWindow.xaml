@@ -95,7 +95,7 @@
                             <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Current tyre age"/>
                             <TextBox Grid.Row="3" Grid.Column="1" HorizontalAlignment="Left" x:Name="ScanAttackerTyreAgeBox" Width="90" Margin="0,0,0,6" IsReadOnly="True" Background="#F8F8F8"/>
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Replacement tyre"/>
+                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Replacement tyre" FontWeight="Bold"/>
                             <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
                                 <ComboBox x:Name="ScanAttackerReplCompoundCombo" Width="95" Margin="0,0,8,0">
                                     <ComboBoxItem Content="SOFT" IsSelected="True"/>
@@ -134,7 +134,7 @@
                             <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Current tyre age"/>
                             <TextBox Grid.Row="3" Grid.Column="1" HorizontalAlignment="Left" x:Name="ScanTargetTyreAgeBox" Width="90" Margin="0,0,0,6" IsReadOnly="True" Background="#F8F8F8"/>
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Replacement tyre"/>
+                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Replacement tyre" FontWeight="Bold"/>
                             <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
                                 <ComboBox x:Name="ScanTargetReplCompoundCombo" Width="95" Margin="0,0,8,0">
                                     <ComboBoxItem Content="SOFT" IsSelected="True"/>
@@ -300,7 +300,10 @@
                             <CheckBox x:Name="MainScanShowAheadCheckBox" Content="Ahead" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <CheckBox x:Name="MainScanShowMarginalCheckBox" Content="Marginal" IsChecked="True" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <CheckBox x:Name="MainScanShowBehindCheckBox" Content="Behind" IsChecked="True" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ClearResultsButton" Content="Clear Results" Width="120" Height="24" VerticalAlignment="Center"/>
+                            <Button x:Name="ClearResultsButton" Content="Clear Results" Width="120" Height="24" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <CheckBox x:Name="ShowGnColumnsCheckBox" Content="n" IsChecked="True" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="ShowGnPlus1ColumnsCheckBox" Content="n+1" IsChecked="True" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="ShowGnPlus2ColumnsCheckBox" Content="n+2" IsChecked="True" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <DataGrid x:Name="MainScanSingleGrid"
@@ -337,8 +340,12 @@
                                 <DataGridTextColumn Header="Tar. tyre" Binding="{Binding TargetCompound}" Width="70"/>
                                 <DataGridTextColumn Header="Tar. age" Binding="{Binding TargetTyreAge}" Width="55"/>
                                 <DataGridTextColumn Header="G₀" Binding="{Binding G0}" Width="70"/>
-                                <DataGridTextColumn Header="Gap@PitLap" Binding="{Binding GapAtTargetPitLapComplete}" Width="95"/>
-                                <DataGridTextColumn Header="ΔG@PitLap" Binding="{Binding DeltaGAtTargetPitLapComplete}" Width="95"/>
+                                <DataGridTextColumn x:Name="GapGnColumn" Header="G_n" Binding="{Binding GapAtTargetPitLapComplete}" Width="95"/>
+                                <DataGridTextColumn x:Name="DeltaGnColumn" Header="ΔG_n" Binding="{Binding DeltaGAtTargetPitLapComplete}" Width="95"/>
+                                <DataGridTextColumn x:Name="GapGnPlus1Column" Header="G_{n+1}" Binding="{Binding GapAtTargetOutLapComplete}" Width="95"/>
+                                <DataGridTextColumn x:Name="DeltaGnPlus1Column" Header="ΔG_{n+1}" Binding="{Binding DeltaGAtTargetOutLapComplete}" Width="95"/>
+                                <DataGridTextColumn x:Name="GapGnPlus2Column" Header="G_{n+2}" Binding="{Binding GapAtBothDriversNormalLapComplete}" Width="95"/>
+                                <DataGridTextColumn x:Name="DeltaGnPlus2Column" Header="ΔG_{n+2}" Binding="{Binding DeltaGAtBothDriversNormalLapComplete}" Width="95"/>
                                 <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="90"/>
                             </DataGrid.Columns>
                         </DataGrid>

@@ -14,12 +14,23 @@ namespace UndercutAnalyser.Infrastructure
         /// </summary>
         public static void Info(string message)
         {
+            InfoCore(
+                message,
+                isDebuggerAttached: () => Debugger.IsAttached,
+                debuggerLog: Debugger.Log);
+        }
+
+        internal static void InfoCore(
+            string message,
+            Func<bool> isDebuggerAttached,
+            Action<int, string, string> debuggerLog)
+        {
             var m = FormatMessage("INFO", message);
             Trace.WriteLine(m);
             Debug.WriteLine(m);
-            if (Debugger.IsAttached)
+            if (isDebuggerAttached())
             {
-                Debugger.Log(0, "UndercutAnalyser", m + "\n");
+                debuggerLog(0, "UndercutAnalyser", m + "\n");
             }
         }
 
@@ -28,12 +39,23 @@ namespace UndercutAnalyser.Infrastructure
         /// </summary>
         public static void Error(string message)
         {
+            ErrorCore(
+                message,
+                isDebuggerAttached: () => Debugger.IsAttached,
+                debuggerLog: Debugger.Log);
+        }
+
+        internal static void ErrorCore(
+            string message,
+            Func<bool> isDebuggerAttached,
+            Action<int, string, string> debuggerLog)
+        {
             var m = FormatMessage("ERROR", message);
             Trace.WriteLine(m);
             Debug.WriteLine(m);
-            if (Debugger.IsAttached)
+            if (isDebuggerAttached())
             {
-                Debugger.Log(0, "UndercutAnalyser", m + "\n");
+                debuggerLog(0, "UndercutAnalyser", m + "\n");
             }
         }
 
@@ -42,13 +64,26 @@ namespace UndercutAnalyser.Infrastructure
         /// </summary>
         public static void Error(Exception ex, string? context = null)
         {
+            ErrorCore(
+                ex,
+                context,
+                isDebuggerAttached: () => Debugger.IsAttached,
+                debuggerLog: Debugger.Log);
+        }
+
+        internal static void ErrorCore(
+            Exception ex,
+            string? context,
+            Func<bool> isDebuggerAttached,
+            Action<int, string, string> debuggerLog)
+        {
             var ctx = string.IsNullOrEmpty(context) ? string.Empty : $" [{context}]";
             var m = FormatMessage("ERROR", $"{ctx} {ex.GetType()}: {ex.Message}\n{ex.StackTrace}");
             Trace.WriteLine(m);
             Debug.WriteLine(m);
-            if (Debugger.IsAttached)
+            if (isDebuggerAttached())
             {
-                Debugger.Log(0, "UndercutAnalyser", m + "\n");
+                debuggerLog(0, "UndercutAnalyser", m + "\n");
             }
         }
 

@@ -19,6 +19,8 @@ public sealed record ScanRowData(
     string GapAtTargetOutLapComplete,
     string GapAtBothDriversNormalLapComplete,
     string DeltaGAtTargetPitLapComplete,
+    string DeltaGAtTargetOutLapComplete,
+    string DeltaGAtBothDriversNormalLapComplete,
     string Result);
 
 public static partial class ScanWorkflowService
@@ -50,6 +52,8 @@ public static partial class ScanWorkflowService
             GapAtTargetOutLapComplete: FormatGap(prediction.GapAtTargetOutLapCompleteSeconds),
             GapAtBothDriversNormalLapComplete: FormatGap(prediction.GapAtBothDriversNormalLapCompleteSeconds),
             DeltaGAtTargetPitLapComplete: FormatSigned(prediction.DeltaGAtTargetPitLapCompleteSeconds),
+            DeltaGAtTargetOutLapComplete: FormatSigned(prediction.DeltaGAtTargetOutLapCompleteSeconds),
+            DeltaGAtBothDriversNormalLapComplete: FormatSigned(prediction.DeltaGAtBothDriversNormalLapCompleteSeconds),
             Result: WorkspaceWorkflowService.ToResultLabel(prediction.Classification));
     }
 
@@ -80,6 +84,8 @@ public static partial class ScanWorkflowService
             GapAtTargetOutLapComplete: "-",
             GapAtBothDriversNormalLapComplete: "-",
             DeltaGAtTargetPitLapComplete: "-",
+            DeltaGAtTargetOutLapComplete: "-",
+            DeltaGAtBothDriversNormalLapComplete: "-",
             Result: $"Error: {errorMessage}");
     }
 

@@ -63,21 +63,25 @@ public static partial class WorkspaceWorkflowService
         int driverNumber,
         int lapNumber)
     {
-        var stint = stints
-            .Where(s => s.DriverNumber == driverNumber
-                     && s.LapStart <= lapNumber
-                     && (s.LapEnd == null || s.LapEnd >= lapNumber))
+        var driverStints = stints
+            .Where(s => s.DriverNumber == driverNumber)
+            .ToList();
+
+        var activeKnownStint = driverStints
+            .Where(s => s.LapStart <= lapNumber
+                     && (s.LapEnd == null || s.LapEnd >= lapNumber)
+                     && IsKnownCompound(s.Compound))
             .OrderByDescending(s => s.StintNumber)
             .FirstOrDefault();
 
-        if (stint is not null)
+        if (activeKnownStint is not null)
         {
-            var age = Math.Max(0, lapNumber - stint.LapStart + stint.TyreAgeAtStart);
-            return (NormalizeCompoundText(stint.Compound), age);
+            var age = Math.Max(0, lapNumber - activeKnownStint.LapStart + activeKnownStint.TyreAgeAtStart);
+            return (NormalizeCompoundText(activeKnownStint.Compound), age);
         }
 
-        var mostRecentKnownStint = stints
-            .Where(s => s.DriverNumber == driverNumber && s.LapStart <= lapNumber)
+        var mostRecentKnownStint = driverStints
+            .Where(s => s.LapStart <= lapNumber && IsKnownCompound(s.Compound))
             .OrderByDescending(s => s.LapStart)
             .ThenByDescending(s => s.StintNumber)
             .FirstOrDefault();
@@ -86,6 +90,29 @@ public static partial class WorkspaceWorkflowService
         {
             var fallbackAge = Math.Max(0, lapNumber - mostRecentKnownStint.LapStart + mostRecentKnownStint.TyreAgeAtStart);
             return (NormalizeCompoundText(mostRecentKnownStint.Compound), fallbackAge);
+        }
+
+        var nearestUpcomingKnownStint = driverStints
+            .Where(s => s.LapStart > lapNumber && IsKnownCompound(s.Compound))
+            .OrderBy(s => s.LapStart)
+            .ThenBy(s => s.StintNumber)
+            .FirstOrDefault();
+
+        if (nearestUpcomingKnownStint is not null)
+        {
+            return (NormalizeCompoundText(nearestUpcomingKnownStint.Compound), nearestUpcomingKnownStint.TyreAgeAtStart);
+        }
+
+        var activeStint = driverStints
+            .Where(s => s.LapStart <= lapNumber
+                     && (s.LapEnd == null || s.LapEnd >= lapNumber))
+            .OrderByDescending(s => s.StintNumber)
+            .FirstOrDefault();
+
+        if (activeStint is not null)
+        {
+            var age = Math.Max(0, lapNumber - activeStint.LapStart + activeStint.TyreAgeAtStart);
+            return (NormalizeCompoundText(activeStint.Compound), age);
         }
 
         var lastPitOutLap = laps
@@ -97,6 +124,11 @@ public static partial class WorkspaceWorkflowService
             .Max();
 
         return ("UNKNOWN", Math.Max(0, lapNumber - lastPitOutLap));
+    }
+
+    private static bool IsKnownCompound(string? compoundText)
+    {
+        return TyreCompoundParser.FromOpenF1String(compoundText) != TyreCompound.Unknown;
     }
 
     /// <summary>

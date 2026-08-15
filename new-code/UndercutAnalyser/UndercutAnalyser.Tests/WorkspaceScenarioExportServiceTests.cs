@@ -164,6 +164,8 @@ public sealed class WorkspaceScenarioExportServiceTests
             GapAtTargetOutLapComplete: "+0.300 s",
             GapAtBothDriversNormalLapComplete: "+0.200 s",
             DeltaGAtTargetPitLapComplete: "-0.600",
+            DeltaGAtTargetOutLapComplete: "-0.700",
+            DeltaGAtBothDriversNormalLapComplete: "-0.800",
             Result: result);
     }
 }

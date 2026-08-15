@@ -1,4 +1,5 @@
 using System.Globalization;
+using UndercutAnalyser.Domain.Models;
 using UndercutAnalyser.Domain.Prediction;
 
 namespace UndercutAnalyser.Services;
@@ -83,3 +84,40 @@ public sealed record MainWindowSingleScanRunInput(
     string? TargetReplacementAgeText,
     int TargetResponseLaps,
     LapModelParameters ModelParameters);
+
+/// <summary>
+/// Shared static inputs used when evaluating one attacker-target pair across multiple decision laps.
+/// </summary>
+public sealed record MainWindowSingleScanAllLapsInput(
+    PredictionSelection Attacker,
+    PredictionSelection Target,
+    IReadOnlyList<int> DecisionLapNumbers,
+    string EventName,
+    string? AttackerPaceOverrideText,
+    string? TargetPaceOverrideText,
+    IReadOnlyDictionary<int, double> DerivedReferencePaceByDriver,
+    string AttackerReplacementCompoundText,
+    string? AttackerReplacementAgeText,
+    string TargetReplacementCompoundText,
+    string? TargetReplacementAgeText,
+    int TargetResponseLaps,
+    LapModelParameters ModelParameters);
+
+/// <summary>
+/// Shared static inputs used when evaluating one attacker across multiple laps with per-lap auto-target resolution.
+/// </summary>
+public sealed record MainWindowSingleScanAllLapsForAttackerInput(
+    PredictionSelection Attacker,
+    IReadOnlyList<int> DecisionLapNumbers,
+    string EventName,
+    string? AttackerPaceOverrideText,
+    string? TargetPaceOverrideText,
+    IReadOnlyDictionary<int, double> DerivedReferencePaceByDriver,
+    string AttackerReplacementCompoundText,
+    string? AttackerReplacementAgeText,
+    string TargetReplacementCompoundText,
+    string? TargetReplacementAgeText,
+    int TargetResponseLaps,
+    LapModelParameters ModelParameters,
+    IReadOnlyList<EventLap> Laps,
+    IReadOnlyList<Driver> Drivers);

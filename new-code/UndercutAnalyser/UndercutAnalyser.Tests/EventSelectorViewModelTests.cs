@@ -69,6 +69,33 @@ public sealed class EventSelectorViewModelTests
         Assert.Equal(2, raised);
     }
 
+    [Fact]
+    public void SetFilter_NonEventObjectInViewFilter_ReturnsFalse()
+    {
+        var vm = new EventSelectorViewModel(new StubEventDataProvider(_ => Task.FromResult<IReadOnlyList<EventMeeting>>([])));
+        vm.SetFilter("abc");
+
+        Assert.NotNull(vm.EventsView.Filter);
+        Assert.False(vm.EventsView.Filter!(new object()));
+    }
+
+    [Fact]
+    public void Constructor_AddsYearGroupDescription()
+    {
+        var vm = new EventSelectorViewModel(new StubEventDataProvider(_ => Task.FromResult<IReadOnlyList<EventMeeting>>([])));
+
+        Assert.NotEmpty(vm.EventsView.GroupDescriptions);
+    }
+
+    [Fact]
+    public void Constructor_UsesDefaultProvider_WhenNullProviderSupplied()
+    {
+        var vm = new EventSelectorViewModel(null);
+
+        Assert.NotNull(vm.EventsView);
+        Assert.NotNull(vm.Events);
+    }
+
     #endregion
 
     #region LoadAsync guard behavior without WPF application bootstrap
@@ -103,6 +130,26 @@ public sealed class EventSelectorViewModelTests
 
         Assert.Empty(vm.Events);
         Assert.Equal([2024], provider.YearsRequested);
+    }
+
+    [Fact]
+    public void FilterAndOrderRacesCore_ExcludesOutOfRangePreSeasonAndFutureEvents_AndSorts()
+    {
+        var now = new DateTime(2026, 8, 20, 0, 0, 0, DateTimeKind.Local);
+        var races = new List<EventMeeting>
+        {
+            new() { Year = 2024, MeetingName = "Grand Prix A", DateStart = new DateTime(2024, 7, 1), DateEnd = new DateTime(2024, 7, 2) },
+            new() { Year = 2025, MeetingName = "Pre-Season Testing", DateStart = new DateTime(2025, 2, 1), DateEnd = new DateTime(2025, 2, 2) },
+            new() { Year = 2025, MeetingName = "Grand Prix B", DateStart = new DateTime(2025, 5, 1), DateEnd = new DateTime(2025, 5, 2) },
+            new() { Year = 2025, MeetingName = "Grand Prix C", DateStart = new DateTime(2025, 4, 1), DateEnd = new DateTime(2027, 1, 1) },
+            new() { Year = 2026, MeetingName = "Grand Prix D", DateStart = new DateTime(2026, 3, 1), DateEnd = new DateTime(2026, 3, 2) }
+        };
+
+        var result = EventSelectorViewModel.FilterAndOrderRacesCore(races, 2025, 2026, now);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Grand Prix D", result[0].MeetingName);
+        Assert.Equal("Grand Prix B", result[1].MeetingName);
     }
 
     #endregion

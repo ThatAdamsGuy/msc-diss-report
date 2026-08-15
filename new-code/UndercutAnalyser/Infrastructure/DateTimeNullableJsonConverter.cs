@@ -82,12 +82,27 @@ namespace UndercutAnalyser.Infrastructure
         /// </summary>
         private static void DebuggerLog(Exception ex)
         {
+            DebuggerLogCore(
+                ex,
+                () => System.Diagnostics.Debugger.IsAttached,
+                message => System.Diagnostics.Debug.WriteLine(message),
+                (level, category, message) => System.Diagnostics.Debugger.Log(level, category, message));
+        }
+
+        internal static void DebuggerLogCore(
+            Exception ex,
+            Func<bool> isDebuggerAttached,
+            Action<string> debugWriteLine,
+            Action<int, string, string> debuggerLog)
+        {
             try
             {
                 var msg = $"DateTimeNullableJsonConverter parse error: {ex.GetType()}: {ex.Message}";
-                System.Diagnostics.Debug.WriteLine(msg);
-                if (System.Diagnostics.Debugger.IsAttached)
-                    System.Diagnostics.Debugger.Log(0, "UndercutAnalyser", msg + "\n");
+                debugWriteLine(msg);
+                if (isDebuggerAttached())
+                {
+                    debuggerLog(0, "UndercutAnalyser", msg + "\n");
+                }
             }
             catch { }
         }

@@ -26,6 +26,9 @@ public sealed class DriverLapRowTests
         Assert.Equal(string.Empty, row["2"]);
         Assert.Equal(string.Empty, row["3"]);
         Assert.Equal(string.Empty, row["not-a-lap"]);
+        Assert.Same(Brushes.Transparent, row["bg:not-a-lap"]);
+        Assert.Same(Brushes.Transparent, row["border:not-a-lap"]);
+        Assert.Equal(new Thickness(0), row["thickness:not-a-lap"]);
     }
 
     [Fact]
@@ -71,6 +74,60 @@ public sealed class DriverLapRowTests
         Assert.Equal("300.000", cumulative["3"]);
     }
 
+    [Fact]
+    public void Indexer_UsesSectorOneMetric_InIndividualAndCumulativeModes()
+    {
+        var individual = CreateRow(
+            cumulativeMode: false,
+            metric: RawDataValueMetric.SectorOneTime,
+            lapsByNumber: new Dictionary<int, EventLap>
+            {
+                [1] = new EventLap { LapNumber = 1, LapDuration = 90.0f, DurationSector1 = 30.100f },
+                [2] = new EventLap { LapNumber = 2, LapDuration = 91.0f, DurationSector1 = 31.200f }
+            },
+            orderedLapNumbers: [1, 2]);
+
+        var cumulative = CreateRow(
+            cumulativeMode: true,
+            metric: RawDataValueMetric.SectorOneTime,
+            lapsByNumber: new Dictionary<int, EventLap>
+            {
+                [1] = new EventLap { LapNumber = 1, LapDuration = 90.0f, DurationSector1 = 30.100f },
+                [2] = new EventLap { LapNumber = 2, LapDuration = 91.0f, DurationSector1 = 31.200f }
+            },
+            orderedLapNumbers: [1, 2]);
+
+        Assert.Equal("31.200", individual["2"]);
+        Assert.Equal("121.200", cumulative["2"]);
+    }
+
+    [Fact]
+    public void Indexer_UsesSectorTwoMetric_InIndividualAndCumulativeModes()
+    {
+        var individual = CreateRow(
+            cumulativeMode: false,
+            metric: RawDataValueMetric.SectorTwoTime,
+            lapsByNumber: new Dictionary<int, EventLap>
+            {
+                [1] = new EventLap { LapNumber = 1, LapDuration = 90.0f, DurationSector1 = 30.0f, DurationSector2 = 31.0f },
+                [2] = new EventLap { LapNumber = 2, LapDuration = 91.0f, DurationSector1 = 31.0f, DurationSector2 = 32.0f }
+            },
+            orderedLapNumbers: [1, 2]);
+
+        var cumulative = CreateRow(
+            cumulativeMode: true,
+            metric: RawDataValueMetric.SectorTwoTime,
+            lapsByNumber: new Dictionary<int, EventLap>
+            {
+                [1] = new EventLap { LapNumber = 1, LapDuration = 90.0f, DurationSector1 = 30.0f, DurationSector2 = 31.0f },
+                [2] = new EventLap { LapNumber = 2, LapDuration = 91.0f, DurationSector1 = 31.0f, DurationSector2 = 32.0f }
+            },
+            orderedLapNumbers: [1, 2]);
+
+        Assert.Equal("63.000", individual["2"]);
+        Assert.Equal("153.000", cumulative["2"]);
+    }
+
     #endregion
 
     #region Detail, background, border, and thickness metadata
@@ -97,6 +154,24 @@ public sealed class DriverLapRowTests
     }
 
     [Fact]
+    public void DetailKey_ForDriverLap_UsesUnknownCompoundFallback()
+    {
+        var row = CreateRow(
+            cumulativeMode: false,
+            lapsByNumber: new Dictionary<int, EventLap>
+            {
+                [7] = Lap(7, 92.2f)
+            },
+            compoundByLap: new Dictionary<int, string> { [7] = "   " },
+            pitLaps: []);
+
+        var detail = Assert.IsType<string>(row["detail:7"]);
+
+        Assert.Contains("Matched compound: Unknown", detail, StringComparison.Ordinal);
+        Assert.Contains("Inferred pit lap: No", detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DetailKey_ForReferenceRow_ReturnsReferenceSummary()
     {
         var row = CreateRow(cumulativeMode: false, isReferenceRow: true, referenceLapSeconds: 99.8, orderedLapNumbers: [1, 2, 3]);
@@ -104,6 +179,21 @@ public sealed class DriverLapRowTests
         var detail = Assert.IsType<string>(row["detail:2"]);
 
         Assert.Equal("Reference Lap\nLap 2: 99.800 s", detail);
+    }
+
+    [Fact]
+    public void DetailKey_ForReferenceRow_WithNonLapMetric_ReturnsReferenceLapOnly()
+    {
+        var row = CreateRow(
+            cumulativeMode: false,
+            metric: RawDataValueMetric.SectorOneTime,
+            isReferenceRow: true,
+            referenceLapSeconds: 99.8,
+            orderedLapNumbers: [1, 2, 3]);
+
+        var detail = Assert.IsType<string>(row["detail:2"]);
+
+        Assert.Equal("Reference Lap", detail);
     }
 
     [Fact]
@@ -121,6 +211,8 @@ public sealed class DriverLapRowTests
     [InlineData("SOFT", nameof(Brushes.Red))]
     [InlineData("Medium", nameof(Brushes.Yellow))]
     [InlineData("hard", nameof(Brushes.White))]
+    [InlineData("UNKNOWN", nameof(Brushes.Black))]
+    [InlineData("", nameof(Brushes.Black))]
     [InlineData("INTERMEDIATE", nameof(Brushes.Transparent))]
     public void BorderKey_MapsCompoundToExpectedBrush(string compound, string expectedBrushName)
     {
@@ -149,6 +241,7 @@ public sealed class DriverLapRowTests
         Dictionary<int, string>? compoundByLap = null,
         HashSet<int>? pitLaps = null,
         IReadOnlyList<int>? orderedLapNumbers = null,
+        RawDataValueMetric metric = RawDataValueMetric.LapTime,
         bool isReferenceRow = false,
         double? referenceLapSeconds = null) =>
         new(
@@ -158,6 +251,7 @@ public sealed class DriverLapRowTests
             pitLaps: pitLaps ?? [],
             orderedLapNumbers: orderedLapNumbers ?? [1, 2, 3],
             cumulativeMode: cumulativeMode,
+            metric: metric,
             isReferenceRow: isReferenceRow,
             referenceLapSeconds: referenceLapSeconds);
 

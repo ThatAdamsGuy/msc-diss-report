@@ -14,7 +14,7 @@ public static partial class ScanWorkflowService
     public static string BuildCsv(IReadOnlyList<ScanRowData> rows)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Lap,Attacking,Target,AttackerCompound,AttackerTyreAge,TargetCompound,TargetTyreAge,G0,GapTargetPitLapComplete,GapTargetOutLapComplete,GapBothDriversNormalLapComplete,DeltaGTargetPitLapComplete,Result");
+        sb.AppendLine("Lap,Attacking,Target,AttackerCompound,AttackerTyreAge,TargetCompound,TargetTyreAge,G0,GapTargetPitLapComplete,GapTargetOutLapComplete,GapBothDriversNormalLapComplete,DeltaGTargetPitLapComplete,DeltaGTargetOutLapComplete,DeltaGBothDriversNormalLapComplete,Result");
 
         foreach (var row in rows)
         {
@@ -31,6 +31,8 @@ public static partial class ScanWorkflowService
                 WorkspaceWorkflowService.EscapeCsv(row.GapAtTargetOutLapComplete),
                 WorkspaceWorkflowService.EscapeCsv(row.GapAtBothDriversNormalLapComplete),
                 WorkspaceWorkflowService.EscapeCsv(row.DeltaGAtTargetPitLapComplete),
+                WorkspaceWorkflowService.EscapeCsv(row.DeltaGAtTargetOutLapComplete),
+                WorkspaceWorkflowService.EscapeCsv(row.DeltaGAtBothDriversNormalLapComplete),
                 WorkspaceWorkflowService.EscapeCsv(row.Result)));
         }
 

@@ -16,20 +16,70 @@ public static partial class WorkspaceWorkflowService
     /// </summary>
     public static bool TrySaveCsv(Window owner, string csvContent, MainWindowCsvSaveOptions options)
     {
-        var dlg = new SaveFileDialog
-        {
-            Title = options.Title,
-            Filter = options.Filter,
-            FileName = options.FileName,
-            DefaultExt = options.DefaultExt
-        };
+        return TrySaveCsvWithDialog(
+            owner,
+            csvContent,
+            options,
+            dialog: new SaveFileDialogAdapter(new SaveFileDialog()),
+            writeAllText: (path, content, encoding) => File.WriteAllText(path, content, encoding));
+    }
+
+    internal static bool TrySaveCsvWithDialog(
+        Window owner,
+        string csvContent,
+        MainWindowCsvSaveOptions options,
+        IMainWindowSaveFileDialog dialog,
+        Action<string, string, Encoding> writeAllText)
+    {
+        dialog.Title = options.Title;
+        dialog.Filter = options.Filter;
+        dialog.FileName = options.FileName;
+        dialog.DefaultExt = options.DefaultExt;
 
         return TrySaveCsvCore(
             csvContent,
             options,
-            showDialog: () => dlg.ShowDialog(owner),
-            selectedPath: () => dlg.FileName,
-            writeAllText: (path, content, encoding) => File.WriteAllText(path, content, encoding));
+            showDialog: () => dialog.ShowDialog(owner),
+            selectedPath: () => dialog.FileName,
+            writeAllText: writeAllText);
+    }
+
+    internal interface IMainWindowSaveFileDialog
+    {
+        string? Title { get; set; }
+        string Filter { get; set; }
+        string FileName { get; set; }
+        string DefaultExt { get; set; }
+        bool? ShowDialog(Window owner);
+    }
+
+    internal sealed class SaveFileDialogAdapter(SaveFileDialog dialog) : IMainWindowSaveFileDialog
+    {
+        public string? Title
+        {
+            get => dialog.Title;
+            set => dialog.Title = value;
+        }
+
+        public string Filter
+        {
+            get => dialog.Filter;
+            set => dialog.Filter = value;
+        }
+
+        public string FileName
+        {
+            get => dialog.FileName;
+            set => dialog.FileName = value;
+        }
+
+        public string DefaultExt
+        {
+            get => dialog.DefaultExt;
+            set => dialog.DefaultExt = value;
+        }
+
+        public bool? ShowDialog(Window owner) => dialog.ShowDialog(owner);
     }
 
     internal static bool TrySaveCsvCore(

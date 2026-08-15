@@ -87,15 +87,7 @@ namespace UndercutAnalyser.ViewModels
                 // The API returns all races regardless of year, so we call once.
                 var allRaces = await _provider.GetRacesBySeasonAsync(startYear).ConfigureAwait(false);
 
-                // Filter locally for the requested year range
-                var filteredRaces = allRaces
-                    .Where(r => r.Year >= startYear 
-                        && r.Year <= endYear 
-                        && r.MeetingName != "Pre-Season Testing" 
-                        && r.DateEnd <= DateTime.Now)
-                    .OrderByDescending(r => r.Year)
-                    .ThenBy(r => r.Date)
-                    .ToList();
+                var filteredRaces = FilterAndOrderRacesCore(allRaces, startYear, endYear, DateTime.Now);
 
                 // Marshal back to UI thread to update ObservableCollection
                 Application.Current.Dispatcher.Invoke(() =>
@@ -114,6 +106,22 @@ namespace UndercutAnalyser.ViewModels
                 UndercutAnalyser.Infrastructure.Logger.Error(ex, "LoadAsync");
                 // API call failed; leave Events empty
             }
+        }
+
+        internal static List<EventMeeting> FilterAndOrderRacesCore(
+            IReadOnlyList<EventMeeting> allRaces,
+            int startYear,
+            int endYear,
+            DateTime now)
+        {
+            return allRaces
+                .Where(r => r.Year >= startYear
+                    && r.Year <= endYear
+                    && r.MeetingName != "Pre-Season Testing"
+                    && r.DateEnd <= now)
+                .OrderByDescending(r => r.Year)
+                .ThenBy(r => r.Date)
+                .ToList();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

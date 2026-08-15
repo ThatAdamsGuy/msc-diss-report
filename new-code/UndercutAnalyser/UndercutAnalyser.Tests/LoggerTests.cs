@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using UndercutAnalyser.Infrastructure;
 
 namespace UndercutAnalyser.Tests;
@@ -213,6 +214,97 @@ public sealed class LoggerTests
             Assert.Contains(listener.Messages, m => m.Contains("First message"));
             Assert.Contains(listener.Messages, m => m.Contains("Second message"));
             Assert.Contains(listener.Messages, m => m.Contains("Third message"));
+        }
+        finally
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+        }
+    }
+
+    [Fact]
+    public void FormatMessage_IncludesIsoUtcPrefixAndLevel()
+    {
+        var method = typeof(Logger).GetMethod("FormatMessage", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        var formatted = method!.Invoke(null, ["INFO", "payload"]) as string;
+
+        Assert.NotNull(formatted);
+        Assert.Contains("INFO: payload", formatted, StringComparison.Ordinal);
+        Assert.StartsWith("[", formatted, StringComparison.Ordinal);
+        Assert.Contains("] INFO:", formatted, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InfoCore_WhenDebuggerAttached_CallsDebuggerLog()
+    {
+        var debuggerLogCalled = false;
+
+        Logger.InfoCore(
+            message: "attached",
+            isDebuggerAttached: () => true,
+            debuggerLog: (_, _, _) => debuggerLogCalled = true);
+
+        Assert.True(debuggerLogCalled);
+    }
+
+    [Fact]
+    public void ErrorCore_WhenDebuggerNotAttached_DoesNotCallDebuggerLog()
+    {
+        var debuggerLogCalled = false;
+
+        Logger.ErrorCore(
+            message: "detached",
+            isDebuggerAttached: () => false,
+            debuggerLog: (_, _, _) => debuggerLogCalled = true);
+
+        Assert.False(debuggerLogCalled);
+    }
+
+    [Fact]
+    public void InfoCore_WhenDebuggerNotAttached_DoesNotCallDebuggerLog()
+    {
+        var debuggerLogCalled = false;
+
+        Logger.InfoCore(
+            message: "detached",
+            isDebuggerAttached: () => false,
+            debuggerLog: (_, _, _) => debuggerLogCalled = true);
+
+        Assert.False(debuggerLogCalled);
+    }
+
+    [Fact]
+    public void ErrorCore_Exception_WhenDebuggerAttached_CallsDebuggerLog()
+    {
+        var debuggerLogCalled = false;
+
+        Logger.ErrorCore(
+            ex: new InvalidOperationException("boom"),
+            context: "TestCtx",
+            isDebuggerAttached: () => true,
+            debuggerLog: (_, _, _) => debuggerLogCalled = true);
+
+        Assert.True(debuggerLogCalled);
+    }
+
+    [Fact]
+    public void ErrorCore_Exception_WithEmptyContext_UsesNoBracketPrefix()
+    {
+        var listener = new CaptureTraceListener();
+        Trace.Listeners.Add(listener);
+
+        try
+        {
+            Logger.ErrorCore(
+                ex: new InvalidOperationException("boom"),
+                context: string.Empty,
+                isDebuggerAttached: () => false,
+                debuggerLog: (_, _, _) => { });
+
+            Assert.Contains(listener.Messages, m => m.Contains("ERROR:", StringComparison.Ordinal));
+            Assert.DoesNotContain(listener.Messages, m => m.Contains("[]", StringComparison.Ordinal));
         }
         finally
         {

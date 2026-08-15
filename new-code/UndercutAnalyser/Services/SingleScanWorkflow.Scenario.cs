@@ -41,10 +41,16 @@ public static partial class SingleScanWorkflowService
         }
 
         var effectiveTargetDriverNumber = input.SelectedTarget?.DriverNumber;
-        if (suggestedAheadDriverNumber.HasValue &&
-            input.AvailableTargetDriverNumbers.Contains(suggestedAheadDriverNumber.Value))
+        var suggestedIsAvailable = suggestedAheadDriverNumber.HasValue &&
+                                   input.AvailableTargetDriverNumbers.Contains(suggestedAheadDriverNumber.Value);
+
+        if (input.PreferSuggestedTarget && suggestedIsAvailable)
         {
-            effectiveTargetDriverNumber = suggestedAheadDriverNumber.Value;
+            effectiveTargetDriverNumber = suggestedAheadDriverNumber;
+        }
+        else if (!effectiveTargetDriverNumber.HasValue && suggestedIsAvailable)
+        {
+            effectiveTargetDriverNumber = suggestedAheadDriverNumber;
         }
 
         if (!effectiveTargetDriverNumber.HasValue)
@@ -96,7 +102,8 @@ public sealed record MainWindowSingleScanScenarioInput(
     IReadOnlyCollection<int> AvailableTargetDriverNumbers,
     IReadOnlyList<EventLap> Laps,
     IReadOnlyList<EventStint> Stints,
-    IReadOnlyList<RaceControlMessage> RaceControlMessages);
+    IReadOnlyList<RaceControlMessage> RaceControlMessages,
+    bool PreferSuggestedTarget);
 
 /// <summary>
 /// Derived single-scan scenario state used by MainWindow field population.

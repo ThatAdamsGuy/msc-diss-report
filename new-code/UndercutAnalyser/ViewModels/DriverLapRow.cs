@@ -8,6 +8,13 @@ using UndercutAnalyser.Domain.Models;
 
 namespace UndercutAnalyser.ViewModels
 {
+    public enum RawDataValueMetric
+    {
+        LapTime,
+        SectorOneTime,
+        SectorTwoTime
+    }
+
     /// <summary>
     /// One row in the Raw Data table, exposing lap cells via dynamic string keys.
     /// </summary>
@@ -22,6 +29,7 @@ namespace UndercutAnalyser.ViewModels
         private readonly bool _isReferenceRow;
         private readonly double? _referenceLapSeconds;
         private readonly bool _cumulativeMode;
+        private readonly RawDataValueMetric _metric;
 
         /// <summary>
         /// Creates a row backed by lap/stint dictionaries for fast per-cell lookup.
@@ -33,6 +41,7 @@ namespace UndercutAnalyser.ViewModels
             HashSet<int> pitLaps,
             IReadOnlyList<int> orderedLapNumbers,
             bool cumulativeMode,
+            RawDataValueMetric metric = RawDataValueMetric.LapTime,
             bool isReferenceRow = false,
             double? referenceLapSeconds = null)
         {
@@ -44,6 +53,7 @@ namespace UndercutAnalyser.ViewModels
             _isReferenceRow = isReferenceRow;
             _referenceLapSeconds = referenceLapSeconds;
             _cumulativeMode = cumulativeMode;
+            _metric = metric;
         }
 
         // Keys:
@@ -105,20 +115,40 @@ namespace UndercutAnalyser.ViewModels
                     return null;
                 }
 
-                double cumulative = 0;
-                var hasAny = false;
-
-                foreach (var lap in _orderedLapNumbers.Where(l => l <= lapNumber))
+                if (_metric == RawDataValueMetric.LapTime)
                 {
-                    var part = GetIndividualLapValue(lap);
-                    if (part.HasValue)
+                    double cumulativeLapTime = 0;
+                    var hasAnyLapTime = false;
+
+                    foreach (var lap in _orderedLapNumbers.Where(l => l <= lapNumber))
                     {
-                        cumulative += part.Value;
-                        hasAny = true;
+                        var part = GetIndividualLapValue(lap);
+                        if (part.HasValue)
+                        {
+                            cumulativeLapTime += part.Value;
+                            hasAnyLapTime = true;
+                        }
+                    }
+
+                    return hasAnyLapTime ? cumulativeLapTime : null;
+                }
+
+                double cumulativeToPriorLap = 0;
+                foreach (var lap in _orderedLapNumbers.Where(l => l < lapNumber))
+                {
+                    if (_lapsByNumber.TryGetValue(lap, out var priorLap) && priorLap.LapDuration.HasValue)
+                    {
+                        cumulativeToPriorLap += priorLap.LapDuration.Value;
                     }
                 }
 
-                return hasAny ? cumulative : null;
+                var currentPartial = GetIndividualLapValue(lapNumber);
+                if (!currentPartial.HasValue)
+                {
+                    return null;
+                }
+
+                return cumulativeToPriorLap + currentPartial.Value;
             }
 
             return GetIndividualLapValue(lapNumber);
@@ -131,15 +161,21 @@ namespace UndercutAnalyser.ViewModels
         {
             if (_isReferenceRow)
             {
-                return _referenceLapSeconds;
+                return _metric == RawDataValueMetric.LapTime ? _referenceLapSeconds : null;
             }
 
-            if (_lapsByNumber.TryGetValue(lapNumber, out var lap) && lap.LapDuration.HasValue)
+            if (!_lapsByNumber.TryGetValue(lapNumber, out var lap))
             {
-                return lap.LapDuration.Value;
+                return null;
             }
 
-            return null;
+            return _metric switch
+            {
+                RawDataValueMetric.LapTime => lap.LapDuration,
+                RawDataValueMetric.SectorOneTime => lap.DurationSector1,
+                RawDataValueMetric.SectorTwoTime => lap.LapTimeAtSectorTwoLine,
+                _ => lap.LapDuration
+            };
         }
 
         /// <summary>

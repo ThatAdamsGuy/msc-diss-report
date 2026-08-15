@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <ExcludeByFile>  **/MainWindow.xaml.cs,**/MainWindow.xaml,
+  **/App.xaml.cs,**/App.xaml,
+  **/*.g.cs,
+  **/*.g.i.cs</ExcludeByFile>
+          <Format>cobertura</Format>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

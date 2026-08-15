@@ -20,6 +20,7 @@ public sealed class RawDataView : Window
     private readonly DataGrid _rawDataGrid;
     private readonly TextBlock _extraInfoText;
     private readonly ComboBox _modeCombo;
+    private readonly ComboBox _metricCombo;
 
     private readonly IReadOnlyList<EventLap> _laps;
     private readonly IReadOnlyList<Driver> _drivers;
@@ -30,6 +31,7 @@ public sealed class RawDataView : Window
 
     private int[] _lapNumbers = Array.Empty<int>();
     private bool _cumulativeMode;
+    private RawDataValueMetric _metric = RawDataValueMetric.LapTime;
 
     /// <summary>
     /// Creates the raw-data window and initialises grid layout and row content.
@@ -104,6 +106,31 @@ public sealed class RawDataView : Window
         };
         modePanel.Children.Add(_modeCombo);
 
+        modePanel.Children.Add(new TextBlock
+        {
+            Text = "Metric:",
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(16, 0, 8, 0)
+        });
+
+        _metricCombo = new ComboBox
+        {
+            Width = 180,
+            ItemsSource = new[] { "Lap Time", "Sector One Time", "Sector Two Time" },
+            SelectedIndex = 0
+        };
+        _metricCombo.SelectionChanged += (_, _) =>
+        {
+            _metric = (_metricCombo.SelectedIndex) switch
+            {
+                1 => RawDataValueMetric.SectorOneTime,
+                2 => RawDataValueMetric.SectorTwoTime,
+                _ => RawDataValueMetric.LapTime
+            };
+            RefreshRows();
+        };
+        modePanel.Children.Add(_metricCombo);
+
         Grid.SetRow(modePanel, 1);
         root.Children.Add(modePanel);
 
@@ -135,11 +162,7 @@ public sealed class RawDataView : Window
     /// </summary>
     private void BuildGrid()
     {
-        _lapNumbers = _laps
-            .Select(l => l.LapNumber)
-            .Distinct()
-            .OrderBy(n => n)
-            .ToArray();
+        _lapNumbers = BuildLapNumbersCore(_laps);
 
         _rawDataGrid.Columns.Clear();
         _rawDataGrid.Columns.Add(new DataGridTextColumn
@@ -180,6 +203,35 @@ public sealed class RawDataView : Window
         }
     }
 
+    internal static int[] BuildLapNumbersCore(IEnumerable<EventLap> laps)
+    {
+        return laps
+            .Select(l => l.LapNumber)
+            .Distinct()
+            .OrderBy(n => n)
+            .ToArray();
+    }
+
+    internal static string ResolveDriverNameCore(int driverNumber, IReadOnlyDictionary<int, Driver> driverByNumber)
+    {
+        if (!driverByNumber.TryGetValue(driverNumber, out var driver))
+        {
+            return $"Driver {driverNumber}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(driver.FullName))
+        {
+            return driver.FullName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(driver.Code))
+        {
+            return driver.Code;
+        }
+
+        return $"Driver {driverNumber}";
+    }
+
     /// <summary>
     /// Recomputes grid rows from current lap/stint data and selected view mode.
     /// </summary>
@@ -206,9 +258,7 @@ public sealed class RawDataView : Window
 
         foreach (var driverNumber in lapsByDriver.Keys.OrderBy(n => n))
         {
-            var driverName = driverByNumber.TryGetValue(driverNumber, out var driver)
-                ? string.IsNullOrWhiteSpace(driver.FullName) ? driver.Code : driver.FullName
-                : $"Driver {driverNumber}";
+            var driverName = ResolveDriverNameCore(driverNumber, driverByNumber);
 
             var driverLaps = lapsByDriver[driverNumber];
             var pitLaps = BuildPitLaps(driverLaps);
@@ -220,7 +270,8 @@ public sealed class RawDataView : Window
                 compounds,
                 pitLaps,
                 orderedLapList,
-                _cumulativeMode));
+                _cumulativeMode,
+                _metric));
         }
 
         rows.Add(new DriverLapRow(
@@ -230,6 +281,7 @@ public sealed class RawDataView : Window
             new HashSet<int>(),
             orderedLapList,
             _cumulativeMode,
+            _metric,
             isReferenceRow: true,
             referenceLapSeconds: _reference?.AverageLapTimeSeconds));
 
@@ -241,9 +293,14 @@ public sealed class RawDataView : Window
     /// </summary>
     private HashSet<int> BuildPitLaps(Dictionary<int, EventLap> driverLaps)
     {
+        return BuildPitLapsCore(driverLaps.Values);
+    }
+
+    internal static HashSet<int> BuildPitLapsCore(IEnumerable<EventLap> laps)
+    {
         var pitLaps = new HashSet<int>();
 
-        foreach (var lap in driverLaps.Values.Where(l => l.IsPitOutLap))
+        foreach (var lap in laps.Where(l => l.IsPitOutLap))
         {
             if (lap.LapNumber > 1)
             {
@@ -259,10 +316,9 @@ public sealed class RawDataView : Window
     /// </summary>
     private Dictionary<int, string> BuildCompoundsByLap(int driverNumber, Dictionary<int, List<EventStint>> stintsByDriver)
     {
-        var compoundByLap = new Dictionary<int, string>();
         if (!stintsByDriver.TryGetValue(driverNumber, out var driverStints))
         {
-            return compoundByLap;
+            return new Dictionary<int, string>();
         }
 
         var maxDriverLap = _laps
@@ -270,6 +326,13 @@ public sealed class RawDataView : Window
             .Select(l => l.LapNumber)
             .DefaultIfEmpty(0)
             .Max();
+
+        return BuildCompoundsByLapCore(driverStints, maxDriverLap);
+    }
+
+    internal static Dictionary<int, string> BuildCompoundsByLapCore(IEnumerable<EventStint> driverStints, int maxDriverLap)
+    {
+        var compoundByLap = new Dictionary<int, string>();
 
         foreach (var stint in driverStints)
         {
@@ -293,13 +356,30 @@ public sealed class RawDataView : Window
     /// </summary>
     private void UpdateExtraInfo()
     {
-        var referenceAvg = _reference?.AverageLapTimeSeconds;
+        _extraInfoText.Text = BuildExtraInfoTextCore(
+            _reference,
+            _laps.Count,
+            _lapNumbers.Length,
+            _fuelKg,
+            _fuelSecondsPer10Kg,
+            _stints.Count);
+    }
+
+    internal static string BuildExtraInfoTextCore(
+        ReferenceLapTimeResult? reference,
+        int lapCount,
+        int lapNumberCount,
+        double fuelKg,
+        double fuelSecondsPer10Kg,
+        int stintsCount)
+    {
+        var referenceAvg = reference?.AverageLapTimeSeconds;
         var referenceAvgText = referenceAvg.HasValue ? referenceAvg.Value.ToString("F3") : "N/A";
 
-        _extraInfoText.Text =
-            $"Extra info  |  Rows: {_reference?.TotalLapRows ?? _laps.Count}  |  Session laps: {_reference?.MaxSessionLapNumber ?? _lapNumbers.Length}  |  " +
-            $"Reference avg: {referenceAvgText}s  |  Fuel: {_fuelKg:F1} kg  |  Seconds per 10kg: {_fuelSecondsPer10Kg:F3}  |  " +
-            $"Fuel/lap: {_reference?.FuelEffectPerLapSeconds.ToString("F3") ?? "N/A"}s  |  Clean laps: {_reference?.IncludedLaps.ToString() ?? "N/A"}  |  " +
-            $"Excluded (pit-out/pit-in/SC): {_reference?.ExcludedPitOutLaps.ToString() ?? "N/A"}/{_reference?.ExcludedPitInLaps.ToString() ?? "N/A"}/{_reference?.ExcludedSafetyCarLaps.ToString() ?? "N/A"}  |  Stints: {_stints.Count}";
+        return
+            $"Extra info  |  Rows: {reference?.TotalLapRows ?? lapCount}  |  Session laps: {reference?.MaxSessionLapNumber ?? lapNumberCount}  |  " +
+            $"Reference avg: {referenceAvgText}s  |  Fuel: {fuelKg:F1} kg  |  Seconds per 10kg: {fuelSecondsPer10Kg:F3}  |  " +
+            $"Fuel/lap: {reference?.FuelEffectPerLapSeconds.ToString("F3") ?? "N/A"}s  |  Clean laps: {reference?.IncludedLaps.ToString() ?? "N/A"}  |  " +
+            $"Excluded (pit-out/pit-in/SC): {reference?.ExcludedPitOutLaps.ToString() ?? "N/A"}/{reference?.ExcludedPitInLaps.ToString() ?? "N/A"}/{reference?.ExcludedSafetyCarLaps.ToString() ?? "N/A"}  |  Stints: {stintsCount}";
     }
 }
