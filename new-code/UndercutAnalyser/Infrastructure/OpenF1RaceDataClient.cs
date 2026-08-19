@@ -39,12 +39,60 @@ namespace UndercutAnalyser.Infrastructure
         public async Task<IReadOnlyList<EventMeeting>> GetRacesBySeasonAsync(int year)
         {
             var url = "meetings";
-            using var resp = await _http.GetAsync(url).ConfigureAwait(false);
-            resp.EnsureSuccessStatusCode();
-            using var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            var races = await JsonSerializer.DeserializeAsync<List<EventMeeting>>(stream, JsonOptions).ConfigureAwait(false)
-                ?? new List<EventMeeting>();
-            return races;
+            var started = DateTimeOffset.UtcNow;
+            LogHttpStart("GetRacesBySeasonAsync", url, $"season {year}");
+
+            try
+            {
+                using var resp = await _http.GetAsync(url).ConfigureAwait(false);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var errorBody = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    LogHttpFailure("GetRacesBySeasonAsync", url, started, resp, $"season {year}", errorBody);
+                }
+
+                resp.EnsureSuccessStatusCode();
+
+                using var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                var races = await JsonSerializer.DeserializeAsync<List<EventMeeting>>(stream, JsonOptions).ConfigureAwait(false)
+                    ?? new List<EventMeeting>();
+
+                LogHttpSuccess("GetRacesBySeasonAsync", url, started, resp, $"season {year}");
+                return races;
+            }
+            catch (HttpRequestException ex)
+            {
+                LogHttpException("GetRacesBySeasonAsync", url, started, ex, $"season {year}");
+                throw;
+            }
+            catch (TaskCanceledException ex)
+            {
+                LogHttpException("GetRacesBySeasonAsync", url, started, ex, $"season {year}");
+                throw;
+            }
+        }
+
+        private static void LogHttpStart(string operation, string url, string context)
+        {
+            System.Diagnostics.Debug.WriteLine($"OpenF1 {operation} GET {url} started ({context})");
+        }
+
+        private static void LogHttpSuccess(string operation, string url, DateTimeOffset started, HttpResponseMessage response, string context)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"OpenF1 {operation} GET {url} succeeded ({context}) after {(DateTimeOffset.UtcNow - started).TotalMilliseconds:N0} ms: {(int)response.StatusCode} {response.ReasonPhrase}");
+        }
+
+        private static void LogHttpFailure(string operation, string url, DateTimeOffset started, HttpResponseMessage response, string context, string body)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"OpenF1 {operation} GET {url} failed ({context}) after {(DateTimeOffset.UtcNow - started).TotalMilliseconds:N0} ms: {(int)response.StatusCode} {response.ReasonPhrase}. Body: {body}");
+        }
+
+        private static void LogHttpException(string operation, string url, DateTimeOffset started, Exception ex, string context)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"OpenF1 {operation} GET {url} exception ({context}) after {(DateTimeOffset.UtcNow - started).TotalMilliseconds:N0} ms: {ex.GetType().Name}: {ex.Message}");
         }
 
         /// <summary>
